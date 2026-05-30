@@ -1,84 +1,560 @@
-# 🎬 Cinema Web System (Advanced Version)
 
-Hệ thống quản lý và đặt vé xem phim trực tuyến toàn diện, tích hợp các tính năng nâng cao như khóa ghế thời gian thực (Realtime Seat Locking), cấu hình giá vé linh hoạt, AI Chatbot tích hợp và hệ thống lưu vết thông minh.
 
-## 📌 Tổng Quan Dự Án
 
-Dự án này cung cấp giải pháp chuyển đổi số toàn diện cho các rạp chiếu phim, tối ưu hóa trải nghiệm khách hàng từ khâu tra cứu lịch chiếu, đặt vé, chọn bắp nước đến tích điểm thành viên và nhận vé điện tử qua email. Đồng thời, hệ thống cung cấp công cụ quản trị mạnh mẽ (Audit Logs, Price Configuration) cho bộ phận vận hành.
+# Technologies Used
 
----
+## Backend
 
-## 🛠 Thiết Kế Cơ Sở Dữ Liệu (Database Architecture)
+### ASP.NET Core MVC
 
-Cấu trúc cơ sở dữ liệu được thiết kế theo chuẩn DBML, hỗ trợ import trực tiếp tại [dbdiagram.io](https://dbdiagram.io/).
+ASP.NET Core MVC là framework phát triển ứng dụng web của Microsoft dựa trên mô hình **Model - View - Controller (MVC)**.
 
-### 🗺 Sơ đồ mối quan hệ tổng quan
+Framework được sử dụng để:
 
-Hệ thống dữ liệu được chia thành 7 nhóm thực thể chính có mối quan hệ chặt chẽ với nhau:
-
-[Roles] ──< [Users] ── Silber ──< [Bookings] ──< [Tickets] ── [Ticket_Scans]
-│                            │
-[Seat_Holds] (< Showtimes)           ├──< [Booking_Foods] ──> [Food_Beverages]
-│                            │
-[Seats] ──> [Rooms]             └──> [Payments]
+* Xây dựng giao diện web động bằng Razor View.
+* Xử lý HTTP Request và Response.
+* Quản lý luồng xử lý giữa Controller, Service và View.
+* Hỗ trợ Dependency Injection (DI).
+* Tích hợp Entity Framework Core để làm việc với cơ sở dữ liệu.
 
 ---
 
-## 🗂 Chi Tiết Các Nhóm Bảng Trong Hệ Thống
+### Entity Framework Core
 
-### 1. Nhóm Quản Lý Người Dùng, Vai Trò & Bảo Mật
-* `Roles`: Định nghĩa nhóm quyền hạn trong hệ thống (`Admin`, `Manager`, `Staff`, `Customer`, `Guest`).
-* `Users`: Lưu trữ thông tin tài khoản, điểm tích lũy thành viên (`reward_points`) và trạng thái hoạt động.
-* `Password_Reset_Tokens`: Cơ chế mã hóa mã OTP/Token phục vụ tính năng quên mật khẩu an toàn.
-
-### 2. Nhóm Quản Lý Rạp & Sơ Đồ Ghế Ngồi
-* `Rooms` & `Room_Types`: Quản lý phòng chiếu theo định dạng (`2D`, `3D`, `IMAX`, `ScreenX`).
-* `Seats` & `Seat_Types`: Định vị tọa độ ghế (Hàng, Số) và phân loại phân khúc (`Regular`, `VIP`, `Couple`).
-* `Seat_Holds` *(Nâng cao)*: Cơ chế giữ ghế tạm thời trong 5-10 phút khi khách hàng đang tiến hành thanh toán, ngăn chặn tình trạng trùng ghế trực thời gian thực.
-
-### 3. Nhóm Quản Lý Phim & Lịch Chiếu
-* `Movies` & `Genres`: Quản lý thông tin phim, trạng thái phát hành (`Now Showing`, `Coming Soon`, `Stopped`) và bảng trung gian `Movie_Genres`.
-* `Showtimes`: Điều phối lịch chiếu cụ thể theo khung giờ và phòng chiếu.
-
-### 4. Dịch Vụ Bắp Nước, Khuyến Mãi & Tích Điểm
-* `Food_Beverages`: Menu đồ ăn kèm (F&B) kèm trạng thái kho hàng.
-* `Promotions`: Hệ thống mã giảm giá linh hoạt, hỗ trợ giảm theo % hoặc số tiền cố định, áp dụng riêng cho Vé, F&B hoặc Toàn bộ đơn hàng.
-* `Reward_Point_History`: Lưu vết chi tiết lịch sử tích điểm (`Earned`), đổi quà (`Redeemed`), hoặc hoàn điểm (`Refund_Rollback`).
-
-### 5. Nhóm Đặt Vé, Giao Dịch, Hoàn Tiền & Email
-* `Bookings`: Hóa đơn tổng lưu trữ thông tin tiền gốc, thuế VAT, giảm giá và số tiền cuối cùng phải trả (`final_amount`).
-* `Tickets` & `Ticket_Scans`: Mã QR riêng biệt cho từng vé và phân hệ quét vé kiểm tra lối vào (`Checked-in`).
-* `Booking_Foods`: Chi tiết số lượng bắp nước được đặt kèm trong hóa đơn.
-* `Payments`: Cổng ghi nhận thanh toán đa nền tảng (`VNPay`, `MoMo`, `Cash`...) và xử lý tiền thừa tại quầy.
-* `Email_Logs` *(Nâng cao)*: Hàng đợi gửi thư điện tử (Email Queue) tự động gửi vé kèm mã QR, có cơ chế lưu vết lỗi (`Failed`, `Sent`).
-
-### 6. Nhóm Chăm Sóc Khách Hàng & Hệ Thống Logs
-* `Reviews`: Đánh giá, chấm điểm phim từ người dùng đã qua kiểm duyệt (`Approved`).
-* `Chatbot_Logs`: Lưu trữ lịch sử tương tác của khách hàng với AI Chatbot nhằm nhận diện ý định (`intent_detected`) để cải tiến dịch vụ.
-* `Audit_Logs`: Nhật ký tối quan trọng lưu lại vết hành động của Admin/Staff (lưu dữ liệu cũ và mới trước/sau khi cập nhật) nhằm đảm bảo tính minh bạch dữ liệu.
-
-### 7. Nhóm Cấu Hình Giá Vé Linh Hoạt (Price Configuration)
-Hệ thống áp dụng công thức tính giá vé tự động động:
-$$\text{Total Price} = \text{Base Price} + \text{Seat Surcharge} + \text{Type Surcharge} + \text{Time Surcharge}$$
-
-* `Price_Base_Configs`: Giá gốc mặc định hoặc giá riêng cho từng bộ phim bom tấn.
-* `Price_Seat_Configs`: Phụ thu theo loại ghế (ví dụ: VIP +20k, Couple +50k).
-* `Price_Room_Type_Configs`: Phụ thu theo phòng chiếu (ví dụ: IMAX +50k).
-* `Price_Time_Configs`: Phụ thu theo khung giờ cao điểm, ngày cuối tuần (Thứ 7, CN) hoặc các ngày lễ tết cụ thể (`specific_date`) dựa trên mức độ ưu tiên (`priority`).
-* `VAT`: Quản lý cấu hình thuế suất áp dụng linh hoạt trên đơn hàng.
+Entity Framework Core (EF Core) là ORM (Object Relational Mapping) được sử dụng để tương tác với cơ sở dữ liệu thông qua các đối tượng C#.
 
 ---
 
-## 🚀 Hướng Dẫn Sử Dụng Trên dbdiagram.io
+### SQL Server
 
-Để xem trực quan biểu đồ ERD (Entity-Relationship Diagram) và xuất ra file SQL (MySQL, PostgreSQL, SQL Server):
+SQL Server là hệ quản trị cơ sở dữ liệu quan hệ được sử dụng để lưu trữ dữ liệu của hệ thống.
 
-1. Truy cập trang web [dbdiagram.io](https://dbdiagram.io/).
-2. Tạo một diagram mới.
-3. Copy toàn bộ nội dung mã cấu hình DBML trong file mã nguồn cơ sở dữ liệu của bạn và dán vào khung chỉnh sửa bên trái.
-4. Hệ thống sẽ tự động vẽ sơ đồ quan hệ thực thể trực quan ở khung bên phải.
+---
 
-## 🔒 Quy Tắc Bảo Mật & Ràng Buộc Dữ Liệu
-* Mật khẩu người dùng bắt buộc phải được băm (`password_hash`) trước khi lưu trữ.
-* Mã QR của giao dịch (`Bookings.qr_code`) và vé (`Tickets.qr_code`) là duy nhất (`unique`).
-* Tất cả các hành động chỉnh sửa cấu hình hệ thống từ phía quản trị viên bắt buộc phải kích hoạt Trigger để ghi nhận vào `Audit_Logs`.
+## Frontend
+
+### Razor View Engine
+
+Razor là công nghệ tạo giao diện phía máy chủ (Server-side Rendering) của ASP.NET Core MVC.
+
+---
+
+### Tailwind CSS
+
+Tailwind CSS là framework CSS theo hướng Utility-First, cho phép xây dựng giao diện nhanh chóng bằng cách sử dụng các class có sẵn.
+
+**Ví dụ:**
+
+```html
+<button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+    Save
+</button>
+```
+
+# Git Workflow & Branching Rules
+
+## 1. Branch Strategy
+
+Dự án sử dụng mô hình phân nhánh đơn giản:
+
+```text
+main
+ ├── feature/user-management
+ ├── feature/movie-management
+ ├── feature/showtime-management
+ ├── bugfix/login-error
+ └── hotfix/security-fix
+```
+
+### Main Branch
+
+* `main` là nhánh ổn định.
+* Chỉ chứa mã nguồn đã được kiểm tra và hoạt động ổn định.
+* Không commit trực tiếp lên `main`.
+
+---
+
+## 2. Naming Convention
+
+### Feature Branch
+
+Cú pháp:
+
+```text
+feature/<feature-name>
+```
+
+Ví dụ:
+
+```text
+feature/user-management
+feature/movie-management
+```
+
+### Bug Fix Branch
+
+Cú pháp:
+
+```text
+bugfix/<bug-name>
+```
+
+Ví dụ:
+
+```text
+bugfix/login-error
+bugfix/date-validation
+```
+
+### Hot Fix Branch
+
+Cú pháp:
+
+```text
+hotfix/<issue-name>
+```
+
+Ví dụ:
+
+```text
+hotfix/security-patch
+hotfix/database-connection
+```
+
+---
+
+## 3. Commit Message Convention
+
+Cấu trúc:
+
+```text
+<type>: <description>
+```
+
+### Các loại commit
+
+| Type     | Ý nghĩa                         |
+| -------- | ------------------------------- |
+| feat     | Thêm chức năng mới              |
+| fix      | Sửa lỗi                         |
+| refactor | Tái cấu trúc mã nguồn           |
+| style    | Chỉnh sửa giao diện hoặc format |
+| docs     | Cập nhật tài liệu               |
+| test     | Thêm hoặc sửa test              |
+| chore    | Công việc hỗ trợ, cấu hình      |
+
+### Ví dụ
+
+```text
+feat: add doctor management module
+
+feat: create appointment booking page
+
+fix: resolve login validation issue
+
+refactor: simplify appointment service logic
+
+docs: update project structure document
+
+style: improve dashboard layout
+```
+
+---
+
+## 4. Development Workflow
+
+### Bước 1: Cập nhật mã nguồn mới nhất
+
+```bash
+git checkout main
+git pull origin main
+```
+
+### Bước 2: Tạo branch mới
+
+```bash
+git checkout -b feature/<feature-name>
+```
+
+### Bước 3: Thực hiện phát triển
+
+```bash
+git add .
+git commit -m "feat: add doctor create page"
+```
+
+### Bước 4: Push branch
+
+```bash
+git push origin feature/<feature-name>
+```
+
+### Bước 5: Tạo Pull Request
+
+* Tạo Pull Request vào `main`.
+* Chờ review trước khi merge.
+
+---
+
+## 5. Pull Request Rules
+
+Trước khi tạo Pull Request:
+
+* Code phải build thành công.
+* Không còn lỗi compile.
+* Đã kiểm tra chức năng liên quan.
+* Không commit file tạm hoặc file cá nhân.
+
+Ví dụ:
+
+```text
+✔ bin/
+✔ obj/
+✔ .vs/
+✔ publish/
+```
+
+Không được push lên repository.
+
+---
+
+## 6. Files Ignored By Git
+
+Sử dụng `.gitignore` để loại bỏ:
+
+```text
+bin/
+obj/
+.vs/
+publish/
+node_modules/
+
+appsettings.Development.json
+```
+
+Không commit:
+
+* File build.
+* File cache.
+* File log.
+* File cấu hình cá nhân.
+
+---
+
+## 7. Code Review Rules
+
+Trước khi merge:
+
+* Đọc lại code.
+* Kiểm tra naming convention.
+* Kiểm tra logic nghiệp vụ.
+* Loại bỏ code thừa.
+* Không để lại code comment không cần thiết.
+
+Ví dụ không nên:
+
+```csharp
+// TODO: Fix later
+// Temporary code
+```
+
+---
+
+## 8. General Rules
+
+### Nên làm
+
+* Commit nhỏ và rõ ràng.
+* Đặt tên branch dễ hiểu.
+* Viết commit message có ý nghĩa.
+* Pull code mới nhất trước khi làm việc.
+
+### Không nên
+
+* Commit trực tiếp lên `main`.
+* Push code chưa chạy được.
+* Commit nhiều chức năng trong một commit.
+* Đưa thông tin nhạy cảm vào repository.
+
+---
+
+## Recommended Workflow
+
+```text
+Pull main
+    ↓
+Create Feature Branch
+    ↓
+Develop Feature
+    ↓
+Commit Changes
+    ↓
+Push Branch
+    ↓
+Create Pull Request
+    ↓
+Code Review
+    ↓
+Merge Into Main
+```
+
+
+# Design Patterns
+
+### Repository Pattern
+
+Tách biệt logic truy cập dữ liệu khỏi logic nghiệp vụ.
+
+**Lợi ích:**
+
+* Dễ bảo trì.
+* Dễ kiểm thử.
+* Giảm phụ thuộc vào Entity Framework Core.
+
+---
+
+### Unit of Work Pattern
+
+Quản lý nhiều Repository trong cùng một transaction.
+
+**Lợi ích:**
+
+* Đảm bảo tính nhất quán dữ liệu.
+* Giảm số lần truy cập cơ sở dữ liệu.
+
+---
+
+### Dependency Injection (DI)
+
+ASP.NET Core cung cấp cơ chế Dependency Injection tích hợp sẵn.
+
+**Lợi ích:**
+
+* Giảm sự phụ thuộc giữa các thành phần.
+* Dễ mở rộng và kiểm thử hệ thống.
+
+---
+
+## Architecture
+
+Dự án được xây dựng theo kiến trúc phân tầng (Layered Architecture):
+
+```text
+Presentation Layer
+    ↓
+Application Layer
+    ↓
+Domain Layer
+    ↓
+Infrastructure Layer
+    ↓
+Database
+```
+
+### Presentation Layer
+
+* Controllers
+* Views
+* ViewModels
+
+### Application Layer
+
+* DTOs
+* Services
+* Interfaces
+* Mappings
+
+### Domain Layer
+
+* Entities
+* Business Models
+
+### Infrastructure Layer
+
+* DbContext
+* Repositories
+* UnitOfWork
+
+Kiến trúc này giúp hệ thống dễ bảo trì, mở rộng và tái sử dụng trong quá trình phát triển.
+
+
+# Project Structure
+
+```text
+Project
+├── Controllers
+├── Views
+│   ├── Home
+│   └── Shared
+│       ├── _Layout.cshtml
+│       └── _ValidationScriptsPartial.cshtml
+├── Application
+│   ├── Common
+│   │   └── Result.cs
+│   ├── DTOs
+│   │   ├── DoctorDto.cs
+│   │   ├── PatientDto.cs
+│   │   ├── MedicalServiceDto.cs
+│   │   └── AppointmentDto.cs
+│   ├── Interfaces
+│   │   ├── I...Service.cs
+│   │   ├── IGenericRepository.cs
+│   │   └── IUnitOfWork.cs
+│   ├── Mappings
+│   │   └── ...Profile.cs
+│   ├── Services
+│   │   └── ...Service.cs
+│   └── ViewModels
+│       └── ...ViewModel.cs
+├── Domain
+│   └── Entities
+├── Infrastructure
+│   ├── Data
+│   │   └── DbContext.cs
+│   ├── Repositories
+│   │   ├── GenericRepository.cs
+│   │   ├── ...Repository.cs
+│   │   └── ...
+│   └── UnitOfWork
+│       └── UnitOfWork.cs
+├── wwwroot
+│   ├── css
+│   ├── js
+│   ├── images
+│   └── lib
+├── SQL
+│   └── CreateAndSeed.sql
+├── Program.cs
+├── appsettings.json
+└── Project.csproj
+```
+
+## Layer Responsibilities
+
+### Controllers
+
+* Nhận HTTP Request từ người dùng.
+* Gọi Service trong tầng Application.
+* Trả về View hoặc Redirect.
+* Không truy cập trực tiếp DbContext.
+* Không xử lý nghiệp vụ phức tạp.
+
+### Views
+
+* Hiển thị dữ liệu cho người dùng.
+* Sử dụng Razor (.cshtml).
+* Không chứa business logic.
+* Chỉ thực hiện render giao diện.
+
+### Application
+
+Tầng xử lý nghiệp vụ của hệ thống.
+
+#### Common
+
+* Chứa các lớp dùng chung.
+* Ví dụ: `Result<T>`, Constants, Helpers.
+
+#### DTOs
+
+* Dùng để trao đổi dữ liệu giữa các tầng.
+* Không phụ thuộc vào Entity hoặc View.
+
+#### Interfaces
+
+* Khai báo Service, Repository và UnitOfWork.
+* Giúp áp dụng Dependency Injection.
+
+#### Mappings
+
+* Cấu hình AutoMapper.
+* Mapping giữa Entity, DTO và ViewModel.
+
+#### Services
+
+* Chứa business logic.
+* Điều phối Repository và UnitOfWork.
+* Không phụ thuộc vào giao diện MVC.
+
+#### ViewModels
+
+* Dữ liệu phục vụ riêng cho từng View.
+* Có thể kết hợp nhiều DTO hoặc dữ liệu giao diện.
+
+### Domain
+
+Chứa các đối tượng cốt lõi của hệ thống.
+
+#### Entities
+
+* Doctor
+* Patient
+* MedicalService
+* Appointment
+* ...
+
+Đây là nơi mô tả mô hình nghiệp vụ.
+
+Không phụ thuộc vào:
+
+* MVC
+* EF Core
+* SQL Server
+* AutoMapper
+
+### Infrastructure
+
+Tầng truy cập dữ liệu.
+
+#### Data
+
+* Chứa `DbContext`.
+* Cấu hình Entity Framework Core.
+
+#### Repositories
+
+* Thực hiện CRUD với cơ sở dữ liệu.
+* Triển khai các Interface Repository.
+
+#### UnitOfWork
+
+* Quản lý transaction.
+* Điều phối nhiều Repository trong cùng một phiên làm việc.
+
+### wwwroot
+
+Chứa tài nguyên tĩnh:
+
+* CSS
+* JavaScript
+* Images
+* Thư viện Frontend
+
+### SQL
+
+* Script tạo cơ sở dữ liệu.
+* Script seed dữ liệu mẫu.
+
+### Program.cs
+
+* Cấu hình Dependency Injection.
+* Middleware.
+* Routing.
+* Authentication / Authorization.
+
+### appsettings.json
+
+* Connection String.
+* Logging.
+* Các cấu hình hệ thống.
+
+
+## Design Principles
+
+* Separation of Concerns (SoC)
+* Dependency Injection (DI)
+* Repository Pattern
+* Unit of Work Pattern
+* Layered Architecture
+* Clean Architecture Concepts
+* Maintainable and Testable Code
