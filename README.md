@@ -1,327 +1,560 @@
-Deploy ứng dụng ASP.NET Core MVC của bạn lên Server Linux (Ubuntu), sử dụng **Nginx** làm Reverse Proxy và **Cloudflare** để quản lý DNS, bảo mật SSL và Proxy.
-
-Bạn có thể copy toàn bộ nội dung trong block mã nguồn bên dưới để lưu thành file `DEPLOYMENT_GUIDE.md`.
-
-```markdown
-# HƯỚNG DẪN DEPLOY HỆ THỐNG WEB CINEMA (ASP.NET CORE MVC)
-## Môi trường: Ubuntu Server + Nginx + Cloudflare + SQL Server
-
-Tài liệu này hướng dẫn chi tiết quy trình đóng gói ứng dụng **ASP.NET Core MVC** (sử dụng kiến trúc phân tầng Layered Architecture, EF Core, Tailwind CSS), thiết lập môi trường Production trên Linux Server, cấu hình **Nginx** làm Reverse Proxy và cấu hình **Cloudflare** bảo mật.
-
----
-
-## TỔNG QUAN KIẾN TRÚC TRIỂN KHAI
 
 
-```
 
-[Khách hàng] ---> (HTTPS) ---> [Cloudflare (DNS/SSL)] ---> (HTTP/HTTPS) ---> [Nginx Reverse Proxy] ---> (Port 5000) ---> [Kestrel (ASP.NET Core App)]
-|---> [SQL Server]
+# Technologies Used
 
-```
+## Backend
+
+### ASP.NET Core MVC
+
+ASP.NET Core MVC là framework phát triển ứng dụng web của Microsoft dựa trên mô hình **Model - View - Controller (MVC)**.
+
+Framework được sử dụng để:
+
+* Xây dựng giao diện web động bằng Razor View.
+* Xử lý HTTP Request và Response.
+* Quản lý luồng xử lý giữa Controller, Service và View.
+* Hỗ trợ Dependency Injection (DI).
+* Tích hợp Entity Framework Core để làm việc với cơ sở dữ liệu.
 
 ---
 
-## BƯỚC 1: CHUẨN BỊ ỨNG DỤNG (PHÍA LOCAL/DEVELOPMENT)
+### Entity Framework Core
 
-### 1.1 Cấu hình Kestrel Forwarded Headers
-Vì ứng dụng chạy sau Nginx và Cloudflare, bạn cần cấu hình ứng dụng để nhận đúng IP thật của Client và giao thức (HTTP/HTTPS).
+Entity Framework Core (EF Core) là ORM (Object Relational Mapping) được sử dụng để tương tác với cơ sở dữ liệu thông qua các đối tượng C#.
 
-Mở file `Program.cs` và thêm đoạn mã sau vào **trước** `builder.Build()`:
+---
+
+### SQL Server
+
+SQL Server là hệ quản trị cơ sở dữ liệu quan hệ được sử dụng để lưu trữ dữ liệu của hệ thống.
+
+---
+
+## Frontend
+
+### Razor View Engine
+
+Razor là công nghệ tạo giao diện phía máy chủ (Server-side Rendering) của ASP.NET Core MVC.
+
+---
+
+### Tailwind CSS
+
+Tailwind CSS là framework CSS theo hướng Utility-First, cho phép xây dựng giao diện nhanh chóng bằng cách sử dụng các class có sẵn.
+
+**Ví dụ:**
+
+```html
+<button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+    Save
+</button>
+```
+
+# Git Workflow & Branching Rules
+
+## 1. Branch Strategy
+
+Dự án sử dụng mô hình phân nhánh đơn giản:
+
+```text
+main
+ ├── feature/user-management
+ ├── feature/movie-management
+ ├── feature/showtime-management
+ ├── bugfix/login-error
+ └── hotfix/security-fix
+```
+
+### Main Branch
+
+* `main` là nhánh ổn định.
+* Chỉ chứa mã nguồn đã được kiểm tra và hoạt động ổn định.
+* Không commit trực tiếp lên `main`.
+
+---
+
+## 2. Naming Convention
+
+### Feature Branch
+
+Cú pháp:
+
+```text
+feature/<feature-name>
+```
+
+Ví dụ:
+
+```text
+feature/user-management
+feature/movie-management
+```
+
+### Bug Fix Branch
+
+Cú pháp:
+
+```text
+bugfix/<bug-name>
+```
+
+Ví dụ:
+
+```text
+bugfix/login-error
+bugfix/date-validation
+```
+
+### Hot Fix Branch
+
+Cú pháp:
+
+```text
+hotfix/<issue-name>
+```
+
+Ví dụ:
+
+```text
+hotfix/security-patch
+hotfix/database-connection
+```
+
+---
+
+## 3. Commit Message Convention
+
+Cấu trúc:
+
+```text
+<type>: <description>
+```
+
+### Các loại commit
+
+| Type     | Ý nghĩa                         |
+| -------- | ------------------------------- |
+| feat     | Thêm chức năng mới              |
+| fix      | Sửa lỗi                         |
+| refactor | Tái cấu trúc mã nguồn           |
+| style    | Chỉnh sửa giao diện hoặc format |
+| docs     | Cập nhật tài liệu               |
+| test     | Thêm hoặc sửa test              |
+| chore    | Công việc hỗ trợ, cấu hình      |
+
+### Ví dụ
+
+```text
+feat: add doctor management module
+
+feat: create appointment booking page
+
+fix: resolve login validation issue
+
+refactor: simplify appointment service logic
+
+docs: update project structure document
+
+style: improve dashboard layout
+```
+
+---
+
+## 4. Development Workflow
+
+### Bước 1: Cập nhật mã nguồn mới nhất
+
+```bash
+git checkout main
+git pull origin main
+```
+
+### Bước 2: Tạo branch mới
+
+```bash
+git checkout -b feature/<feature-name>
+```
+
+### Bước 3: Thực hiện phát triển
+
+```bash
+git add .
+git commit -m "feat: add doctor create page"
+```
+
+### Bước 4: Push branch
+
+```bash
+git push origin feature/<feature-name>
+```
+
+### Bước 5: Tạo Pull Request
+
+* Tạo Pull Request vào `main`.
+* Chờ review trước khi merge.
+
+---
+
+## 5. Pull Request Rules
+
+Trước khi tạo Pull Request:
+
+* Code phải build thành công.
+* Không còn lỗi compile.
+* Đã kiểm tra chức năng liên quan.
+* Không commit file tạm hoặc file cá nhân.
+
+Ví dụ:
+
+```text
+✔ bin/
+✔ obj/
+✔ .vs/
+✔ publish/
+```
+
+Không được push lên repository.
+
+---
+
+## 6. Files Ignored By Git
+
+Sử dụng `.gitignore` để loại bỏ:
+
+```text
+bin/
+obj/
+.vs/
+publish/
+node_modules/
+
+appsettings.Development.json
+```
+
+Không commit:
+
+* File build.
+* File cache.
+* File log.
+* File cấu hình cá nhân.
+
+---
+
+## 7. Code Review Rules
+
+Trước khi merge:
+
+* Đọc lại code.
+* Kiểm tra naming convention.
+* Kiểm tra logic nghiệp vụ.
+* Loại bỏ code thừa.
+* Không để lại code comment không cần thiết.
+
+Ví dụ không nên:
 
 ```csharp
-using Microsoft.AspNetCore.HttpOverrides;
-
-builder.Services.Configure<ForwardedHeadersOptions>(options =>
-{
-    options.ForwardedHeaders = ForwardedHeadersOptions.XForwardedFor | ForwardedHeadersOptions.XForwardedProto;
-    // Cloudflare và Nginx thường dùng các dải IP proxy này, xóa các hạn chế mạng mặc định nếu cần:
-    options.KnownNetworks.Clear();
-    options.KnownProxies.Clear();
-});
-
-```
-
-Thêm vào **ngay đầu tiên** của HTTP pipeline sau `app.Build()`:
-
-```csharp
-var app = builder.Build();
-
-app.UseForwardedHeaders(); // Phải đặt TRƯỚC Authentication, Authorization và Routing
-
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
-}
-
-```
-
-### 1.2 Tạo file cấu hình Production (`appsettings.Production.json`)
-
-Tạo file này ở thư mục gốc dự án (ngang hàng `appsettings.json`) để cấu hình Connection String và các tham số trên Server:
-
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=127.0.0.1;Database=WebCinemaDb;User Id=sa;Password=YourSecurePassword123!;TrustServerCertificate=True;"
-  },
-  "Logging": {
-    "LogLevel": {
-      "Default": "Information",
-      "Microsoft.AspNetCore": "Warning"
-    }
-  },
-  "AllowedHosts": "*"
-}
-
-```
-
-> ⚠️ **LƯU Ý BẢO MẬT:** Đảm bảo `appsettings.Development.json` đã nằm trong `.gitignore` như quy tắc Git Workflow của dự án. Không commit mật khẩu Production lên Git.
-
-### 1.3 Biên dịch và đóng gói ứng dụng (Publish)
-
-Từ thư mục chứa file dự án `.csproj`, chạy lệnh để build ra thư mục chuẩn bị mang lên server:
-
-```bash
-dotnet publish -c Release -o ./publish
-
-```
-
-Nén thư mục `publish` thành file `.zip` (ví dụ: `webcinema.zip`) để chuẩn bị upload.
-
----
-
-## BƯỚC 2: CẤU HÌNH SERVER LINUX (UBUNTU)
-
-Kết nối vào VPS của bạn qua SSH:
-
-```bash
-ssh root@your_server_ip
-
-```
-
-### 2.1 Cài đặt .NET 8.0 Runtime (hoặc .NET version dự án sử dụng)
-
-```bash
-# Cập nhật danh sách gói
-sudo apt-get update
-
-# Cài đặt ASP.NET Core Runtime
-sudo apt-get install -y aspnetcore-runtime-8.0
-
-```
-
-### 2.2 Cài đặt SQL Server trên Ubuntu (Nếu chạy DB cùng Server)
-
-Nếu bạn dùng Server DB riêng thì bỏ qua bước này. Nếu chạy chung:
-
-```bash
-# Nhập khóa GPG kho lưu trữ công cộng
-wget -qO- [https://packages.microsoft.com/keys/microsoft.asc](https://packages.microsoft.com/keys/microsoft.asc) | sudo apt-key add -
-
-# Đăng ký kho lưu trữ Ubuntu của SQL Server
-sudo add-apt-repository "$(wget -qO- [https://packages.microsoft.com/config/ubuntu/$](https://packages.microsoft.com/config/ubuntu/$)(lsb_release -rs)/mssql-server-2022.list)"
-
-# Cài đặt SQL Server
-sudo apt-get update
-sudo apt-get install -y mssql-server
-
-# Cấu hình SQL Server (Đặt mật khẩu sa mạnh)
-sudo /opt/mssql/bin/mssql-conf setup
-
-# Kiểm tra dịch vụ hoạt động
-systemctl status mssql-server
-
-```
-
-> 💡 *Mẹo:* Sau khi cài đặt, hãy sử dụng script `CreateAndSeed.sql` từ tầng SQL của dự án để khởi tạo cấu trúc Database.
-
-### 2.3 Upload và Giải nén Source Code
-
-Tạo thư mục chứa ứng dụng:
-
-```bash
-sudo mkdir -p /var/www/webcinema
-sudo chown -R $USER:$USER /var/www/webcinema
-
-```
-
-Dùng SCP hoặc FileZilla upload file `webcinema.zip` lên thư mục trên và giải nén:
-
-```bash
-sudo apt install unzip
-cd /var/www/webcinema
-unzip webcinema.zip
-
+// TODO: Fix later
+// Temporary code
 ```
 
 ---
 
-## BƯỚC 3: CẤU HÌNH SYSTEMD SERVICE FOR KESTREL
+## 8. General Rules
 
-Để ứng dụng .NET chạy ngầm và tự động khởi động lại khi server bị crash hoặc reboot, ta tạo một `Systemd service`.
+### Nên làm
 
-Tạo file dịch vụ:
+* Commit nhỏ và rõ ràng.
+* Đặt tên branch dễ hiểu.
+* Viết commit message có ý nghĩa.
+* Pull code mới nhất trước khi làm việc.
 
-```bash
-sudo nano /etc/systemd/system/webcinema.service
+### Không nên
 
-```
-
-Dán nội dung sau vào:
-
-```ini
-[Unit]
-Description=ASP.NET Core Web Cinema Application
-After=network.target mssql-server.service # Đảm bảo chạy sau mạng và DB
-
-[Service]
-WorkingDirectory=/var/www/webcinema
-ExecStart=/usr/bin/dotnet /var/www/webcinema/Project.dll # Thay Project.dll bằng tên file chạy của bạn
-Restart=always
-# Khởi động lại sau 10 giây nếu bị sập
-RestartSec=10
-KillSignal=SIGINT
-SyslogIdentifier=webcinema
-User=www-data
-Environment=ASPNETCORE_ENVIRONMENT=Production
-Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
-
-[Install]
-WantedBy=multi-user.target
-
-```
-
-Kích hoạt và chạy Service:
-
-```bash
-sudo systemctl enable webcinema.service
-sudo systemctl start webcinema.service
-
-# Kiểm tra trạng thái xem ứng dụng đã chạy ở port 5000 thành công chưa
-sudo systemctl status webcinema.service
-
-```
+* Commit trực tiếp lên `main`.
+* Push code chưa chạy được.
+* Commit nhiều chức năng trong một commit.
+* Đưa thông tin nhạy cảm vào repository.
 
 ---
 
-## BƯỚC 4: CÀI ĐẶT VÀ CẤU HÌNH NGINX REVERSE PROXY
+## Recommended Workflow
 
-Nginx đóng vai trò đứng đầu tiếp nhận các Request từ ngoài internet (Port 80/443) rồi chuyển tiếp vào cổng nội bộ `localhost:5000` của Kestrel.
-
-### 4.1 Cài đặt Nginx
-
-```bash
-sudo apt update
-sudo apt install nginx -y
-sudo systemctl start nginx
-sudo systemctl enable nginx
-
+```text
+Pull main
+    ↓
+Create Feature Branch
+    ↓
+Develop Feature
+    ↓
+Commit Changes
+    ↓
+Push Branch
+    ↓
+Create Pull Request
+    ↓
+Code Review
+    ↓
+Merge Into Main
 ```
 
-### 4.2 Cấu hình Server Block cho Dự án
 
-Tạo file cấu hình mới:
+# Design Patterns
 
-```bash
-sudo nano /etc/nginx/sites-available/webcinema
+### Repository Pattern
 
-```
+Tách biệt logic truy cập dữ liệu khỏi logic nghiệp vụ.
 
-Nội dung file cấu hình (Hỗ trợ tối ưu hóa và chống giả mạo Header):
+**Lợi ích:**
 
-```nginx
-server {
-    listen 80;
-    server_name yourdomain.com [www.yourdomain.com](https://www.yourdomain.com); # Thay bằng domain của bạn
-
-    # Cấu hình Static Files (Tối ưu hóa tải cho wwwroot)
-    location / {
-        proxy_pass         [http://127.0.0.1:5000](http://127.0.0.1:5000);
-        proxy_http_version 1.1;
-        proxy_set_header   Upgrade $http_upgrade;
-        proxy_set_header   Connection keep-alive;
-        proxy_set_header   Host $host;
-        proxy_cache_bypass $http_upgrade;
-        proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header   X-Forwarded-Proto $scheme;
-    }
-
-    # Tối ưu hóa Cache cho tài nguyên tĩnh của wwwroot (css, js, images)
-    location ~* \.(?:css|js|jpg|jpeg|gif|png|ico|svg|woff2)$ {
-        root /var/www/webcinema/wwwroot;
-        expires 30d;
-        add_header Cache-Control "public, no-transform";
-    }
-}
-
-```
-
-Kích hoạt cấu hình và restart Nginx:
-
-```bash
-sudo ln -s /etc/nginx/sites-available/webcinema /etc/nginx/sites-enabled/
-sudo nginx -t # Kiểm tra cú pháp xem có lỗi không
-sudo systemctl restart nginx
-
-```
+* Dễ bảo trì.
+* Dễ kiểm thử.
+* Giảm phụ thuộc vào Entity Framework Core.
 
 ---
 
-## BƯỚC 5: CẤU HÌNH CLOUDFLARE (DNS & SECURITY)
+### Unit of Work Pattern
 
-### 5.1 Cấu hình DNS Records
+Quản lý nhiều Repository trong cùng một transaction.
 
-1. Đăng nhập vào trình quản lý **Cloudflare**.
-2. Chọn tên miền của bạn (`yourdomain.com`).
-3. Đi tới mục **DNS** -> **Records** và thêm:
-* **Type:** `A` | **Name:** `@` (hoặc domain gốc) | **IPv4 address:** `IP_CỦA_SERVER_VPS` | **Proxy status:** `Proxied` (Đám mây màu vàng).
-* **Type:** `CNAME` | **Name:** `www` | **Target:** `yourdomain.com` | **Proxy status:** `Proxied`.
+**Lợi ích:**
 
-
-
-### 5.2 Cấu hình SSL/TLS (Tránh lỗi vòng lặp chuyển hướng vô tận)
-
-Khi bật đám mây Proxy của Cloudflare, lưu lượng từ Client đến Cloudflare sẽ được mã hóa HTTPS. Tại đây có 2 kịch bản cấu hình trong mục **SSL/TLS -> Overview**:
-
-* **Chế độ Flexible (Khuyên dùng nếu lười cài SSL trên VPS):**
-* *Luồng:* Client `(HTTPS)` -> Cloudflare `(HTTP)` -> Nginx (Port 80).
-* *Lưu ý:* Khi chọn chế độ này, **KHÔNG** được cấu hình Nginx tự động redirect port 80 sang 443, vì sẽ tạo ra lỗi `ERR_TOO_MANY_REDIRECTS`.
-
-
-* **Chế độ Full hoặc Full (Strict) (Khuyên dùng bảo mật tuyệt đối):**
-* *Luồng:* Client `(HTTPS)` -> Cloudflare `(HTTPS)` -> Nginx (Port 443).
-* *Thực hiện:* Bạn cần cài thêm chứng chỉ SSL (Let's Encrypt hoặc Cloudflare Origin CA) lên Nginx bằng Certbot trước khi bật chế độ này.
-
-
+* Đảm bảo tính nhất quán dữ liệu.
+* Giảm số lần truy cập cơ sở dữ liệu.
 
 ---
 
-## BƯỚC 6: KIỂM TRA VÀ BẢO TRÌ HỆ THỐNG
+### Dependency Injection (DI)
 
-### 6.1 Lệnh kiểm tra Logs thời gian thực
+ASP.NET Core cung cấp cơ chế Dependency Injection tích hợp sẵn.
 
-Khi ứng dụng có lỗi (500 Internal Server Error, không kết nối được Database...), dùng lệnh này để xem log chi tiết phát sinh từ code C# / Kestrel:
+**Lợi ích:**
 
-```bash
-sudo journalctl -fu webcinema.service
+* Giảm sự phụ thuộc giữa các thành phần.
+* Dễ mở rộng và kiểm thử hệ thống.
 
+---
+
+## Architecture
+
+Dự án được xây dựng theo kiến trúc phân tầng (Layered Architecture):
+
+```text
+Presentation Layer
+    ↓
+Application Layer
+    ↓
+Domain Layer
+    ↓
+Infrastructure Layer
+    ↓
+Database
 ```
 
-### 6.2 Cập nhật Code mới (CI/CD thủ công theo Git Workflow)
+### Presentation Layer
 
-Mỗi khi có code mới được Merge vào nhánh `main` và cần deploy lại:
+* Controllers
+* Views
+* ViewModels
 
-1. Chạy `dotnet publish` ở máy local.
-2. Nén và up đè đè file mới lên thư mục `/var/www/webcinema`.
-3. Khởi động lại service để áp dụng thay đổi:
+### Application Layer
 
-```bash
-sudo systemctl restart webcinema.service
+* DTOs
+* Services
+* Interfaces
+* Mappings
 
+### Domain Layer
+
+* Entities
+* Business Models
+
+### Infrastructure Layer
+
+* DbContext
+* Repositories
+* UnitOfWork
+
+Kiến trúc này giúp hệ thống dễ bảo trì, mở rộng và tái sử dụng trong quá trình phát triển.
+
+
+# Project Structure
+
+```text
+Project
+├── Controllers
+├── Views
+│   ├── Home
+│   └── Shared
+│       ├── _Layout.cshtml
+│       └── _ValidationScriptsPartial.cshtml
+├── Application
+│   ├── Common
+│   │   └── Result.cs
+│   ├── DTOs
+│   │   ├── DoctorDto.cs
+│   │   ├── PatientDto.cs
+│   │   ├── MedicalServiceDto.cs
+│   │   └── AppointmentDto.cs
+│   ├── Interfaces
+│   │   ├── I...Service.cs
+│   │   ├── IGenericRepository.cs
+│   │   └── IUnitOfWork.cs
+│   ├── Mappings
+│   │   └── ...Profile.cs
+│   ├── Services
+│   │   └── ...Service.cs
+│   └── ViewModels
+│       └── ...ViewModel.cs
+├── Domain
+│   └── Entities
+├── Infrastructure
+│   ├── Data
+│   │   └── DbContext.cs
+│   ├── Repositories
+│   │   ├── GenericRepository.cs
+│   │   ├── ...Repository.cs
+│   │   └── ...
+│   └── UnitOfWork
+│       └── UnitOfWork.cs
+├── wwwroot
+│   ├── css
+│   ├── js
+│   ├── images
+│   └── lib
+├── SQL
+│   └── CreateAndSeed.sql
+├── Program.cs
+├── appsettings.json
+└── Project.csproj
 ```
 
-```
+## Layer Responsibilities
 
-```
+### Controllers
+
+* Nhận HTTP Request từ người dùng.
+* Gọi Service trong tầng Application.
+* Trả về View hoặc Redirect.
+* Không truy cập trực tiếp DbContext.
+* Không xử lý nghiệp vụ phức tạp.
+
+### Views
+
+* Hiển thị dữ liệu cho người dùng.
+* Sử dụng Razor (.cshtml).
+* Không chứa business logic.
+* Chỉ thực hiện render giao diện.
+
+### Application
+
+Tầng xử lý nghiệp vụ của hệ thống.
+
+#### Common
+
+* Chứa các lớp dùng chung.
+* Ví dụ: `Result<T>`, Constants, Helpers.
+
+#### DTOs
+
+* Dùng để trao đổi dữ liệu giữa các tầng.
+* Không phụ thuộc vào Entity hoặc View.
+
+#### Interfaces
+
+* Khai báo Service, Repository và UnitOfWork.
+* Giúp áp dụng Dependency Injection.
+
+#### Mappings
+
+* Cấu hình AutoMapper.
+* Mapping giữa Entity, DTO và ViewModel.
+
+#### Services
+
+* Chứa business logic.
+* Điều phối Repository và UnitOfWork.
+* Không phụ thuộc vào giao diện MVC.
+
+#### ViewModels
+
+* Dữ liệu phục vụ riêng cho từng View.
+* Có thể kết hợp nhiều DTO hoặc dữ liệu giao diện.
+
+### Domain
+
+Chứa các đối tượng cốt lõi của hệ thống.
+
+#### Entities
+
+* Doctor
+* Patient
+* MedicalService
+* Appointment
+* ...
+
+Đây là nơi mô tả mô hình nghiệp vụ.
+
+Không phụ thuộc vào:
+
+* MVC
+* EF Core
+* SQL Server
+* AutoMapper
+
+### Infrastructure
+
+Tầng truy cập dữ liệu.
+
+#### Data
+
+* Chứa `DbContext`.
+* Cấu hình Entity Framework Core.
+
+#### Repositories
+
+* Thực hiện CRUD với cơ sở dữ liệu.
+* Triển khai các Interface Repository.
+
+#### UnitOfWork
+
+* Quản lý transaction.
+* Điều phối nhiều Repository trong cùng một phiên làm việc.
+
+### wwwroot
+
+Chứa tài nguyên tĩnh:
+
+* CSS
+* JavaScript
+* Images
+* Thư viện Frontend
+
+### SQL
+
+* Script tạo cơ sở dữ liệu.
+* Script seed dữ liệu mẫu.
+
+### Program.cs
+
+* Cấu hình Dependency Injection.
+* Middleware.
+* Routing.
+* Authentication / Authorization.
+
+### appsettings.json
+
+* Connection String.
+* Logging.
+* Các cấu hình hệ thống.
+
+
+## Design Principles
+
+* Separation of Concerns (SoC)
+* Dependency Injection (DI)
+* Repository Pattern
+* Unit of Work Pattern
+* Layered Architecture
+* Clean Architecture Concepts
+* Maintainable and Testable Code
