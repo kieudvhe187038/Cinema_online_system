@@ -1,0 +1,58 @@
+# Build output
+bin/
+obj/
+out/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.VC.db
+*.VC.opendb
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+!**/packages/build/
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# VSCode
+.vscode/
+
+# ASP.NET Core
+wwwroot/lib/
+wwwroot/dist/
+*.pfx
+
+# Secrets & sensitive config
+appsettings.Development.json
+appsettings.Local.json
+**/secrets.json
+.env
+.env.*
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Test results
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+
+# Publish output
+publish/
+**/Properties/PublishProfiles/
