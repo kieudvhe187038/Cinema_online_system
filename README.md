@@ -59,11 +59,11 @@ Dự án sử dụng mô hình phân nhánh đơn giản:
 
 ```text
 main
- ├── feature/user-management
- ├── feature/movie-management
- ├── feature/showtime-management
- ├── bugfix/login-error
- └── hotfix/security-fix
+ ├── <ten-nguoi>-feature/user-management
+ ├── <ten-nguoi>-feature/movie-management
+ ├── <ten-nguoi>-feature/showtime-management
+ ├── <ten-nguoi>-bugfix/login-error
+ └── <ten-nguoi>-hotfix/security-fix
 ```
 
 ### Main Branch
@@ -76,19 +76,21 @@ main
 
 ## 2. Naming Convention
 
+Tên branch **bắt buộc** bắt đầu bằng tên người làm (viết thường, không dấu).
+
 ### Feature Branch
 
 Cú pháp:
 
 ```text
-feature/<feature-name>
+<ten-nguoi>-feature/<feature-name>
 ```
 
 Ví dụ:
 
 ```text
-feature/user-management
-feature/movie-management
+vkieu-feature/user-management
+tuan-feature/movie-management
 ```
 
 ### Bug Fix Branch
@@ -96,14 +98,14 @@ feature/movie-management
 Cú pháp:
 
 ```text
-bugfix/<bug-name>
+<ten-nguoi>-bugfix/<bug-name>
 ```
 
 Ví dụ:
 
 ```text
-bugfix/login-error
-bugfix/date-validation
+vkieu-bugfix/login-error
+tuan-bugfix/date-validation
 ```
 
 ### Hot Fix Branch
@@ -111,14 +113,14 @@ bugfix/date-validation
 Cú pháp:
 
 ```text
-hotfix/<issue-name>
+<ten-nguoi>-hotfix/<issue-name>
 ```
 
 Ví dụ:
 
 ```text
-hotfix/security-patch
-hotfix/database-connection
+vkieu-hotfix/security-patch
+tuan-hotfix/database-connection
 ```
 
 ---
@@ -128,8 +130,10 @@ hotfix/database-connection
 Cấu trúc:
 
 ```text
-<type>: <description>
+<type>(<ten-nguoi>): <description>
 ```
+
+Commit message **bắt buộc** ghi tên người làm trong phần `(<ten-nguoi>)`.
 
 ### Các loại commit
 
@@ -146,17 +150,17 @@ Cấu trúc:
 ### Ví dụ
 
 ```text
-feat: add doctor management module
+feat(vkieu): add movie management module
 
-feat: create appointment booking page
+feat(tuan): create seat booking page
 
-fix: resolve login validation issue
+fix(vkieu): resolve login validation issue
 
-refactor: simplify appointment service logic
+refactor(tuan): simplify showtime service logic
 
-docs: update project structure document
+docs(vkieu): update project structure document
 
-style: improve dashboard layout
+style(tuan): improve dashboard layout
 ```
 
 ---
@@ -173,20 +177,20 @@ git pull origin main
 ### Bước 2: Tạo branch mới
 
 ```bash
-git checkout -b feature/<feature-name>
+git checkout -b <ten-nguoi>-feature/<feature-name>
 ```
 
 ### Bước 3: Thực hiện phát triển
 
 ```bash
 git add .
-git commit -m "feat: add doctor create page"
+git commit -m "feat(<ten-nguoi>): add movie create page"
 ```
 
 ### Bước 4: Push branch
 
 ```bash
-git push origin feature/<feature-name>
+git push origin <ten-nguoi>-feature/<feature-name>
 ```
 
 ### Bước 5: Tạo Pull Request
