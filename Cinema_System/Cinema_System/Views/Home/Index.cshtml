@@ -33,6 +33,8 @@
     </div>
 </section>
 
+<!-- scripts intentionally removed: homepage uses full sections, not tabbed panes -->
+
 <!-- Quick Booking Bar -->
 <section class="quick-book-section">
     <div class="quick-book-card">
@@ -72,8 +74,10 @@
     </div>
 </section>
 
+<!-- preserved original homepage layout: no tab controls here -->
+
 <!-- Phim Đang Chiếu -->
-<section class="movies-section">
+<section id="tab-now" class="movies-section tab-content active">
     <div class="section-header">
         <div>
             <h2 class="section-title">
@@ -147,7 +151,7 @@
 </section>
 
 <!-- Phim Sắp Chiếu -->
-<section class="movies-section">
+<section id="tab-coming" class="movies-section tab-content">
     <div class="section-header">
         <div>
             <h2 class="section-title">
@@ -213,6 +217,80 @@
         {
             <div class="no-movies">
                 <p>Hiện chưa có phim sắp chiếu.</p>
+            </div>
+        }
+    </div>
+</section>
+
+<!-- Suất Chiếu Đặc Biệt -->
+<section id="tab-special" class="movies-section tab-content">
+    <div class="section-header">
+        <div>
+            <h2 class="section-title">
+                <span class="title-bar"></span>
+                SUẤT CHIẾU ĐẶC BIỆT
+            </h2>
+            <p class="section-subtitle">Những suất chiếu đặc biệt dành cho bạn</p>
+        </div>
+    </div>
+    <div class="movies-grid">
+        @if (Model?.SpecialShowtimeMovies != null && Model.SpecialShowtimeMovies.Any())
+        {
+            @foreach (var movie in Model.SpecialShowtimeMovies)
+            {
+                <div class="movie-card">
+                    <div class="movie-poster">
+                        @if (!string.IsNullOrEmpty(movie.PosterUrl))
+                        {
+                            <img src="@movie.PosterUrl"
+                                 alt="@movie.Title"
+                                 onerror="this.src='https://placehold.co/250x350?text=@Uri.EscapeDataString(movie.Title)&font=raleway'" />
+                        }
+                        else
+                        {
+                            <img src="https://placehold.co/250x350?text=@Uri.EscapeDataString(movie.Title)&font=raleway" alt="@movie.Title" />
+                        }
+                        <div class="movie-badges">
+                            @if (!string.IsNullOrEmpty(movie.Language))
+                            {
+                                <span class="badge-format">@movie.Language</span>
+                            }
+                            @if (!string.IsNullOrEmpty(movie.AgeRating))
+                            {
+                                <span class="badge-age">@movie.AgeRating</span>
+                            }
+                        </div>
+                        <div class="movie-overlay">
+                            <button class="btn-primary btn-buy">MUA VÉ NGAY</button>
+                            <button class="btn-detail">XEM CHI TIẾT</button>
+                        </div>
+                    </div>
+                    <div class="movie-info">
+                        <h3 class="movie-title">@movie.Title</h3>
+                        <div class="movie-meta">
+                            @if (!string.IsNullOrEmpty(movie.Director))
+                            {
+                                <span>Đạo diễn: @movie.Director</span>
+                            }
+                            @if (movie.DurationMinutes.HasValue)
+                            {
+                                <span class="movie-duration">
+                                    <span class="material-symbols-outlined">schedule</span> @movie.DurationMinutes phút
+                                </span>
+                            }
+                        </div>
+                        @if (!string.IsNullOrEmpty(movie.Description))
+                        {
+                            <p class="movie-description" title="@movie.Description">@movie.Description.Substring(0, Math.Min(50, movie.Description.Length))...</p>
+                        }
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="no-movies">
+                <p>Hiện chưa có suất chiếu đặc biệt.</p>
             </div>
         }
     </div>
