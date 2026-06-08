@@ -1,0 +1,108 @@
+﻿@model Cinema_System.Application.ViewModels.ProfileViewModel
+@{
+    ViewData["Title"] = "Hồ sơ của tôi";
+}
+
+<!-- Nhúng Tailwind ngay trong view để không phải sửa _Layout chung của nhóm -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- ====== TRANG HỒ SƠ NHÂN VIÊN ====== -->
+<div class="min-h-screen bg-gray-100 py-10 px-4">
+    <div class="max-w-2xl mx-auto">
+
+        <!-- Thông báo thành công -->
+        @if (TempData["Success"] != null)
+        {
+            <div class="mb-4 rounded-xl bg-green-100 border border-green-300 text-green-800 px-4 py-3">
+                @TempData["Success"]
+            </div>
+        }
+
+        <!-- ===== Header: avatar + tên + vai trò ===== -->
+        <div class="rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 p-8 text-center text-white shadow-lg">
+            <img src="@(string.IsNullOrEmpty(Model.AvatarUrl) ? "https://placehold.co/130x130?text=Avatar" : Model.AvatarUrl)"
+                 alt="Ảnh đại diện"
+                 class="mx-auto h-32 w-32 rounded-full border-4 border-white object-cover bg-white shadow-md" />
+            <h1 class="mt-4 text-2xl font-bold">@Model.FullName</h1>
+            <span class="mt-1 inline-block rounded-full bg-white/20 px-3 py-1 text-sm">@Model.RoleName</span>
+            <!-- Chỉ Customer mới có điểm tích lũy. Staff/Admin/Manager KHÔNG hiển thị -->
+            @if (Model.RoleName == "CUSTOMER")
+            {
+                <div class="mt-3">
+                <span class="inline-block rounded-full bg-yellow-400 px-4 py-1 font-semibold text-yellow-900">
+                    ⭐ @Model.RewardPoints điểm
+                </span>
+            </div>
+            }
+        </div>
+
+        <!-- ===== Thông tin chi tiết ===== -->
+        <div class="mt-6 rounded-2xl bg-white p-6 shadow-md">
+            <h2 class="mb-4 text-lg font-bold text-gray-800">Thông tin cá nhân</h2>
+
+            <dl class="divide-y divide-gray-100">
+                <div class="flex justify-between py-3">
+                    <dt class="font-medium text-gray-500">Họ và tên</dt>
+                    <dd class="font-semibold text-gray-800">@Model.FullName</dd>
+                </div>
+                <div class="flex justify-between py-3">
+                    <dt class="font-medium text-gray-500">Email</dt>
+                    <dd class="font-semibold text-gray-800">@Model.Email</dd>
+                </div>
+                <div class="flex justify-between py-3">
+                    <dt class="font-medium text-gray-500">Số điện thoại</dt>
+                    <dd class="font-semibold text-gray-800">
+                        @(string.IsNullOrEmpty(Model.Phone) ? "Chưa cập nhật" : Model.Phone)
+                    </dd>
+                </div>
+
+                <div class="flex justify-between py-3">
+                    <dt class="font-medium text-gray-500">Ngày sinh</dt>
+                    <dd class="font-semibold text-gray-800">
+                        @if (Model.DateOfBirth == null)
+                        {
+                            <span>Chưa cập nhật</span>
+                        }
+                        else
+                        {
+                            @Model.DateOfBirth.Value.ToString("dd/MM/yyyy")
+                            <span class="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-sm text-blue-700">
+                                @Model.Age tuổi
+                            </span>
+                        }
+                    </dd>
+                </div>
+
+                <div class="flex justify-between py-3">
+                    <dt class="font-medium text-gray-500">Vai trò</dt>
+                    <dd class="font-semibold text-gray-800">@Model.RoleName</dd>
+                </div>
+                <div class="flex justify-between py-3">
+                    <dt class="font-medium text-gray-500">Trạng thái</dt>
+                    <dd>
+                        <span class="rounded-full px-3 py-1 text-sm font-semibold text-white
+                            @(Model.Status == "Active" ? "bg-green-500" : "bg-red-500")">
+                            @Model.Status
+                        </span>
+                    </dd>
+                </div>
+                <div class="flex justify-between py-3">
+                    <dt class="font-medium text-gray-500">Ngày tạo tài khoản</dt>
+                    <dd class="font-semibold text-gray-800">@Model.CreatedAt.ToString("dd/MM/yyyy")</dd>
+                </div>
+            </dl>
+        </div>
+
+        <!-- ===== Nút hành động ===== -->
+        <div class="mt-6 flex gap-3">
+            <a asp-action="Edit"
+               class="flex-1 rounded-xl bg-indigo-600 px-4 py-3 text-center font-semibold text-white hover:bg-indigo-700 transition">
+                ✏️ Chỉnh sửa hồ sơ
+            </a>
+            <a asp-action="ChangePassword"
+               class="flex-1 rounded-xl border border-gray-300 bg-white px-4 py-3 text-center font-semibold text-gray-700 hover:bg-gray-50 transition">
+                🔒 Đổi mật khẩu
+            </a>
+        </div>
+    </div>
+</div>
