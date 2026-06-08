@@ -2,7 +2,286 @@
     ViewData["Title"] = "Home Page";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<!-- Hero Carousel -->
+<section class="hero-section">
+    <div class="hero-bg">
+        <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuD0FbgZ6y1CTXLUavz6OcQqyy3wOQw7LKToKPZqdpUipNJzh1if505lNBz-Nl0Pzs0N0GHfEnGaUTMY312PfMQoLZRlabx70TlxkrcGT3IAHsRL99ttW-14Sbj1alQl_nJmSFiyvpfPHhv5SSPdp3XQIPP9Ud5X_akRP4ZzBZkkb7kr022Wqbhzx8GJpqH7LTSmzDwzqGWT1qReh0O1_zdtEeGNjkaANPVdHAAUxX_XWSyN_5PNmVeG3eN0GRjbEFTJEqDwoa2ZKAGd"
+             alt="Hero Banner" />
+        <div class="hero-gradient"></div>
+    </div>
+    <div class="hero-content">
+        <span class="badge-hot" style="width:fit-content;display:inline-block">PHIM HOT</span>
+        <h1>CHIẾN BINH CUỐI CÙNG: ĐẠI CHIẾN NGÂN HÀ</h1>
+        <p>Hành trình bảo vệ vũ trụ của các chiến binh quả cảm. Một siêu phẩm kỹ xảo không thể bỏ lỡ tại CineStar trong tháng này.</p>
+        <div class="hero-actions">
+            <button class="btn-primary hero-btn">
+                <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">play_circle</span>
+                ĐẶT VÉ NGAY
+            </button>
+            <button class="btn-ghost hero-btn">XEM TRAILER</button>
+        </div>
+    </div>
+    <!-- Carousel Dots -->
+    <div class="carousel-dots">
+        <div class="dot active"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+    </div>
+</section>
+
+<!-- Quick Booking Bar -->
+<section class="quick-book-section">
+    <div class="quick-book-card">
+        <div class="book-field">
+            <label>
+                <span class="material-symbols-outlined">movie</span> CHỌN PHIM
+            </label>
+            <select>
+                <option>Tất cả các phim</option>
+                <option>Chiến Binh Cuối Cùng</option>
+                <option>Minions: Sự Trỗi Dậy</option>
+            </select>
+        </div>
+        <div class="book-field">
+            <label>
+                <span class="material-symbols-outlined">calendar_today</span> CHỌN NGÀY
+            </label>
+            <select>
+                <option>Hôm nay, 24/05</option>
+                <option>Thứ 7, 25/05</option>
+                <option>Chủ nhật, 26/05</option>
+            </select>
+        </div>
+        <div class="book-field">
+            <label>
+                <span class="material-symbols-outlined">schedule</span> SUẤT CHIẾU
+            </label>
+            <select>
+                <option>Chọn suất chiếu</option>
+                <option>18:30 - 2D</option>
+                <option>20:45 - 3D</option>
+            </select>
+        </div>
+        <button class="btn-primary book-submit">
+            <span class="material-symbols-outlined">confirmation_number</span> ĐẶT VÉ NHANH
+        </button>
+    </div>
+</section>
+
+<!-- Phim Đang Chiếu -->
+<section class="movies-section">
+    <div class="section-header">
+        <div>
+            <h2 class="section-title">
+                <span class="title-bar"></span>
+                PHIM ĐANG CHIẾU
+            </h2>
+            <p class="section-subtitle">Trải nghiệm điện ảnh đỉnh cao cùng CineStar</p>
+        </div>
+        <a href="#" class="view-all">Xem tất cả <span class="material-symbols-outlined">chevron_right</span></a>
+    </div>
+    <div class="movies-grid">
+        <!-- Movie Card 1 -->
+        <div class="movie-card">
+            <div class="movie-poster">
+                <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCNOiAsT2mq-T-lDgEyLl5Vlm6EKrVkgInW47C7CoCIZMR9SBYBbULaOEfOywxWxDdAY4oGaGM8tgdyTNHCiXKPbhe9I18lLABntMjjqg-p0PkacA25xOe85TPOgoNWnUTe8jI8C80jWkRKfA33pNzRr2lm6TcImUcUNX2v7ruQHqM8uXO5ZIqYr-acGhfwBhgWNAg75xQ5wQWicNgO8LSXvNgB3KPR4OKaAHhws7PrOKSd5CxRtVPwjpoM-BAprF9hCnYbH4wcQpts" alt="Vệ Binh Dải Ngân Hà 3" />
+                <div class="movie-badges">
+                    <span class="badge-format">2D/3D</span>
+                    <span class="badge-age t16">T16</span>
+                </div>
+                <div class="movie-overlay">
+                    <button class="btn-primary btn-buy">MUA VÉ NGAY</button>
+                    <button class="btn-detail">XEM CHI TIẾT</button>
+                </div>
+            </div>
+            <div class="movie-info">
+                <h3 class="movie-title">VỆ BINH DẢI NGÂN HÀ 3</h3>
+                <div class="movie-meta">
+                    <span>Hành Động, Viễn Tưởng</span>
+                    <span class="movie-rating">
+                        <span class="material-symbols-outlined star-icon" style="font-variation-settings:'FILL' 1">star</span> 9.2
+                    </span>
+                </div>
+            </div>
+        </div>
+        <!-- Movie Card 2 -->
+        <div class="movie-card">
+            <div class="movie-poster">
+                <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCaV3C5IiRSLI3HCW7Tu252WOAo6feLJlECBQQErTG2FFuGwRdeihaX818QuC6HxPnnt_KBxccDmWB1obY9Pd06ZPgUD9Fr15aEpi03f58i8OC24wcKeEbMl4d0qewtHQ6Ilfcnmhpirpqwz_-M2hqETfLHgfu52CM3ukqXuBjXwcl1KMnwk5U725fh6CULZEVLd0KAmeDXBMZHBN3Q3gvSQK5vtaibAslL1LB08gdWBITtZwHgV5QvN0QATuGKJ3ss09lrIYl_UiVz" alt="Những Kẻ Quyến Rũ" />
+                <div class="movie-badges">
+                    <span class="badge-format">2D</span>
+                    <span class="badge-age p">P</span>
+                </div>
+                <div class="movie-overlay">
+                    <button class="btn-primary btn-buy">MUA VÉ NGAY</button>
+                    <button class="btn-detail">XEM CHI TIẾT</button>
+                </div>
+            </div>
+            <div class="movie-info">
+                <h3 class="movie-title">NHỮNG KẺ QUYẾN RŨ</h3>
+                <div class="movie-meta">
+                    <span>Tình Cảm, Hài Hước</span>
+                    <span class="movie-rating">
+                        <span class="material-symbols-outlined star-icon" style="font-variation-settings:'FILL' 1">star</span> 8.5
+                    </span>
+                </div>
+            </div>
+        </div>
+        <!-- Movie Card 3 -->
+        <div class="movie-card">
+            <div class="movie-poster">
+                <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCNqHdz0ryl38Svm_cfWQCGTav_QyaJcr4u3_XaBgK7Zh3JSs_ft4hmenj49_47mY92gleIjT6Q-iU1aPWxGOaupYBp6JlSA_JwUfddvc97BWwpn9lGONFHsqImgffgyy-xX0Z3cu6XemmPVej9FFzUJ44QCEFWHKA6Yv63rBHx20bSoCNyA83VFMcg7PXg5dwUQaG-xNmM4c9AhGyzHcqWYg007DCe2jpkKijhBJiddS4IAo23g4JZpWgBe_5S0LHGnxJ1E5Vbnh1Y" alt="Tốc Độ 10" />
+                <div class="movie-overlay">
+                    <button class="btn-primary btn-buy">MUA VÉ NGAY</button>
+                </div>
+            </div>
+            <div class="movie-info">
+                <h3 class="movie-title">TỐC ĐỘ 10</h3>
+            </div>
+        </div>
+        <!-- Movie Card 4 -->
+        <div class="movie-card">
+            <div class="movie-poster">
+                <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAY93_O3x1XqlDgyad2hrUpHC50V1gvMvNbmVuOwS408RZ4j0vT8FytaX6CwO4Dz_1dhRLjbmY5oLHP6ZaBxxebZWHSCAlXRhJZzgtGsCLsOpq_EDREcBda4raWS4lpm4wygBjtIMvZuoQ6h7tr_KADXTTT2uyJXz8Z-sTP1cHiPKw222wPlNMJ3rpX1cFpXH5f887PQiKjGsDpgnciKL3Fv_2bMpNcS3Njpu3Ou4IoyD9T_BwF0Stu3iNCF-hjtZn9xU7gzT17otIF" alt="Xứ Sở Diệu Kỳ" />
+                <div class="movie-overlay">
+                    <button class="btn-primary btn-buy">MUA VÉ NGAY</button>
+                </div>
+            </div>
+            <div class="movie-info">
+                <h3 class="movie-title">XỨ SỞ DIỆU KỲ</h3>
+            </div>
+        </div>
+        <!-- Movie Card 5 -->
+        <div class="movie-card">
+            <div class="movie-poster">
+                <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCKm1d7r82fzFa1NgiSu00g3tk1FcEPXnwR3nzhe9B7I23h4PTxn4HXHOw5JwewopENaWJz0p00rvzqQvx29-s75dBjoGL_C5124igm9WuDYctcIFu3w0DfMe5fUyboAc5Kk6GwaEc4Qn1nVgjLj3J9d1gRVUof-_1i4USkCKUsoyyMdOfMPUZSNB4zXqqobXtZAIo9KFV40evKE-mfaBTHPBa-n3oZdLSdflVhX6C7OusuVmCR1W_SDFxvcIaZIV8xLgZKGkxY4sN9" alt="Tiếng Vọng Đêm Khuya" />
+                <div class="movie-overlay">
+                    <button class="btn-primary btn-buy">MUA VÉ NGAY</button>
+                </div>
+            </div>
+            <div class="movie-info">
+                <h3 class="movie-title">TIẾNG VỌNG ĐÊM KHUYA</h3>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Ưu Đãi Đặc Biệt -->
+<section class="promo-section">
+    <div class="promo-container">
+        <h2 class="promo-title">ƯU ĐÃI ĐẶC BIỆT</h2>
+        <div class="promo-grid">
+            <div class="promo-card">
+                <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDV5XgZ3wR2AHzDQkZYypVEwT_XGxHOMeAaY4xmZXjMpREGjyVv2IN4xfk-1FToPayOe_kyjb0D_F_XwxPHeeBi9EsJKctPxsXVg-uGQqHlujfTd6GgKo81pNXbxKAgVuCCAZv0FmqTNLr17G5f6UG3kaLDelGkWJcVZ__s5kSpEGUuEQ2mDeCAUXVw1NP8ipuG-eUkHIqWZ7RnMTA8I0VYXM1JOTr5U4uJUa8uPl63tpRJi8gxPXEuHOK_xOHnRIfbTMa-VpXIisYt" alt="C-Student" />
+                <div class="promo-overlay">
+                    <h4>C-Student: Đồng Giá 45K</h4>
+                    <p>Ưu đãi độc quyền cho học sinh, sinh viên mỗi ngày.</p>
+                </div>
+            </div>
+            <div class="promo-card">
+                <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCtG2WhG2kSOQ9Jk1rs-KitQNn98lvVL6RpyOG__XXxR9IRxYKJXQWcpK3bLNvq-xZ3ZCX2Viw0-Esx34IGQKKZxiTGRPZ6fJu2co-j7DItbU_nMu6geVMljPNUWlCjhe3w0KCjebDuZwnp8YUIsHfLzhfD-YaTfHd8ms1tE0uQIOHdM1FTivrL2NpXno0gAo-d-YM7N34mbN8og6gURx7H4kSz-RzAYoK14Py7quVBKdQrNYUcmQ4Yb1uh2KHSJofZygmd3M6nQsH-" alt="Thứ Hai Hạnh Phúc" />
+                <div class="promo-overlay">
+                    <h4>Thứ Hai Hạnh Phúc</h4>
+                    <p>Chỉ từ 50K/vé vào mỗi thứ hai hàng tuần.</p>
+                </div>
+            </div>
+            <div class="promo-card">
+                <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAq5iOF5a412Fb_VBh6DsHTF5JkGu64ys6aP0POXdbrgZUSKfORmLoltA0lsZyFFW_XTV3v1RRIE3OTVR46nij5Rd9SeQRZRLxYJlQ03R9U7nsQ8xV4L6E2mrCLYdz3twO9gXQn3TFBY69dVWiVvksKwdWBrVHbN44JOBOp5oHzT5TJYKsx_j-1Q7iuf87XeNv4gYngqz8oDUlJ6p6oAf1gt1QQPQ7l_DgiTBoiTdrryHQ18YFdWKAq0UDj8qvk2xSd7JA92mhwikHm" alt="Combo Ưu Đãi" />
+                <div class="promo-overlay">
+                    <h4>Combo Ưu Đãi 15%</h4>
+                    <p>Giảm ngay 15% khi đặt bắp nước online cùng vé.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Phim Sắp Chiếu -->
+<section class="upcoming-section">
+    <div class="section-container">
+        <h2 class="upcoming-title">PHIM SẮP CHIẾU</h2>
+        <div class="upcoming-scroll">
+            <div class="upcoming-card">
+                <div class="upcoming-poster">
+                    <img src="https://images.unsplash.com/photo-1518621736915-f3b1c41bfd00?w=400&h=600&fit=crop" alt="Bản Tình Ca Cuối Cùng" />
+                    <div class="upcoming-play">
+                        <button class="play-btn"><span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">play_arrow</span></button>
+                    </div>
+                </div>
+                <p class="release-date">15/06/2024</p>
+                <h3 class="upcoming-name">BẢN TÌNH CA CUỐI CÙNG</h3>
+            </div>
+            <div class="upcoming-card">
+                <div class="upcoming-poster">
+                    <img src="https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=400&h=600&fit=crop" alt="Những Cỗ Máy Huyền Thoại" />
+                    <div class="upcoming-play">
+                        <button class="play-btn"><span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">play_arrow</span></button>
+                    </div>
+                </div>
+                <p class="release-date">20/06/2024</p>
+                <h3 class="upcoming-name">NHỮNG CỖ MÁY HUYỀN THOẠI</h3>
+            </div>
+            <div class="upcoming-card">
+                <div class="upcoming-poster">
+                    <img src="https://images.unsplash.com/photo-1531259683007-016a7b628fc3?w=400&h=600&fit=crop" alt="Kỷ Nguyên Siêu Anh Hùng" />
+                    <div class="upcoming-play">
+                        <button class="play-btn"><span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">play_arrow</span></button>
+                    </div>
+                </div>
+                <p class="release-date">28/06/2024</p>
+                <h3 class="upcoming-name">KỶ NGUYÊN SIÊU ANH HÙNG</h3>
+            </div>
+            <div class="upcoming-card">
+                <div class="upcoming-poster">
+                    <img src="https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=400&h=600&fit=crop" alt="Bên Kia Cây Cầu" />
+                    <div class="upcoming-play">
+                        <button class="play-btn"><span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">play_arrow</span></button>
+                    </div>
+                </div>
+                <p class="release-date">05/07/2024</p>
+                <h3 class="upcoming-name">BÊN KIA CÂY CẦU</h3>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Tin Điện Ảnh -->
+<section class="news-section">
+    <div class="section-container">
+        <h2 class="news-title">TIN ĐIỆN ẢNH</h2>
+        <div class="news-bento">
+            <!-- Featured Article -->
+            <div class="news-featured">
+                <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDo3DMPnDcuPdJN0gMRyH-7a9sen6sIz-Wh9Shc7IemtSNcTsYI-2qerh8ignKLj8HALFEWnxEj6iucZ1mKFt4BTtKdQVcbVJqfTjrOhWlZOR9Ia7pAemCDb_mJ8HnQWxKySLy3luC0LKnYCylX54jrsOjRbz_sPtfYKsZGQloij-5C4O89JQPICeOEKzYTTE4XknOeCuGeESFTCk6e4c6C_TrfXTm8hLgzNydYTgDPsi7PcScQc6dq-dxU_VyEEdiUCEJCNeXccjVO" alt="Khai trương cụm rạp" />
+                <div class="news-featured-overlay">
+                    <span class="news-tag">SỰ KIỆN</span>
+                    <h3>Khai Trương Cụm Rạp Mới Tại Đà Lạt - Nhiều Ưu Đãi Khủng</h3>
+                    <p>CineStar chính thức cập bến thành phố ngàn hoa với không gian thiết kế cực nghệ...</p>
+                </div>
+            </div>
+            <!-- Side Articles -->
+            <div class="news-side">
+                <div class="news-small">
+                    <div class="news-thumb">
+                        <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLsVxHXA73XEG2t_VO-JgJdZGTXQydLaZw6uKxcDMc0vGtj2wKZivFZ1Q7MkUU-qr875f2aXGqPO-x3iautQLbmK8AxCrrtCH0TR_M9xEvvQm68Geqo1mxUuyNuNbGYc5TpZqBD9ck9MJrBlRC8gt3YkVgenOWAtfBzvVVR-i5CfrXX6ytntxvsDvPJ2C9iqRwpjIpsvOONE5tFNSzk_VjdYdg-8ms3x-t21eKxWUaFWIg3S4X5Vka_cVkuBWLEQA7EMCjGazfMofF" alt="Top 5 Phim" />
+                    </div>
+                    <div class="news-text">
+                        <span class="news-tag orange">TIN TỨC</span>
+                        <h4>Top 5 Phim Đứng Đầu Phòng Vé Tháng 5</h4>
+                        <p>Điểm qua những cái tên làm mưa làm gió tại CineStar tuần qua...</p>
+                    </div>
+                </div>
+                <div class="news-small">
+                    <div class="news-thumb">
+                        <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAm5mh3wYaxRIC9PzTCcsLmFzpfH9hv-mRhF_hr0D_uW_OdTipH5_ZHMV4x6h1ub2NThC8JAE9mHvxryt9wmpIbErDafRTRQizm6jC_gUuW10DknKNe-G7D8lOGc4D5mj6C9HmF_uDnIM2q7F03hEi-QvxbEKyRtZ6gf7t5RMK-r83BTN-MekbG9GPGb9w7NkB3MkD2WZVFDUDrsBPn9pcn-M_nohIG8E9E3jMlqV0F6tuulagjD1BiJtRBZNQPJnPNk7ASy0W5a_-_" alt="Cảm nhận khán giả" />
+                    </div>
+                    <div class="news-text">
+                        <span class="news-tag orange">REVIEW</span>
+                        <h4>Cảm Nhận Khán Giả Về 'Chiến Binh Cuối Cùng'</h4>
+                        <p>"Kỹ xảo mãn nhãn, cốt truyện gây bất ngờ đến phút chót"...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
