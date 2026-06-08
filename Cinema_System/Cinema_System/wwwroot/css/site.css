@@ -1,5 +1,5 @@
 /* =========================================
-   CineStar – site.css
+   CineStar ï¿½ site.css
    Full design system matching the mockup
    ========================================= */
 
@@ -525,6 +525,113 @@ img {
     gap: 1rem;
 }
 
+/* Tabs on Movies page */
+.movies-tabs {
+    list-style: none;
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.movies-tabs .tab {
+    font-weight: 700;
+    color: var(--on-surface-variant);
+    cursor: pointer;
+    padding-bottom: 6px;
+}
+
+.movies-tabs .tab.active,
+.movies-tabs .tab:hover {
+    color: var(--primary);
+    border-bottom: 3px solid var(--primary);
+}
+
+/* Make the tab anchors look like the main nav */
+.movies-tabs .tab a {
+    color: inherit;
+    text-decoration: none;
+    padding: 0.25rem 0.5rem;
+    display: inline-block;
+}
+
+/* Pagination styles */
+.pagination {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: center;
+}
+.pagination ul {
+    list-style: none;
+    display: flex;
+    gap: 0.5rem;
+    padding: 0;
+    margin: 0;
+    align-items: center;
+}
+.pagination li {
+    display: inline-block;
+}
+.pagination a,
+.pagination span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0.75rem;
+    border-radius: 999px;
+    min-width: 40px;
+    font-weight: 700;
+    color: var(--on-surface-variant);
+    text-decoration: none;
+    background: transparent;
+    border: 1px solid rgba(0,0,0,0.06);
+}
+.pagination a:hover {
+    background: rgba(0,0,0,0.03);
+    color: var(--primary);
+    border-color: rgba(0,0,0,0.10);
+}
+.pagination .current {
+    background: var(--primary);
+    color: var(--white);
+    border-color: var(--primary);
+}
+.pagination .disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+/* Overlay button visual tweaks to match homepage */
+.movie-overlay .btn-buy,
+.movie-overlay .btn-detail {
+    display: block;
+    width: calc(100% - 3rem);
+    margin: 0 auto;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius);
+    font-weight: 800;
+}
+.movie-overlay .btn-buy {
+    background: var(--primary);
+    color: var(--white);
+    border: none;
+}
+.movie-overlay .btn-detail {
+    background: var(--white);
+    color: var(--secondary);
+    border: 1px solid rgba(255,255,255,0.6);
+}
+
+/* Header small links above title: make inline and styled */
+.movies-page-header .muted {
+    color: var(--on-surface-variant);
+    margin-bottom: 0.5rem;
+}
+.movies-page-header .movies-tabs {
+    margin-top: 0.25rem;
+}
+
 @media (min-width: 768px) {
     .movies-grid {
         grid-template-columns: repeat(3, 1fr);
@@ -540,6 +647,37 @@ img {
 @media (min-width: 1280px) {
     .movies-grid {
         grid-template-columns: repeat(5, 1fr);
+    }
+}
+
+/* Movies page: center up to 4 cards per row and keep centered when fewer items */
+.movies-section.movies-page .movies-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.movies-section.movies-page .movie-card {
+    flex: 0 0 calc((100% - 3rem) / 4);
+    max-width: 260px;
+}
+
+@media (max-width: 1279px) {
+    .movies-section.movies-page .movie-card {
+        flex: 0 0 calc((100% - 2rem) / 3);
+    }
+}
+
+@media (max-width: 991px) {
+    .movies-section.movies-page .movie-card {
+        flex: 0 0 calc((100% - 1rem) / 2);
+    }
+}
+
+@media (max-width: 575px) {
+    .movies-section.movies-page .movie-card {
+        flex: 0 0 100%;
     }
 }
 

@@ -20,11 +20,13 @@ namespace Cinema_System.Controllers
         {
             var nowShowingMovies = await _movieService.GetNowShowingMoviesAsync();
             var comingSoonMovies = await _movieService.GetComingSoonMoviesAsync();
+            var specialShowtimeMovies = await _movieService.GetSpecialShowtimeMoviesAsync();
 
             var viewModel = new HomeViewModel
             {
                 NowShowingMovies = nowShowingMovies,
                 ComingSoonMovies = comingSoonMovies
+                , SpecialShowtimeMovies = specialShowtimeMovies
             };
 
             return View(viewModel);
