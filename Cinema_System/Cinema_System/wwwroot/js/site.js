@@ -1,4 +1,20 @@
-﻿// Please see documentation at https://learn.microsoft.com/aspnet/core/client-side/bundling-and-minification
-// for details on configuring this project to bundle and minify static web assets.
+﻿// CineStar – site.js
 
-// Write your JavaScript code.
+// Sticky header effect
+window.addEventListener('scroll', function () {
+    const header = document.getElementById('main-header');
+    if (!header) return;
+    if (window.scrollY > 50) {
+        header.classList.add('scrolled');
+    } else {
+        header.classList.remove('scrolled');
+    }
+});
+
+// Quick booking select highlight
+document.querySelectorAll('.book-field select').forEach(function (select) {
+    select.addEventListener('change', function () {
+        this.style.boxShadow = '0 0 0 2px #f37021';
+        setTimeout(() => { this.style.boxShadow = ''; }, 1000);
+    });
+});
