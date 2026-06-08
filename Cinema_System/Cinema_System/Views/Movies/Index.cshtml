@@ -1,0 +1,128 @@
+@model MoviesPageViewModel
+
+@{
+    ViewData["Title"] = "Phim";
+}
+
+<section class="movies-page-header">
+    <div class="section-container">
+    </div>
+</section>
+
+<section class="movies-tabs-section">
+    <div class="section-container">
+        <ul class="movies-tabs">
+            <li class="tab @(Model.SelectedTab == "coming" ? "active" : "")"><a href="@Url.Action("Index", "Movies", new { tab = "coming", page = 1 })">PHIM SẮP CHIẾU</a></li>
+            <li class="tab @(Model.SelectedTab == "now" ? "active" : "")"><a href="@Url.Action("Index", "Movies", new { tab = "now", page = 1 })">PHIM ĐANG CHIẾU</a></li>
+            <li class="tab @(Model.SelectedTab == "special" ? "active" : "")"><a href="@Url.Action("Index", "Movies", new { tab = "special", page = 1 })">SUẤT CHIẾU ĐẶC BIỆT</a></li>
+        </ul>
+    </div>
+</section>
+
+<section class="movies-section movies-page">
+    <div class="section-header">
+        <div>
+            <h2 class="section-title">
+                <span class="title-bar"></span>
+                @(Model.SelectedTab == "coming" ? "PHIM SẮP CHIẾU" : Model.SelectedTab == "special" ? "SUẤT CHIẾU ĐẶC BIỆT" : "PHIM ĐANG CHIẾU")
+            </h2>
+        </div>
+    </div>
+
+    <div class="movies-grid">
+        @if (Model?.Movies != null && Model.Movies.Any())
+        {
+            @foreach (var movie in Model.Movies)
+            {
+                <div class="movie-card">
+                    <div class="movie-poster">
+                        @if (!string.IsNullOrEmpty(movie.PosterUrl))
+                        {
+                            <img src="@movie.PosterUrl" alt="@movie.Title" onerror="this.src='https://placehold.co/250x350?text=@Uri.EscapeDataString(movie.Title)&font=raleway'" />
+                        }
+                        else
+                        {
+                            <img src="https://placehold.co/250x350?text=@Uri.EscapeDataString(movie.Title)&font=raleway" alt="@movie.Title" />
+                        }
+                        <div class="movie-badges">
+                            @if (!string.IsNullOrEmpty(movie.Language))
+                            {
+                                <span class="badge-format">@movie.Language</span>
+                            }
+                            @if (!string.IsNullOrEmpty(movie.AgeRating))
+                            {
+                                <span class="badge-age">@movie.AgeRating</span>
+                            }
+                        </div>
+                        <div class="movie-overlay">
+                            <button class="btn-primary btn-buy">MUA VÉ NGAY</button>
+                            <button class="btn-detail">XEM CHI TIẾT</button>
+                        </div>
+                    </div>
+                    <div class="movie-info">
+                        <h3 class="movie-title">@movie.Title</h3>
+                        <div class="movie-meta">
+                            @if (!string.IsNullOrEmpty(movie.Director))
+                            {
+                                <span>Đạo diễn: @movie.Director</span>
+                            }
+                            @if (movie.DurationMinutes.HasValue)
+                            {
+                                <span class="movie-duration"><span class="material-symbols-outlined">schedule</span> @movie.DurationMinutes phút</span>
+                            }
+                        </div>
+                        @if (!string.IsNullOrEmpty(movie.Description))
+                        {
+                            <p class="movie-description" title="@movie.Description">@movie.Description.Substring(0, Math.Min(50, movie.Description.Length))...</p>
+                        }
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="no-movies"><p>Không tìm thấy phim cho lựa chọn này.</p></div>
+        }
+    </div>
+
+    @if (Model.TotalPages > 1)
+    {
+        <nav class="pagination" aria-label="Pages">
+            <ul>
+                <li>
+                    @if (Model.CurrentPage > 1)
+                    {
+                        <a href="@Url.Action("Index", "Movies", new { tab = Model.SelectedTab, page = Model.CurrentPage - 1 })">&laquo; Trước</a>
+                    }
+                    else
+                    {
+                        <span class="disabled">&laquo; Trước</span>
+                    }
+                </li>
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    <li>
+                        @if (i == Model.CurrentPage)
+                        {
+                            <span class="current">@i</span>
+                        }
+                        else
+                        {
+                            <a href="@Url.Action("Index", "Movies", new { tab = Model.SelectedTab, page = i })">@i</a>
+                        }
+                    </li>
+                }
+                <li>
+                    @if (Model.CurrentPage < Model.TotalPages)
+                    {
+                        <a href="@Url.Action("Index", "Movies", new { tab = Model.SelectedTab, page = Model.CurrentPage + 1 })">Tiếp &raquo;</a>
+                    }
+                    else
+                    {
+                        <span class="disabled">Tiếp &raquo;</span>
+                    }
+                </li>
+            </ul>
+        </nav>
+    }
+</section>
