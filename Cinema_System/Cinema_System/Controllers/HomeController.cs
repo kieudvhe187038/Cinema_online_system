@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,15 +8,26 @@ namespace Cinema_System.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
+        private readonly IMovieService _movieService;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(ILogger<HomeController> logger, IMovieService movieService)
         {
             _logger = logger;
+            _movieService = movieService;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            return View();
+            var nowShowingMovies = await _movieService.GetNowShowingMoviesAsync();
+            var comingSoonMovies = await _movieService.GetComingSoonMoviesAsync();
+
+            var viewModel = new HomeViewModel
+            {
+                NowShowingMovies = nowShowingMovies,
+                ComingSoonMovies = comingSoonMovies
+            };
+
+            return View(viewModel);
         }
 
         public IActionResult Privacy()
