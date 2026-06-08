@@ -1,3 +1,5 @@
+using Cinema_System.Application.Interfaces;
+using Cinema_System.Application.Services;
 using Cinema_System.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,6 +11,9 @@ builder.Services.AddControllersWithViews();
 var connectionStr = builder.Configuration.GetConnectionString("MyCnn");
 builder.Services.AddDbContext<CinemaWebDbContext>(options =>
     options.UseSqlServer(connectionStr));
+
+// Register application services
+builder.Services.AddScoped<IMovieService, MovieService>();
 
 var app = builder.Build();
 

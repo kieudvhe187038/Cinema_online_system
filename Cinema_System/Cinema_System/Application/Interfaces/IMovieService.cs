@@ -1,0 +1,11 @@
+using Cinema_System.Application.DTOs;
+
+namespace Cinema_System.Application.Interfaces;
+
+public interface IMovieService
+{
+    Task<IEnumerable<MovieDTO>> GetAllMoviesAsync();
+    Task<IEnumerable<MovieDTO>> GetNowShowingMoviesAsync();
+    Task<IEnumerable<MovieDTO>> GetComingSoonMoviesAsync();
+    Task<MovieDTO> GetMovieByIdAsync(Guid id);
+}
