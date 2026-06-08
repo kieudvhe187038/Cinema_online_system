@@ -1,0 +1,80 @@
+@model UserEditViewModel
+@{
+    ViewData["Title"] = "Sửa Người Dùng";
+}
+
+@section Styles {
+    <style>
+        .ue-wrap { max-width: 640px; margin: 6rem auto 3rem; padding: 0 1.5rem; }
+        .ue-title { font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: var(--on-surface); margin-bottom: 1.5rem; }
+        .ue-card { background: var(--white); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); padding: 1.75rem; }
+        .ue-field { margin-bottom: 1.1rem; }
+        .ue-field label { display: block; font-weight: 600; color: var(--on-surface-variant); margin-bottom: .4rem; font-size: .9rem; }
+        .ue-field input, .ue-field select { width: 100%; padding: .6rem .8rem; border: 1px solid var(--outline-variant); border-radius: var(--radius); background: var(--white); font-family: var(--font-body); }
+        .ue-field input:focus, .ue-field select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(243,112,33,.15); }
+        .ue-error { color: #b91c1c; font-size: .82rem; margin-top: .3rem; display: block; }
+        .ue-summary { color: #b91c1c; font-size: .9rem; margin-bottom: 1rem; }
+        .ue-actions { display: flex; gap: .75rem; margin-top: 1.5rem; }
+        .ue-btn { padding: .6rem 1.3rem; border: none; border-radius: var(--radius); font-weight: 600; cursor: pointer; font-family: var(--font-body); text-decoration: none; display: inline-flex; align-items: center; }
+        .ue-btn-primary { background: var(--primary); color: var(--white); }
+        .ue-btn-primary:hover { background: var(--primary-dark); }
+        .ue-btn-ghost { background: var(--surface-container); color: var(--on-surface); }
+    </style>
+}
+
+<div class="ue-wrap">
+    <h1 class="ue-title">Sửa Thông Tin Người Dùng</h1>
+
+    <div class="ue-card">
+        <form method="post" action="@Url.Action("Edit", "Users")">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+
+            <div asp-validation-summary="ModelOnly" class="ue-summary"></div>
+
+            <div class="ue-field">
+                <label asp-for="FullName"></label>
+                <input asp-for="FullName" />
+                <span asp-validation-for="FullName" class="ue-error"></span>
+            </div>
+
+            <div class="ue-field">
+                <label asp-for="Email"></label>
+                <input asp-for="Email" />
+                <span asp-validation-for="Email" class="ue-error"></span>
+            </div>
+
+            <div class="ue-field">
+                <label asp-for="Phone"></label>
+                <input asp-for="Phone" />
+                <span asp-validation-for="Phone" class="ue-error"></span>
+            </div>
+
+            <div class="ue-field">
+                <label asp-for="DateOfBirth"></label>
+                <input asp-for="DateOfBirth" type="date" />
+                <span asp-validation-for="DateOfBirth" class="ue-error"></span>
+            </div>
+
+            <div class="ue-field">
+                <label asp-for="RoleId"></label>
+                <select asp-for="RoleId">
+                    @foreach (var role in Model.Roles)
+                    {
+                        <option value="@role.Id" selected="@(role.Id == Model.RoleId)">@role.Name</option>
+                    }
+                </select>
+                <span asp-validation-for="RoleId" class="ue-error"></span>
+            </div>
+
+            <div class="ue-actions">
+                <button type="submit" class="ue-btn ue-btn-primary">Lưu thay đổi</button>
+                <a class="ue-btn ue-btn-ghost" href="@Url.Action("Details", "Users", new { id = Model.Id })">Hủy</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -12,8 +12,10 @@ var connectionStr = builder.Configuration.GetConnectionString("MyCnn");
 builder.Services.AddDbContext<CinemaWebDbContext>(options =>
     options.UseSqlServer(connectionStr));
 
-// Register application services
+// Register Unit of Work + application services
+builder.Services.AddScoped<IUnitOfWork, Cinema_System.Infrastructure.UnitOfWork.UnitOfWork>();
 builder.Services.AddScoped<IMovieService, MovieService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 var app = builder.Build();
 

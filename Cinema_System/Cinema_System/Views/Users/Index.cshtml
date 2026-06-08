@@ -1,0 +1,142 @@
+@model UserListViewModel
+@{
+    ViewData["Title"] = "Quản Lý Người Dùng";
+}
+
+@section Styles {
+    <style>
+        .um-wrap { max-width: 1280px; margin: 6rem auto 3rem; padding: 0 1.5rem; }
+        .um-title { font-family: var(--font-head); font-size: 1.75rem; font-weight: 800; color: var(--on-surface); margin-bottom: 1.5rem; }
+        .um-alert { padding: .75rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: .9rem; }
+        .um-alert.success { background: #e7f5ec; color: #166534; border: 1px solid #16653433; }
+        .um-alert.error { background: #fde8e8; color: #b91c1c; border: 1px solid #b91c1c33; }
+        .um-filters { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: 1.25rem; align-items: center; }
+        .um-filters input, .um-filters select { padding: .55rem .75rem; border: 1px solid var(--outline-variant); border-radius: var(--radius); background: var(--white); font-family: var(--font-body); }
+        .um-filters input { min-width: 240px; }
+        .um-btn { padding: .55rem 1.1rem; border: none; border-radius: var(--radius); font-weight: 600; cursor: pointer; font-family: var(--font-body); text-decoration: none; display: inline-flex; align-items: center; gap: .35rem; }
+        .um-btn-primary { background: var(--primary); color: var(--white); }
+        .um-btn-primary:hover { background: var(--primary-dark); }
+        .um-btn-ghost { background: var(--surface-container); color: var(--on-surface); }
+        .um-table { width: 100%; border-collapse: collapse; background: var(--white); border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-sm); }
+        .um-table th, .um-table td { padding: .85rem 1rem; text-align: left; border-bottom: 1px solid var(--surface-container); font-size: .9rem; }
+        .um-table th { background: var(--secondary-dark); color: var(--white); font-weight: 600; }
+        .um-table tr:hover td { background: var(--surface); }
+        .um-chip { display: inline-block; padding: .2rem .6rem; border-radius: 999px; font-size: .75rem; font-weight: 600; }
+        .um-chip.active { background: #e7f5ec; color: #166534; }
+        .um-chip.inactive { background: #fde8e8; color: #b91c1c; }
+        .um-role { color: var(--secondary); font-weight: 600; }
+        .um-actions { display: flex; gap: .4rem; flex-wrap: wrap; }
+        .um-link { color: var(--secondary); text-decoration: none; font-weight: 600; font-size: .85rem; }
+        .um-link:hover { color: var(--primary); }
+        .um-danger { color: #b91c1c; background: none; border: none; cursor: pointer; font-weight: 600; font-size: .85rem; font-family: var(--font-body); padding: 0; }
+        .um-success-link { color: #166534; background: none; border: none; cursor: pointer; font-weight: 600; font-size: .85rem; font-family: var(--font-body); padding: 0; }
+        .um-pager { display: flex; gap: .35rem; margin-top: 1.25rem; justify-content: center; }
+        .um-pager a { padding: .4rem .75rem; border: 1px solid var(--outline-variant); border-radius: var(--radius); text-decoration: none; color: var(--on-surface); }
+        .um-pager a.active { background: var(--primary); color: var(--white); border-color: var(--primary); }
+        .um-empty { text-align: center; padding: 3rem; color: var(--on-surface-variant); }
+        .um-meta { color: var(--on-surface-variant); font-size: .85rem; margin-bottom: .75rem; }
+    </style>
+}
+
+<div class="um-wrap">
+    <h1 class="um-title">Quản Lý Người Dùng</h1>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="um-alert success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="um-alert error">@TempData["Error"]</div>
+    }
+
+    <form method="get" class="um-filters">
+        <input type="text" name="search" value="@Model.Search" placeholder="Tìm theo tên, email, SĐT..." />
+        <select name="roleId">
+            <option value="">-- Tất cả vai trò --</option>
+            @foreach (var role in Model.Roles)
+            {
+                <option value="@role.Id" selected="@(Model.RoleId == role.Id)">@role.Name</option>
+            }
+        </select>
+        <select name="status">
+            <option value="">-- Tất cả trạng thái --</option>
+            <option value="Active" selected="@(Model.Status == "Active")">Đang hoạt động</option>
+            <option value="Inactive" selected="@(Model.Status == "Inactive")">Vô hiệu</option>
+        </select>
+        <button type="submit" class="um-btn um-btn-primary">Lọc</button>
+        <a href="@Url.Action("Index", "Users")" class="um-btn um-btn-ghost">Xóa lọc</a>
+    </form>
+
+    <p class="um-meta">Tổng cộng @Model.TotalCount người dùng</p>
+
+    @if (Model.Users.Any())
+    {
+        <table class="um-table">
+            <thead>
+                <tr>
+                    <th>Họ tên</th>
+                    <th>Email</th>
+                    <th>SĐT</th>
+                    <th>Vai trò</th>
+                    <th>Điểm</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in Model.Users)
+                {
+                    var isActive = user.Status == "Active";
+                    <tr>
+                        <td>@user.FullName</td>
+                        <td>@user.Email</td>
+                        <td>@(string.IsNullOrEmpty(user.Phone) ? "—" : user.Phone)</td>
+                        <td><span class="um-role">@user.RoleName</span></td>
+                        <td>@user.RewardPoints</td>
+                        <td>
+                            <span class="um-chip @(isActive ? "active" : "inactive")">
+                                @(isActive ? "Hoạt động" : "Vô hiệu")
+                            </span>
+                        </td>
+                        <td>
+                            <div class="um-actions">
+                                <a class="um-link" href="@Url.Action("Details", "Users", new { id = user.Id })">Xem</a>
+                                <a class="um-link" href="@Url.Action("Edit", "Users", new { id = user.Id })">Sửa</a>
+                                <form method="post" action="@Url.Action("ToggleStatus", "Users")" style="display:inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@user.Id" />
+                                    <input type="hidden" name="active" value="@(isActive ? "false" : "true")" />
+                                    @if (isActive)
+                                    {
+                                        <button type="submit" class="um-danger"
+                                                onclick="return confirm('Vô hiệu hóa tài khoản này?');">Vô hiệu</button>
+                                    }
+                                    else
+                                    {
+                                        <button type="submit" class="um-success-link">Kích hoạt</button>
+                                    }
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (Model.TotalPages > 1)
+        {
+            <div class="um-pager">
+                @for (int p = 1; p <= Model.TotalPages; p++)
+                {
+                    <a class="@(p == Model.CurrentPage ? "active" : "")"
+                       href="@Url.Action("Index", "Users", new { search = Model.Search, roleId = Model.RoleId, status = Model.Status, page = p })">@p</a>
+                }
+            </div>
+        }
+    }
+    else
+    {
+        <div class="um-empty">Không tìm thấy người dùng nào phù hợp.</div>
+    }
+</div>
