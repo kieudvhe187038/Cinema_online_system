@@ -1,46 +1,119 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="vi" class="light">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Cinema_System</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <title>@ViewData["Title"] - CineStar</title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/Cinema_System.styles.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
 </head>
-<body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">Cinema_System</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
+<body class="text-on-surface">
+
+    <!-- TopNavBar -->
+    <header id="main-header" class="fixed top-0 w-full z-50">
+        <div class="header-inner">
+            <div class="header-container">
+                <div class="header-left">
+                    <a class="site-logo" asp-area="" asp-controller="Home" asp-action="Index">CineStar</a>
+                    <nav class="main-nav">
+                        <a class="nav-link active" asp-area="" asp-controller="Home" asp-action="Index">Phim Đang Chiếu</a>
+                        <a class="nav-link" href="#">Lịch Chiếu</a>
+                        <a class="nav-link" href="#">Giá Vé</a>
+                        <a class="nav-link" href="#">Khuyến Mãi</a>
+                        <a class="nav-link" href="#">Tin Điện Ảnh</a>
+                    </nav>
+                </div>
+                <div class="header-right">
+                    <div class="search-box">
+                        <input type="text" placeholder="Tìm phim, rạp..." />
+                        <span class="material-symbols-outlined search-icon">search</span>
+                    </div>
+                    <div class="auth-buttons">
+                        <button class="btn-login">Đăng Nhập</button>
+                        <button class="btn-register">Đăng Ký</button>
+                    </div>
                 </div>
             </div>
-        </nav>
+        </div>
     </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - Cinema_System - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <main class="main-content">
+        @RenderBody()
+    </main>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <div class="footer-brand">
+                <a class="site-logo" href="#">CineStar</a>
+                <p>Hệ thống rạp chiếu phim hiện đại với công nghệ âm thanh hình ảnh hàng đầu Việt Nam.</p>
+                <div class="social-links">
+                    <a href="#" class="social-btn"><span class="material-symbols-outlined">face_nod</span></a>
+                    <a href="#" class="social-btn"><span class="material-symbols-outlined">play_circle</span></a>
+                    <a href="#" class="social-btn"><span class="material-symbols-outlined">camera</span></a>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h4 class="footer-title">Về Chúng Tôi</h4>
+                <ul class="footer-links">
+                    <li><a href="#">Giới thiệu CineStar</a></li>
+                    <li><a href="#">Tuyển dụng</a></li>
+                    <li><a href="#">Chính sách bảo mật</a></li>
+                    <li><a href="#">Điều khoản sử dụng</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4 class="footer-title">Hỗ Trợ Khách Hàng</h4>
+                <ul class="footer-links">
+                    <li><a href="#">Hướng dẫn đặt vé</a></li>
+                    <li><a href="#">Quy định xem phim</a></li>
+                    <li><a href="#">Liên hệ quảng cáo</a></li>
+                    <li><a href="#">Giải quyết khiếu nại</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4 class="footer-title">Chấp Nhận Thanh Toán</h4>
+                <div class="payment-methods">
+                    <div class="payment-badge">VISA</div>
+                    <div class="payment-badge">MoMo</div>
+                    <div class="payment-badge">ATM</div>
+                    <div class="payment-badge">VNPAY</div>
+                </div>
+                <h4 class="footer-title" style="margin-top:1.5rem">Tải Ứng Dụng</h4>
+                <div class="app-buttons">
+                    <button class="app-btn">
+                        <span class="material-symbols-outlined">phone_iphone</span>
+                        <div>
+                            <p class="app-label">Download on</p>
+                            <p class="app-store">App Store</p>
+                        </div>
+                    </button>
+                    <button class="app-btn">
+                        <span class="material-symbols-outlined">play_arrow</span>
+                        <div>
+                            <p class="app-label">Get it on</p>
+                            <p class="app-store">Google Play</p>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2024 CineStar. Toàn bộ bản quyền được bảo lưu.</p>
+            <div class="footer-bottom-right">
+                <span>Công ty Cổ phần Giải trí CineStar</span>
+                <span class="divider">|</span>
+                <span>MST: 0123456789</span>
+            </div>
         </div>
     </footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
