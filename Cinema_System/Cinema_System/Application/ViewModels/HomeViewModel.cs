@@ -6,4 +6,5 @@ public class HomeViewModel
 {
     public IEnumerable<MovieDTO> NowShowingMovies { get; set; } = new List<MovieDTO>();
     public IEnumerable<MovieDTO> ComingSoonMovies { get; set; } = new List<MovieDTO>();
+    public IEnumerable<MovieDTO> SpecialShowtimeMovies { get; set; } = new List<MovieDTO>();
 }

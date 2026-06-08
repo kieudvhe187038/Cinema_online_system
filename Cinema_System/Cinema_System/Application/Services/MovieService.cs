@@ -53,6 +53,16 @@ public class MovieService : IMovieService
         return movie;
     }
 
+    public async Task<IEnumerable<MovieDTO>> GetSpecialShowtimeMoviesAsync()
+    {
+        var movies = await _context.Movies
+            .Where(m => m.Showtimes.Any(s => s.Status == "Special" || s.Status == "Special Screening" || (s.Status != null && EF.Functions.Like(s.Status, "%Đặc%"))))
+            .Select(m => MapToDTO(m))
+            .ToListAsync();
+
+        return movies;
+    }
+
     private static MovieDTO MapToDTO(Domain.Entities.Movie m)
     {
         return new MovieDTO
