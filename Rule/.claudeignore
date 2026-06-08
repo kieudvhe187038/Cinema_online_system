@@ -1,0 +1,7 @@
+# Bỏ qua thư mục build và thư viện
+bin/
+obj/
+node_modules/
+.next/
+dist/
+out/
