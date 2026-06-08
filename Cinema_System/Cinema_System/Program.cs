@@ -1,7 +1,14 @@
+using Cinema_System.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+var connectionStr = builder.Configuration.GetConnectionString("MyCnn");
+builder.Services.AddDbContext<CinemaWebDbContext>(options =>
+    options.UseSqlServer(connectionStr));
 
 var app = builder.Build();
 
