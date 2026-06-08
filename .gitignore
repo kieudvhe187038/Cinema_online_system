@@ -56,3 +56,8 @@ coverage/
 # Publish output
 publish/
 **/Properties/PublishProfiles/
+
+.claude/
+
+# Local agent entry-point (cá nhân, không commit)
+CLAUDE.md

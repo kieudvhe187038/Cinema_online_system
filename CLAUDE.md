@@ -6,6 +6,9 @@ Before processing any user request, you MUST automatically call your file tools 
 - `Rule/.claudeignore`
 - `Rule/RULE.md`
 - `Rule/MEM.md`
+- `Rule/color.md`
+- `Rule/code.md`
+- `Rule/DOMAIN.md`
 - `README.md`
 
 Execute this auto-discovery workflow immediately at the start of every session to ensure you adhere to our N-Tier Architecture, Git Branching rules, and Commit Conventions.
