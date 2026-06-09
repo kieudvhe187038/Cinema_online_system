@@ -79,7 +79,9 @@
 
                 <div class="mf-field">
                     <label asp-for="ReleaseDate"></label>
-                    <input asp-for="ReleaseDate" type="date" />
+                    <input asp-for="ReleaseDate" type="date"
+                           min="@DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd")" />
+                    <span asp-validation-for="ReleaseDate" class="mf-error"></span>
                 </div>
 
                 <div class="mf-field">
