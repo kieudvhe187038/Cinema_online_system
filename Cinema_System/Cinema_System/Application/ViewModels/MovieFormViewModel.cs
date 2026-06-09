@@ -3,7 +3,7 @@ using Cinema_System.Application.DTOs;
 
 namespace Cinema_System.Application.ViewModels;
 
-public class MovieFormViewModel
+public class MovieFormViewModel : IValidatableObject
 {
     public Guid Id { get; set; }
 
@@ -64,4 +64,14 @@ public class MovieFormViewModel
     public List<Guid> SelectedGenreIds { get; set; } = new();
 
     public List<GenreDTO> AvailableGenres { get; set; } = new();
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        if (ReleaseDate.HasValue && ReleaseDate.Value < DateOnly.FromDateTime(DateTime.Today))
+        {
+            yield return new ValidationResult(
+                "Ngày khởi chiếu phải là hôm nay hoặc trong tương lai.",
+                new[] { nameof(ReleaseDate) });
+        }
+    }
 }
