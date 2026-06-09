@@ -23,13 +23,18 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
 
     public async Task<IEnumerable<T>> GetAllAsync(
         Expression<Func<T, bool>>? predicate = null,
-        Func<IQueryable<T>, IQueryable<T>>? include = null,
+        string[]? includeProperties = null,
         Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null)
     {
         IQueryable<T> query = _dbSet.AsNoTracking();
 
-        if (include is not null)
-            query = include(query);
+        if (includeProperties is not null && includeProperties.Length > 0)
+        {
+            foreach (var inc in includeProperties)
+            {
+                query = query.Include(inc);
+            }
+        }
 
         if (predicate is not null)
             query = query.Where(predicate);
@@ -42,12 +47,17 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
 
     public async Task<T?> FirstOrDefaultAsync(
         Expression<Func<T, bool>> predicate,
-        Func<IQueryable<T>, IQueryable<T>>? include = null)
+        string[]? includeProperties = null)
     {
         IQueryable<T> query = _dbSet;
 
-        if (include is not null)
-            query = include(query);
+        if (includeProperties is not null && includeProperties.Length > 0)
+        {
+            foreach (var inc in includeProperties)
+            {
+                query = query.Include(inc);
+            }
+        }
 
         return await query.FirstOrDefaultAsync(predicate);
     }

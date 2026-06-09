@@ -22,5 +22,9 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<PriceRoomTypeConfig> PriceRoomTypeConfigs { get; }
 
+    IGenericRepository<Movie> Movies { get; }
+
+    IGenericRepository<Genre> Genres { get; }
+
     Task<int> SaveChangesAsync();
 }

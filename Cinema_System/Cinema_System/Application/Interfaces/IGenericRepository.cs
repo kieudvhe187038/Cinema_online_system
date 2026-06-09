@@ -8,12 +8,12 @@ public interface IGenericRepository<T> where T : class
 
     Task<IEnumerable<T>> GetAllAsync(
         Expression<Func<T, bool>>? predicate = null,
-        Func<IQueryable<T>, IQueryable<T>>? include = null,
+        string[]? includeProperties = null,
         Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null);
 
     Task<T?> FirstOrDefaultAsync(
         Expression<Func<T, bool>> predicate,
-        Func<IQueryable<T>, IQueryable<T>>? include = null);
+        string[]? includeProperties = null);
 
     Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate);
 

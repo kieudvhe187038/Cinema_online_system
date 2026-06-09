@@ -17,35 +17,22 @@ namespace Cinema_System.Controllers
 
         public async Task<IActionResult> Index(string tab = "now", int page = 1)
         {
-            var nowShowing = (await _movieService.GetNowShowingMoviesAsync()).ToList();
-            var comingSoon = (await _movieService.GetComingSoonMoviesAsync()).ToList();
-            var special = (await _movieService.GetSpecialShowtimeMoviesAsync()).ToList();
+            var pageSize = 4;
+            var vm = await _movieService.GetMoviesPageAsync(tab, page, pageSize);
+            return View(vm);
+        }
+
+        public async Task<IActionResult> Search(string q, int page = 1)
+        {
+            if (string.IsNullOrWhiteSpace(q))
+            {
+                return RedirectToAction("Index");
+            }
 
             var pageSize = 4;
-            IEnumerable<Cinema_System.Application.DTOs.MovieDTO> source = tab?.ToLower() switch
-            {
-                "coming" => comingSoon,
-                "special" => special,
-                _ => nowShowing,
-            };
-
-            var totalCount = source.Count();
-            var totalPages = totalCount == 0 ? 1 : (int)Math.Ceiling(totalCount / (double)pageSize);
-            if (page < 1) page = 1;
-            if (page > totalPages) page = totalPages;
-
-            var items = source.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-
-            var vm = new Cinema_System.Application.ViewModels.MoviesPageViewModel
-            {
-                SelectedTab = tab?.ToLower() ?? "now",
-                Movies = items,
-                CurrentPage = page,
-                TotalPages = totalPages,
-                PageSize = pageSize
-            };
-
-            return View(vm);
+            var vm = await _movieService.SearchMoviesAsync(q, page, pageSize);
+            ViewData["SearchKeyword"] = q;
+            return View("Index", vm);
         }
     }
 }

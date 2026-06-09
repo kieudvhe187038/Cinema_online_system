@@ -30,10 +30,12 @@
                     </nav>
                 </div>
                 <div class="header-right">
-                    <div class="search-box">
-                        <input type="text" placeholder="Tìm phim, rạp..." />
-                        <span class="material-symbols-outlined search-icon">search</span>
-                    </div>
+                    <form asp-controller="Movies" asp-action="Search" method="get" class="search-box">
+                        <input type="text" name="q" value="@(ViewData["SearchKeyword"] ?? string.Empty)" placeholder="Tìm phim, rạp..." />
+                        <button type="submit" class="search-button" aria-label="Tìm kiếm">
+                            <span class="material-symbols-outlined search-icon">search</span>
+                        </button>
+                    </form>
                     <div class="auth-buttons">
                         <button class="btn-login">Đăng Nhập</button>
                         <button class="btn-register">Đăng Ký</button>
