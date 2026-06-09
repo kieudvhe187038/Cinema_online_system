@@ -15,17 +15,12 @@
 
   <ItemGroup>
     <Folder Include="Application\Common\" />
-    <Folder Include="Application\DTOs\" />
-    <Folder Include="Application\Interfaces\" />
-    <Folder Include="Application\Mappings\" />
-    <Folder Include="Application\Services\" />
     <Folder Include="Domain\Entities\" />
     <Folder Include="Infrastructure\Data\" />
-    <Folder Include="Infrastructure\UnitOfWork\" />
-    <Folder Include="Infrastructure\Repositories\" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.27" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.27">
       <PrivateAssets>all</PrivateAssets>
