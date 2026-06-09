@@ -1,6 +1,6 @@
 @model MovieListViewModel
 @{
-    ViewData["Title"] = "Quản Lý Phim";
+    ViewData["Title"] = "Quản lý phim";
     ViewData["SidebarNewUrl"] = Url.Action("Create", "MovieManagement");
     ViewData["SidebarNewLabel"] = "Add New Movie";
     Layout = "~/Views/Shared/_ManagerLayout.cshtml";
@@ -234,7 +234,7 @@
                 <label>Tìm kiếm</label>
                 <div class="mv-search-wrap">
                     <span class="material-symbols-outlined">search</span>
-                    <input type="text" name="search" value="@Model.Search" placeholder="Tìm kiếm phim..." />
+                    <input type="text" name="search"  value="@Model.Search" placeholder="   Tìm kiếm phim..." />
                 </div>
             </div>
             <div class="mv-filter-item">
