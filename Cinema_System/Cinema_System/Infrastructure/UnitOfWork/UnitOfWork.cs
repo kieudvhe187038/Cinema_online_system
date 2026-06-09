@@ -18,6 +18,8 @@ public class UnitOfWork : IUnitOfWork
     private IGenericRepository<RoomType>? _roomTypes;
     private IGenericRepository<Room>? _rooms;
     private IGenericRepository<PriceRoomTypeConfig>? _priceRoomTypeConfigs;
+    private IGenericRepository<Movie>? _movies;
+    private IGenericRepository<Genre>? _genres;
 
     public UnitOfWork(CinemaWebDbContext context)
     {
@@ -50,6 +52,12 @@ public class UnitOfWork : IUnitOfWork
 
     public IGenericRepository<PriceRoomTypeConfig> PriceRoomTypeConfigs =>
         _priceRoomTypeConfigs ??= new GenericRepository<PriceRoomTypeConfig>(_context);
+
+    public IGenericRepository<Movie> Movies =>
+        _movies ??= new GenericRepository<Movie>(_context);
+
+    public IGenericRepository<Genre> Genres =>
+        _genres ??= new GenericRepository<Genre>(_context);
 
     public async Task<int> SaveChangesAsync()
     {
