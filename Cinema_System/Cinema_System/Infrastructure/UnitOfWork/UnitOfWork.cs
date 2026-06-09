@@ -11,6 +11,7 @@ public class UnitOfWork : IUnitOfWork
 
     private IGenericRepository<User>? _users;
     private IGenericRepository<Role>? _roles;
+    private IGenericRepository<SystemConfig>? _systemConfigs;
 
     public UnitOfWork(CinemaWebDbContext context)
     {
@@ -22,6 +23,9 @@ public class UnitOfWork : IUnitOfWork
 
     public IGenericRepository<Role> Roles =>
         _roles ??= new GenericRepository<Role>(_context);
+
+    public IGenericRepository<SystemConfig> SystemConfigs =>
+        _systemConfigs ??= new GenericRepository<SystemConfig>(_context);
 
     public async Task<int> SaveChangesAsync()
     {
