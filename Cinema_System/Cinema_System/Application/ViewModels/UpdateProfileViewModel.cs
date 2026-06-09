@@ -17,5 +17,12 @@ namespace Cinema_System.Application.ViewModels
 
         [Display(Name = "Email")]
         public string? Email { get; set; }
+
+        // Ảnh hiện tại để hiển thị preview (không phải file upload)
+        public string? CurrentAvatarUrl { get; set; }
+
+        // File ảnh người dùng chọn để tải lên
+        [Display(Name = "Ảnh đại diện mới")]
+        public IFormFile? AvatarFile { get; set; }
     }
 }

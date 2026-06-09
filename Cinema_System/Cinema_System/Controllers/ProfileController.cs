@@ -10,11 +10,13 @@ namespace Cinema_System.Controllers
     public class ProfileController : Controller
     {
         private readonly IProfileService _profileService;
+        private readonly IWebHostEnvironment _env;
         private readonly IMapper _mapper;
 
-        public ProfileController(IProfileService profileService, IMapper mapper)
+        public ProfileController(IProfileService profileService, IWebHostEnvironment env, IMapper mapper)
         {
             _profileService = profileService;
+            _env = env;
             _mapper = mapper;
         }
 
@@ -43,20 +45,47 @@ namespace Cinema_System.Controllers
                 Id = dto.Id,
                 FullName = dto.FullName,
                 Phone = dto.Phone,
-                Email = dto.Email
+                Email = dto.Email,
+                CurrentAvatarUrl = dto.AvatarUrl
             };
             return View(vm);
         }
 
-        // ===== 2. LƯU CẬP NHẬT (tên, số điện thoại) =====
+        // ===== 2+3. LƯU CẬP NHẬT + UPLOAD AVATAR =====
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(UpdateProfileViewModel vm)
         {
             if (!ModelState.IsValid)
+            {
+                var cur = await _profileService.GetProfileAsync(GetCurrentUserId());
+                vm.CurrentAvatarUrl = cur?.AvatarUrl;
                 return View(vm);
+            }
 
-            var dto = new UpdateProfileDto { FullName = vm.FullName, Phone = vm.Phone };
+            // Lưu file ảnh (việc IO của tầng Presentation), rồi chỉ đưa ĐƯỜNG DẪN cho Service.
+            string? avatarUrl = null;
+            if (vm.AvatarFile != null && vm.AvatarFile.Length > 0)
+            {
+                var allowed = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+                var ext = Path.GetExtension(vm.AvatarFile.FileName).ToLower();
+                if (!allowed.Contains(ext))
+                {
+                    ModelState.AddModelError("AvatarFile", "Chỉ chấp nhận ảnh jpg, jpeg, png, gif");
+                    return View(vm);
+                }
+
+                var uploadDir = Path.Combine(_env.WebRootPath, "uploads", "avatars");
+                Directory.CreateDirectory(uploadDir);
+                var fileName = Guid.NewGuid().ToString() + ext;
+                using (var stream = new FileStream(Path.Combine(uploadDir, fileName), FileMode.Create))
+                {
+                    await vm.AvatarFile.CopyToAsync(stream);
+                }
+                avatarUrl = "/uploads/avatars/" + fileName;
+            }
+
+            var dto = new UpdateProfileDto { FullName = vm.FullName, Phone = vm.Phone, AvatarUrl = avatarUrl };
             var ok = await _profileService.UpdateProfileAsync(GetCurrentUserId(), dto);
             if (!ok) return NotFound();
 

@@ -10,12 +10,29 @@
     <div class="max-w-xl mx-auto rounded-2xl bg-white p-8 shadow-md">
         <h1 class="mb-6 text-xl font-bold text-gray-800">✏️ Chỉnh sửa hồ sơ</h1>
 
-        <form asp-action="Edit" method="post">
+        <!-- enctype=multipart/form-data: BẮT BUỘC khi upload file -->
+        <form asp-action="Edit" method="post" enctype="multipart/form-data">
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="Id" />
 
             <!-- Tóm tắt lỗi chung -->
             <div asp-validation-summary="ModelOnly" class="mb-3 text-sm text-red-600"></div>
+
+            <!-- Preview ảnh đại diện -->
+            <div class="mb-5 text-center">
+                <img id="avatarPreview"
+                     src="@(string.IsNullOrEmpty(Model.CurrentAvatarUrl) ? "https://placehold.co/120x120?text=Avatar" : Model.CurrentAvatarUrl)"
+                     class="mx-auto h-28 w-28 rounded-full border-4 border-gray-200 object-cover" />
+            </div>
+
+            <!-- Ô chọn ảnh -->
+            <div class="mb-4">
+                <label asp-for="AvatarFile" class="mb-1 block text-sm font-medium text-gray-700"></label>
+                <input asp-for="AvatarFile" type="file" accept="image/*" onchange="previewAvatar(this)"
+                       class="block w-full rounded-lg border border-gray-300 text-sm
+                file:mr-4 file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-indigo-700" />
+                <span asp-validation-for="AvatarFile" class="text-sm text-red-600"></span>
+            </div>
 
             <!-- Họ tên -->
             <div class="mb-4">
@@ -57,4 +74,14 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Xem trước ảnh ngay khi chọn, chưa cần upload lên server
+        function previewAvatar(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => document.getElementById('avatarPreview').src = e.target.result;
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
 }
