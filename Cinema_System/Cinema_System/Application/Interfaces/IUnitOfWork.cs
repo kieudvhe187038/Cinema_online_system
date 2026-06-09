@@ -10,5 +10,11 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<SystemConfig> SystemConfigs { get; }
 
+    IGenericRepository<SeatType> SeatTypes { get; }
+
+    IGenericRepository<Seat> Seats { get; }
+
+    IGenericRepository<PriceSeatConfig> PriceSeatConfigs { get; }
+
     Task<int> SaveChangesAsync();
 }
