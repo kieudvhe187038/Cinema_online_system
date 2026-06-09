@@ -1,4 +1,5 @@
 using Cinema_System.Application.Interfaces;
+using Cinema_System.Domain.Entities;
 using Cinema_System.Infrastructure.Data;
 using Cinema_System.Infrastructure.Repositories;
 
@@ -15,9 +16,12 @@ public class UnitOfWork : IUnitOfWork
     {
         _context = context;
         Users = new UserRepository(_context);
+        Roles = new GenericRepository<Role>(_context);
     }
 
     public IUserRepository Users { get; }
+
+    public IGenericRepository<Role> Roles { get; }
 
     public Task<int> SaveChangesAsync() => _context.SaveChangesAsync();
 

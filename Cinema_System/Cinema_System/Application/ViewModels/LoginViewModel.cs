@@ -17,7 +17,7 @@ public class LoginViewModel
     [Display(Name = "Mật khẩu")]
     public string Password { get; set; } = null!;
 
-    [Display(Name = "Ghi nhớ đăng nhập")]
+    [Display(Name = "Lưu thông tin đăng nhập")]
     public bool RememberMe { get; set; }
 
     public string? ReturnUrl { get; set; }

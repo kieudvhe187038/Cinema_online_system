@@ -1,0 +1,89 @@
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>@ViewData["Title"] | CineStar</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary-container": "#f37021",
+                        "surface-container-low": "#f3f4f5",
+                        "outline-variant": "#e0c0b2",
+                        "secondary": "#265fa2",
+                        "on-background": "#191c1d",
+                        "surface": "#f8f9fa",
+                        "error-container": "#ffdad6",
+                        "on-error": "#ffffff",
+                        "surface-variant": "#e1e3e4",
+                        "on-primary-container": "#541f00",
+                        "error": "#ba1a1a",
+                        "on-surface-variant": "#584237",
+                        "on-primary": "#ffffff",
+                        "primary": "#a04100",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container": "#edeeef",
+                        "on-surface": "#191c1d",
+                        "on-error-container": "#93000a",
+                        "background": "#f8f9fa",
+                        "outline": "#8c7166"
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                    spacing: { "sm": "12px", "md": "24px", "gutter": "24px", "xs": "4px", "xl": "80px", "lg": "48px", "base": "8px" },
+                    fontFamily: {
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "body-md": ["Be Vietnam Pro"],
+                        "label-sm": ["Be Vietnam Pro"],
+                        "label-md": ["Be Vietnam Pro"],
+                        "display-lg": ["Plus Jakarta Sans"]
+                    },
+                    fontSize: {
+                        "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "1.2", "fontWeight": "500" }],
+                        "label-md": ["14px", { "lineHeight": "1.2", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800" }]
+                    }
+                }
+            }
+        };
+    </script>
+    <style>
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .login-bg-overlay { background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.8)); }
+        .cinematic-shadow { box-shadow: 0px 4px 20px rgba(38, 95, 162, 0.1); }
+    </style>
+</head>
+<body class="bg-surface font-body-md text-on-surface">
+    <main class="min-h-screen flex items-center justify-center py-lg">
+        <div class="absolute inset-0 z-0 overflow-hidden">
+            <img alt="" class="w-full h-full object-cover"
+                 src="https://lh3.googleusercontent.com/aida-public/AB6AXuBqJjSqzDUw1cfaWFnEJgv1fx7bA1u2VNSxXf6cAddhDvzDr-uySr3my1_vyPEIh6nSs7po-Du71asopYkQy8cOVwTTNldjmJUcfXG3yAg9RKf7XyTcYndvsFZ6VH5gTWE-gGStHzPklnMA8Z-3fnb2upPbxhqOCgNkdDYcI2G8Q8YI1slq3FKAKtpWpB2m0W9Bd-fu1cbs6XiTTQdbVAXYGgQV8l8_l34XJJXoXtQM0ejvcls3ObnScLth3hmj4wawLaMgS5Xe6SU" />
+            <div class="absolute inset-0 login-bg-overlay"></div>
+        </div>
+        <div class="relative z-10 w-full @(ViewData["CardWidth"] as string ?? "max-w-md") px-gutter md:px-0">
+            <div class="bg-surface-container-lowest rounded-xl p-8 cinematic-shadow border border-outline-variant/10">
+                @RenderBody()
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Hiệu ứng focus nhẹ cho các ô nhập (dùng chung mọi trang auth)
+        document.querySelectorAll('input[type="text"], input[type="email"], input[type="password"], input[type="tel"], input[type="date"]').forEach(input => {
+            input.addEventListener('focus', () => input.parentElement.classList.add('scale-[1.01]', 'transition-transform'));
+            input.addEventListener('blur', () => input.parentElement.classList.remove('scale-[1.01]'));
+        });
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -11,4 +11,10 @@ public interface IUserRepository : IGenericRepository<User>
     /// Lấy User theo email (kèm thông tin Role) phục vụ đăng nhập.
     /// </summary>
     Task<User?> GetByEmailWithRoleAsync(string email);
+
+    /// <summary>Kiểm tra email đã tồn tại hay chưa.</summary>
+    Task<bool> EmailExistsAsync(string email);
+
+    /// <summary>Kiểm tra số điện thoại đã tồn tại hay chưa.</summary>
+    Task<bool> PhoneExistsAsync(string phone);
 }

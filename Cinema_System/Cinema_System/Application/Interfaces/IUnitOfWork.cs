@@ -1,3 +1,5 @@
+using Cinema_System.Domain.Entities;
+
 namespace Cinema_System.Application.Interfaces;
 
 /// <summary>
@@ -6,6 +8,8 @@ namespace Cinema_System.Application.Interfaces;
 public interface IUnitOfWork : IDisposable
 {
     IUserRepository Users { get; }
+
+    IGenericRepository<Role> Roles { get; }
 
     Task<int> SaveChangesAsync();
 }
