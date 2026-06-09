@@ -1,11 +1,12 @@
 @model MovieFormViewModel
 @{
     ViewData["Title"] = "Sửa Phim";
+    Layout = "~/Views/Shared/_ManagerLayout.cshtml";
 }
 
 @section Styles {
 <style>
-    .mf-wrap { max-width: 860px; margin: 6rem auto 3rem; padding: 0 1.5rem; }
+    .mf-wrap { max-width: 860px; margin: 0 auto 2rem; padding: 0; }
     .mf-title { font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: var(--on-surface); margin-bottom: 1.5rem; }
     .mf-card { background: var(--white); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); padding: 1.75rem; margin-bottom: 1.25rem; }
     .mf-section-title { font-weight: 700; font-size: 1rem; color: var(--on-surface); margin-bottom: 1rem; padding-bottom: .5rem; border-bottom: 2px solid var(--surface-container); }

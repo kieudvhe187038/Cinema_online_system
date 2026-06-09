@@ -13,7 +13,7 @@ public interface IMovieService
     Task<MovieDTO?> GetMovieByIdAsync(Guid id);
 
     Task<IEnumerable<GenreDTO>> GetAllGenresAsync();
-    Task<MovieListViewModel> GetMoviesForAdminAsync(string? search, string? status, int page, int pageSize);
+    Task<MovieListViewModel> GetMoviesForAdminAsync(string? search, string? status, string? genre, int page, int pageSize);
     Task<MovieFormViewModel?> GetForEditAsync(Guid id);
     Task<Result> CreateAsync(MovieFormViewModel model);
     Task<Result> UpdateAsync(MovieFormViewModel model);

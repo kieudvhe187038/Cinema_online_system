@@ -11,4 +11,6 @@ public class MovieListViewModel
     public int TotalCount { get; set; }
     public string? Search { get; set; }
     public string? StatusFilter { get; set; }
+    public string? GenreFilter { get; set; }
+    public List<GenreDTO> AvailableGenres { get; set; } = new();
 }
