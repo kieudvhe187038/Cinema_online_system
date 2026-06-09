@@ -92,5 +92,27 @@ namespace Cinema_System.Controllers
             TempData["Success"] = "Cập nhật hồ sơ thành công!";
             return RedirectToAction("Index");
         }
+
+        // ===== 4. ĐỔI MẬT KHẨU =====
+        public IActionResult ChangePassword() => View(new ChangePasswordViewModel());
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangePassword(ChangePasswordViewModel vm)
+        {
+            if (!ModelState.IsValid) return View(vm);
+
+            var (ok, error) = await _profileService.ChangePasswordAsync(
+                GetCurrentUserId(), vm.OldPassword, vm.NewPassword);
+
+            if (!ok)
+            {
+                ModelState.AddModelError("OldPassword", error ?? "Đổi mật khẩu thất bại");
+                return View(vm);
+            }
+
+            TempData["Success"] = "Đổi mật khẩu thành công!";
+            return RedirectToAction("Index");
+        }
     }
 }
