@@ -18,6 +18,7 @@ builder.Services.AddScoped<IMovieService, MovieService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IPointConfigService, PointConfigService>();
 builder.Services.AddScoped<ISeatTypeService, SeatTypeService>();
+builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
 
 var app = builder.Build();
 
