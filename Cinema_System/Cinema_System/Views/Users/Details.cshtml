@@ -1,0 +1,121 @@
+@model UserDTO
+@{
+    ViewData["Title"] = "Chi Tiết Người Dùng";
+    var roles = ViewBag.Roles as IEnumerable<Cinema_System.Application.DTOs.RoleDTO>
+        ?? new List<Cinema_System.Application.DTOs.RoleDTO>();
+    var isActive = Model.Status == "Active";
+}
+
+@section Styles {
+    <style>
+        .ud-wrap { max-width: 880px; margin: 6rem auto 3rem; padding: 0 1.5rem; }
+        .ud-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .ud-title { font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: var(--on-surface); }
+        .ud-alert { padding: .75rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: .9rem; }
+        .ud-alert.success { background: #e7f5ec; color: #166534; border: 1px solid #16653433; }
+        .ud-alert.error { background: #fde8e8; color: #b91c1c; border: 1px solid #b91c1c33; }
+        .ud-temp { background: #fff7ed; border: 1px dashed var(--primary); color: var(--primary-dark); padding: 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-weight: 600; }
+        .ud-temp code { background: var(--white); padding: .25rem .6rem; border-radius: var(--radius); font-size: 1.05rem; letter-spacing: .5px; }
+        .ud-card { background: var(--white); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); padding: 1.75rem; margin-bottom: 1.5rem; }
+        .ud-grid { display: grid; grid-template-columns: 180px 1fr; gap: .85rem 1rem; }
+        .ud-label { color: var(--on-surface-variant); font-weight: 600; }
+        .ud-value { color: var(--on-surface); }
+        .ud-chip { display: inline-block; padding: .2rem .6rem; border-radius: 999px; font-size: .75rem; font-weight: 600; }
+        .ud-chip.active { background: #e7f5ec; color: #166534; }
+        .ud-chip.inactive { background: #fde8e8; color: #b91c1c; }
+        .ud-section-title { font-family: var(--font-head); font-weight: 700; margin-bottom: 1rem; color: var(--on-surface); }
+        .ud-row { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
+        .ud-row select { padding: .55rem .75rem; border: 1px solid var(--outline-variant); border-radius: var(--radius); background: var(--white); }
+        .ud-btn { padding: .55rem 1.1rem; border: none; border-radius: var(--radius); font-weight: 600; cursor: pointer; font-family: var(--font-body); text-decoration: none; display: inline-flex; align-items: center; }
+        .ud-btn-primary { background: var(--primary); color: var(--white); }
+        .ud-btn-primary:hover { background: var(--primary-dark); }
+        .ud-btn-secondary { background: var(--secondary); color: var(--white); }
+        .ud-btn-secondary:hover { background: var(--secondary-dark); }
+        .ud-btn-ghost { background: var(--surface-container); color: var(--on-surface); }
+        .ud-btn-danger { background: #dc2626; color: var(--white); }
+    </style>
+}
+
+<div class="ud-wrap">
+    <div class="ud-top">
+        <h1 class="ud-title">@Model.FullName</h1>
+        <a class="ud-btn ud-btn-ghost" href="@Url.Action("Index", "Users")">← Danh sách</a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="ud-alert success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="ud-alert error">@TempData["Error"]</div>
+    }
+    @if (TempData["TempPassword"] != null)
+    {
+        <div class="ud-temp">
+            Mật khẩu tạm: <code>@TempData["TempPassword"]</code>
+            <div style="font-weight:400;font-size:.85rem;margin-top:.5rem;color:var(--on-surface-variant)">
+                Mật khẩu chỉ hiển thị một lần. Hãy gửi cho người dùng và yêu cầu đổi lại sau khi đăng nhập.
+            </div>
+        </div>
+    }
+
+    <div class="ud-card">
+        <div class="ud-grid">
+            <span class="ud-label">Email</span><span class="ud-value">@Model.Email</span>
+            <span class="ud-label">Số điện thoại</span><span class="ud-value">@(string.IsNullOrEmpty(Model.Phone) ? "—" : Model.Phone)</span>
+            <span class="ud-label">Ngày sinh</span><span class="ud-value">@Model.DateOfBirth.ToString("dd/MM/yyyy")</span>
+            <span class="ud-label">Vai trò</span><span class="ud-value">@Model.RoleName</span>
+            <span class="ud-label">Điểm thưởng</span><span class="ud-value">@Model.RewardPoints</span>
+            <span class="ud-label">Trạng thái</span>
+            <span class="ud-value">
+                <span class="ud-chip @(isActive ? "active" : "inactive")">@(isActive ? "Đang hoạt động" : "Vô hiệu")</span>
+            </span>
+            <span class="ud-label">Ngày tạo</span><span class="ud-value">@(Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "—")</span>
+        </div>
+    </div>
+
+    <div class="ud-card">
+        <h3 class="ud-section-title">Phân quyền vai trò</h3>
+        <form method="post" action="@Url.Action("AssignRole", "Users")" class="ud-row">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.Id" />
+            <select name="roleId">
+                @foreach (var role in roles)
+                {
+                    <option value="@role.Id" selected="@(role.Id == Model.RoleId)">@role.Name</option>
+                }
+            </select>
+            <button type="submit" class="ud-btn ud-btn-secondary">Cập nhật vai trò</button>
+        </form>
+    </div>
+
+    <div class="ud-card">
+        <h3 class="ud-section-title">Thao tác tài khoản</h3>
+        <div class="ud-row">
+            <a class="ud-btn ud-btn-primary" href="@Url.Action("Edit", "Users", new { id = Model.Id })">Sửa thông tin</a>
+
+            <form method="post" action="@Url.Action("ResetPassword", "Users")" style="display:inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button type="submit" class="ud-btn ud-btn-secondary"
+                        onclick="return confirm('Đặt lại mật khẩu cho người dùng này?');">Reset mật khẩu</button>
+            </form>
+
+            <form method="post" action="@Url.Action("ToggleStatus", "Users")" style="display:inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <input type="hidden" name="active" value="@(isActive ? "false" : "true")" />
+                @if (isActive)
+                {
+                    <button type="submit" class="ud-btn ud-btn-danger"
+                            onclick="return confirm('Vô hiệu hóa tài khoản này?');">Vô hiệu hóa</button>
+                }
+                else
+                {
+                    <button type="submit" class="ud-btn ud-btn-secondary">Kích hoạt</button>
+                }
+            </form>
+        </div>
+    </div>
+</div>
