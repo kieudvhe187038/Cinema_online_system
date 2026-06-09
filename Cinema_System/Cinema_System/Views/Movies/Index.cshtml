@@ -73,7 +73,7 @@
                         </div>
                         @if (!string.IsNullOrEmpty(movie.Description))
                         {
-                            <p class="movie-description" title="@movie.Description">@movie.Description.Substring(0, Math.Min(50, movie.Description.Length))...</p>
+                            <p class="movie-description" title="@movie.Description">@movie.Description?.Substring(0, Math.Min(50, movie.Description?.Length ?? 0))...</p>
                         }
                     </div>
                 </div>

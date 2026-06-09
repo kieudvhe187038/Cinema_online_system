@@ -4,7 +4,6 @@ using Cinema_System.Application.DTOs;
 using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
 using Cinema_System.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace Cinema_System.Application.Services;
 
@@ -31,7 +30,7 @@ public class UserService : IUserService
 
         var users = (await _unitOfWork.Users.GetAllAsync(
             predicate,
-            include: q => q.Include(u => u.Role),
+            includeProperties: new[] { "Role" },
             orderBy: q => q.OrderByDescending(u => u.CreatedAt))).ToList();
 
         var totalCount = users.Count;
@@ -63,7 +62,7 @@ public class UserService : IUserService
     {
         var user = await _unitOfWork.Users.FirstOrDefaultAsync(
             u => u.Id == id,
-            include: q => q.Include(u => u.Role));
+            includeProperties: new[] { "Role" });
 
         return user is null ? null : MapToDTO(user);
     }

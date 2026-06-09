@@ -8,5 +8,6 @@ public interface IMovieService
     Task<IEnumerable<MovieDTO>> GetNowShowingMoviesAsync();
     Task<IEnumerable<MovieDTO>> GetComingSoonMoviesAsync();
     Task<IEnumerable<MovieDTO>> GetSpecialShowtimeMoviesAsync();
-    Task<MovieDTO> GetMovieByIdAsync(Guid id);
+    Task<MovieDTO?> GetMovieByIdAsync(Guid id);
+    Task<Cinema_System.Application.ViewModels.MoviesPageViewModel> GetMoviesPageAsync(string tab, int page, int pageSize);
 }

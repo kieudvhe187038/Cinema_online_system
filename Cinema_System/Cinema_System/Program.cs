@@ -1,4 +1,5 @@
 using Cinema_System.Application.Interfaces;
+using Cinema_System.Application.Mappings;
 using Cinema_System.Application.Services;
 using Cinema_System.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddAutoMapper(typeof(MovieMappingProfile).Assembly);
 
 var connectionStr = builder.Configuration.GetConnectionString("MyCnn");
 builder.Services.AddDbContext<CinemaWebDbContext>(options =>
