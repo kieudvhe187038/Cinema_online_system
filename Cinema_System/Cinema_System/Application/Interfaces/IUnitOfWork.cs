@@ -24,5 +24,7 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<Movie> Movies { get; }
 
+    IGenericRepository<Genre> Genres { get; }
+
     Task<int> SaveChangesAsync();
 }

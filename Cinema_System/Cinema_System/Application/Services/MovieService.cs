@@ -1,5 +1,7 @@
+using System.Linq;
 using Cinema_System.Application.DTOs;
 using Cinema_System.Application.Interfaces;
+using Cinema_System.Domain.Entities;
 
 namespace Cinema_System.Application.Services;
 
@@ -14,33 +16,33 @@ public class MovieService : IMovieService
         _mapper = mapper;
     }
 
-        public async Task<Cinema_System.Application.ViewModels.MoviesPageViewModel> GetMoviesPageAsync(string tab, int page, int pageSize)
+    public async Task<Cinema_System.Application.ViewModels.MoviesPageViewModel> GetMoviesPageAsync(string tab, int page, int pageSize)
+    {
+        IEnumerable<MovieDTO> source = tab?.ToLower() switch
         {
-            IEnumerable<MovieDTO> source = tab?.ToLower() switch
-            {
-                "coming" => (await GetComingSoonMoviesAsync()).ToList(),
-                "special" => (await GetSpecialShowtimeMoviesAsync()).ToList(),
-                _ => (await GetNowShowingMoviesAsync()).ToList(),
-            };
+            "coming" => (await GetComingSoonMoviesAsync()).ToList(),
+            "special" => (await GetSpecialShowtimeMoviesAsync()).ToList(),
+            _ => (await GetNowShowingMoviesAsync()).ToList(),
+        };
 
-            var totalCount = source.Count();
-            var totalPages = totalCount == 0 ? 1 : (int)Math.Ceiling(totalCount / (double)pageSize);
-            if (page < 1) page = 1;
-            if (page > totalPages) page = totalPages;
+        var totalCount = source.Count();
+        var totalPages = totalCount == 0 ? 1 : (int)Math.Ceiling(totalCount / (double)pageSize);
+        if (page < 1) page = 1;
+        if (page > totalPages) page = totalPages;
 
-            var items = source.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+        var items = source.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
-            var vm = new Cinema_System.Application.ViewModels.MoviesPageViewModel
-            {
-                SelectedTab = tab?.ToLower() ?? "now",
-                Movies = items,
-                CurrentPage = page,
-                TotalPages = totalPages,
-                PageSize = pageSize
-            };
+        var vm = new Cinema_System.Application.ViewModels.MoviesPageViewModel
+        {
+            SelectedTab = tab?.ToLower() ?? "now",
+            Movies = items,
+            CurrentPage = page,
+            TotalPages = totalPages,
+            PageSize = pageSize
+        };
 
-            return vm;
-        }
+        return vm;
+    }
 
     public async Task<IEnumerable<MovieDTO>> GetAllMoviesAsync()
     {
@@ -69,6 +71,67 @@ public class MovieService : IMovieService
         );
 
         return _mapper.Map<IEnumerable<MovieDTO>>(movies);
+    }
+
+    public async Task<IEnumerable<MovieDTO>> GetFilteredMoviesAsync(string? genre, string? ageRating, string? status)
+    {
+        var movies = await _unitOfWork.Movies.GetAllAsync(
+            includeProperties: new[] { "Showtimes", "Genres" }
+        );
+
+        var filtered = movies.Where(m =>
+            (string.IsNullOrWhiteSpace(genre) || (m.Genres != null && m.Genres.Any(g => string.Equals(g.Name, genre, StringComparison.OrdinalIgnoreCase)))) &&
+            (string.IsNullOrWhiteSpace(ageRating) || string.Equals(m.AgeRating, ageRating, StringComparison.OrdinalIgnoreCase)) &&
+            (string.IsNullOrWhiteSpace(status) || string.Equals(m.Status, status, StringComparison.OrdinalIgnoreCase))
+        );
+
+        return _mapper.Map<IEnumerable<MovieDTO>>(filtered);
+    }
+
+    public async Task<IEnumerable<string>> GetAllGenresAsync()
+    {
+        var genres = await _unitOfWork.Genres.GetAllAsync(
+            orderBy: q => q.OrderBy(g => g.Name)
+        );
+
+        return genres
+            .Select(g => g.Name)
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(name => name)
+            .ToList();
+    }
+
+    public async Task<IEnumerable<string>> GetAllAgeRatingsAsync()
+    {
+        var movies = await _unitOfWork.Movies.GetAllAsync();
+        var ratings = movies
+            .Select(m => m.AgeRating)
+            .Where(rating => !string.IsNullOrWhiteSpace(rating))
+            .Select(rating => rating!)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var order = new List<string> { "P", "C13", "C16", "C18" };
+        return ratings
+            .OrderBy(rating =>
+            {
+                var index = order.FindIndex(x => string.Equals(x, rating, StringComparison.OrdinalIgnoreCase));
+                return index >= 0 ? index : order.Count;
+            })
+            .ThenBy(rating => rating, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    public async Task<IEnumerable<string>> GetAllMovieStatusesAsync()
+    {
+        var movies = await _unitOfWork.Movies.GetAllAsync();
+        return movies
+            .Select(m => m.Status)
+            .Where(status => !string.IsNullOrWhiteSpace(status))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(status => status)
+            .ToList()!;
     }
 
     public async Task<MovieDTO?> GetMovieByIdAsync(Guid id)

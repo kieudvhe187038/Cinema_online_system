@@ -2,6 +2,17 @@
 @using Cinema_System.Application.ViewModels;
 @model HomeViewModel
 
+@functions {
+    private static string AgeRatingLabel(string rating) => rating switch
+    {
+        "P" => "P - Phù hợp mọi lứa tuổi",
+        "C13" => "C13 - Trên 13 tuổi",
+        "C16" => "C16 - Trên 16 tuổi",
+        "C18" => "C18 - Trên 18 tuổi",
+        _ => rating
+    };
+}
+
 @{
     ViewData["Title"] = "Home Page";
 }
@@ -35,44 +46,125 @@
 
 <!-- scripts intentionally removed: homepage uses full sections, not tabbed panes -->
 
-<!-- Quick Booking Bar -->
+<!-- Movie Filter Bar -->
 <section class="quick-book-section">
-    <div class="quick-book-card">
+    <form asp-controller="Home" asp-action="Index" method="get" class="quick-book-card">
         <div class="book-field">
             <label>
-                <span class="material-symbols-outlined">movie</span> CHỌN PHIM
+                <span class="material-symbols-outlined">category</span> THỂ LOẠI
             </label>
-            <select>
-                <option>Tất cả các phim</option>
-                <option>Chiến Binh Cuối Cùng</option>
-                <option>Minions: Sự Trỗi Dậy</option>
+            <select name="genre">
+                <option value="">Tất cả thể loại</option>
+                @foreach (var genre in Model.AvailableGenres)
+                {
+                    <option value="@genre" selected="@(Model.SelectedGenre == genre)">@genre</option>
+                }
             </select>
         </div>
         <div class="book-field">
             <label>
-                <span class="material-symbols-outlined">calendar_today</span> CHỌN NGÀY
+                <span class="material-symbols-outlined">safe</span> ĐỘ TUỔI
             </label>
-            <select>
-                <option>Hôm nay, 24/05</option>
-                <option>Thứ 7, 25/05</option>
-                <option>Chủ nhật, 26/05</option>
+            <select name="ageRating">
+                <option value="">Tất cả độ tuổi</option>
+                @foreach (var rating in Model.AvailableAgeRatings)
+                {
+                    <option value="@rating" selected="@(Model.SelectedAgeRating == rating)">@AgeRatingLabel(rating)</option>
+                }
             </select>
         </div>
         <div class="book-field">
             <label>
-                <span class="material-symbols-outlined">schedule</span> SUẤT CHIẾU
+                <span class="material-symbols-outlined">movie_filter</span> TRẠNG THÁI
             </label>
-            <select>
-                <option>Chọn suất chiếu</option>
-                <option>18:30 - 2D</option>
-                <option>20:45 - 3D</option>
+            <select name="status">
+                <option value="">Tất cả trạng thái</option>
+                @foreach (var item in Model.AvailableStatuses)
+                {
+                    <option value="@item" selected="@(Model.SelectedStatus == item)">@item</option>
+                }
             </select>
         </div>
-        <button class="btn-primary book-submit">
-            <span class="material-symbols-outlined">confirmation_number</span> ĐẶT VÉ NHANH
+        <button type="submit" class="btn-primary book-submit">
+            <span class="material-symbols-outlined">filter_alt</span> Lọc phim
         </button>
-    </div>
+        <a asp-controller="Home" asp-action="Index" class="btn-ghost book-submit">Xóa lọc</a>
+    </form>
 </section>
+
+@if (!string.IsNullOrWhiteSpace(Model.SelectedGenre) || !string.IsNullOrWhiteSpace(Model.SelectedAgeRating) || !string.IsNullOrWhiteSpace(Model.SelectedStatus))
+{
+    <section class="movies-section">
+        <div class="section-header">
+            <div>
+                <h2 class="section-title">
+                    <span class="title-bar"></span>
+                    KẾT QUẢ LỌC PHIM
+                </h2>
+                <p class="section-subtitle">
+                    @if (!string.IsNullOrWhiteSpace(Model.SelectedGenre)) { <span>Thể loại: <strong>@Model.SelectedGenre</strong></span>; }
+                    @if (!string.IsNullOrWhiteSpace(Model.SelectedAgeRating)) { <span>Độ tuổi: <strong>@AgeRatingLabel(Model.SelectedAgeRating)</strong></span>; }
+                    @if (!string.IsNullOrWhiteSpace(Model.SelectedStatus)) { <span>Trạng thái: <strong>@Model.SelectedStatus</strong></span>; }
+                </p>
+            </div>
+        </div>
+        <div class="movies-grid">
+            @if (Model.FilteredMovies != null && Model.FilteredMovies.Any())
+            {
+                @foreach (var movie in Model.FilteredMovies)
+                {
+                    <div class="movie-card">
+                        <div class="movie-poster">
+                            @if (!string.IsNullOrEmpty(movie.PosterUrl))
+                            {
+                                <img src="@movie.PosterUrl" alt="@movie.Title" onerror="this.src='https://placehold.co/250x350?text=@Uri.EscapeDataString(movie.Title)&font=raleway'" />
+                            }
+                            else
+                            {
+                                <img src="https://placehold.co/250x350?text=@Uri.EscapeDataString(movie.Title)&font=raleway" alt="@movie.Title" />
+                            }
+                            <div class="movie-badges">
+                                @if (!string.IsNullOrEmpty(movie.Language))
+                                {
+                                    <span class="badge-format">@movie.Language</span>
+                                }
+                                @if (!string.IsNullOrEmpty(movie.AgeRating))
+                                {
+                                    <span class="badge-age">@movie.AgeRating</span>
+                                }
+                            </div>
+                            <div class="movie-overlay">
+                                <button class="btn-primary btn-buy">MUA VÉ NGAY</button>
+                                <button class="btn-detail">XEM CHI TIẾT</button>
+                            </div>
+                        </div>
+                        <div class="movie-info">
+                            <h3 class="movie-title">@movie.Title</h3>
+                            <div class="movie-meta">
+                                @if (!string.IsNullOrEmpty(movie.Director))
+                                {
+                                    <span>Đạo diễn: @movie.Director</span>
+                                }
+                                @if (movie.DurationMinutes.HasValue)
+                                {
+                                    <span class="movie-duration"><span class="material-symbols-outlined">schedule</span> @movie.DurationMinutes phút</span>
+                                }
+                            </div>
+                            @if (!string.IsNullOrEmpty(movie.Description))
+                            {
+                                <p class="movie-description" title="@movie.Description">@movie.Description.Substring(0, Math.Min(50, movie.Description.Length))...</p>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="no-movies"><p>Không tìm thấy phim phù hợp với bộ lọc.</p></div>
+            }
+        </div>
+    </section>
+}
 
 <!-- preserved original homepage layout: no tab controls here -->
 
