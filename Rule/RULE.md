@@ -37,8 +37,8 @@
 - **Data Access Rule:** Controllers MUST call Services -> Services MUST call UnitOfWork/Repositories -> Repositories interact with DB. Do NOT bypass layers.
 
 ## 5. Automated Knowledge Synchronization (MEM.md Rule)
-- Inside the `.claude/` folder, there is a file named `MEM.md` which acts as the shared team memory for all project modifications, bug fixes, database schema changes, and technical decisions.
-- **Your Responsibility:** At the end of EVERY task (when you successfully fix a bug, refactor code, change the database, or add a new feature), you MUST automatically inspect, update, or append the modification details into `.claude/MEM.md`.
+- Inside the `Rule/` folder, there is a file named `MEM.md` which acts as the shared team memory for all project modifications, bug fixes, database schema changes, and technical decisions.
+- **Your Responsibility:** At the end of EVERY task (when you successfully fix a bug, refactor code, change the database, or add a new feature), you MUST automatically inspect, update, or append the modification details into `Rule/MEM.md`.
 - **Formatting Rule for MEM.md:** You must preserve the existing content and append a new log entry using the following Markdown structure:
 ```text
   ### [YYYY-MM-DD] <Feature/Bug Name> (By: <user-name-from-commit>)

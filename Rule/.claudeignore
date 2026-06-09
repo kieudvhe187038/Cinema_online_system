@@ -1,7 +1,7 @@
-# Bỏ qua thư mục build và thư viện
 bin/
 obj/
+.vs/
+.git/
+publish/
 node_modules/
-.next/
-dist/
-out/
+*.log

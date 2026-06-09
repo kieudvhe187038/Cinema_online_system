@@ -1,0 +1,224 @@
+<!DOCTYPE html><html class="light" lang="vi" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Đăng Nhập | CineStar - Trải Nghiệm Điện Ảnh Đỉnh Cao</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary-fixed-dim": "#a6c8ff",
+                    "secondary-container": "#83b5fe",
+                    "primary-container": "#f37021",
+                    "surface-container-low": "#f3f4f5",
+                    "on-tertiary-fixed-variant": "#234873",
+                    "outline-variant": "#e0c0b2",
+                    "secondary": "#265fa2",
+                    "on-secondary-fixed-variant": "#004786",
+                    "on-background": "#191c1d",
+                    "surface": "#f8f9fa",
+                    "surface-container-high": "#e7e8e9",
+                    "error-container": "#ffdad6",
+                    "on-tertiary-container": "#02305a",
+                    "on-error": "#ffffff",
+                    "tertiary-container": "#7799c9",
+                    "surface-variant": "#e1e3e4",
+                    "inverse-primary": "#ffb693",
+                    "secondary-fixed": "#d4e3ff",
+                    "primary-fixed-dim": "#ffb693",
+                    "inverse-surface": "#2e3132",
+                    "on-primary-container": "#541f00",
+                    "on-tertiary": "#ffffff",
+                    "tertiary": "#3d608c",
+                    "error": "#ba1a1a",
+                    "on-surface-variant": "#584237",
+                    "inverse-on-surface": "#f0f1f2",
+                    "on-primary": "#ffffff",
+                    "tertiary-fixed-dim": "#a6c9fb",
+                    "primary": "#a04100",
+                    "surface-bright": "#f8f9fa",
+                    "on-tertiary-fixed": "#001c39",
+                    "surface-dim": "#d9dadb",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-tint": "#a04100",
+                    "on-primary-fixed": "#341000",
+                    "surface-container": "#edeeef",
+                    "on-secondary-fixed": "#001c3a",
+                    "on-primary-fixed-variant": "#7a3000",
+                    "surface-container-highest": "#e1e3e4",
+                    "primary-fixed": "#ffdbcb",
+                    "on-surface": "#191c1d",
+                    "on-error-container": "#93000a",
+                    "tertiary-fixed": "#d3e3ff",
+                    "on-secondary": "#ffffff",
+                    "background": "#f8f9fa",
+                    "outline": "#8c7166",
+                    "on-secondary-container": "#004684"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "sm": "12px",
+                    "md": "24px",
+                    "gutter": "24px",
+                    "xs": "4px",
+                    "xl": "80px",
+                    "lg": "48px",
+                    "container-max": "1280px",
+                    "base": "8px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "body-md": ["Be Vietnam Pro"],
+                    "body-lg": ["Be Vietnam Pro"],
+                    "headline-lg-mobile": ["Plus Jakarta Sans"],
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "label-sm": ["Be Vietnam Pro"],
+                    "label-md": ["Be Vietnam Pro"],
+                    "display-lg": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                    "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                    "label-sm": ["12px", {"lineHeight": "1.2", "fontWeight": "500"}],
+                    "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .login-bg-overlay {
+            background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.8));
+        }
+        .cinematic-shadow {
+            box-shadow: 0px 4px 20px rgba(38, 95, 162, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-surface font-body-md text-on-surface">
+<!-- Header Section (Suppressed per task context for focused Login but using style guidance for brand logic) -->
+
+<main class="min-h-screen flex items-center justify-center pt-[80px] pb-lg">
+<!-- Split Layout / Background Container -->
+<div class="absolute inset-0 z-0 overflow-hidden">
+<img alt="" class="w-full h-full object-cover" data-alt="A wide cinematic interior of a luxury modern movie theater at night. The seating area is empty with soft ambient blue lighting on the aisles and glowing orange highlights on the screen periphery. The atmosphere is quiet, expectant, and highly premium, capturing a mood of cinematic anticipation with a rich color palette of deep blues and vibrant orange accents." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBqJjSqzDUw1cfaWFnEJgv1fx7bA1u2VNSxXf6cAddhDvzDr-uySr3my1_vyPEIh6nSs7po-Du71asopYkQy8cOVwTTNldjmJUcfXG3yAg9RKf7XyTcYndvsFZ6VH5gTWE-gGStHzPklnMA8Z-3fnb2upPbxhqOCgNkdDYcI2G8Q8YI1slq3FKAKtpWpB2m0W9Bd-fu1cbs6XiTTQdbVAXYGgQV8l8_l34XJJXoXtQM0ejvcls3ObnScLth3hmj4wawLaMgS5Xe6SU">
+<div class="absolute inset-0 login-bg-overlay"></div>
+</div>
+<!-- Login Card -->
+<div class="relative z-10 w-full max-w-md px-gutter md:px-0">
+<div class="bg-surface-container-lowest rounded-xl p-lg cinematic-shadow border border-outline-variant/10">
+<div class="text-center mb-md"><div class="font-display-lg text-display-lg font-bold text-primary-container mb-sm">CineStar</div>
+<h1 class="font-headline-md text-headline-md text-on-surface mb-xs">Chào Mừng Trở Lại</h1>
+<p class="font-body-md text-on-surface-variant">Đăng nhập để đặt vé và nhận ưu đãi</p>
+</div>
+<form class="space-y-md">
+<!-- Identity Input -->
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface-variant block">Email hoặc Số điện thoại</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant">person</span>
+<input class="w-full pl-lg pr-md py-sm bg-surface-container rounded-lg border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none" placeholder="example@gmail.com" type="text">
+</div>
+</div>
+<!-- Password Input -->
+<div class="space-y-xs">
+<label class="font-label-md text-label-md text-on-surface-variant block">Mật khẩu</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant">lock</span>
+<input class="w-full pl-lg pr-lg py-sm bg-surface-container rounded-lg border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none" placeholder="••••••••" type="password">
+<button class="absolute right-sm top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary" type="button">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+</div>
+</div>
+<!-- Helpers -->
+<div class="flex items-center justify-between">
+<label class="flex items-center gap-xs cursor-pointer group">
+<input class="w-4 h-4 rounded text-primary focus:ring-primary border-outline-variant cursor-pointer" type="checkbox">
+<span class="font-label-sm text-label-sm text-on-surface-variant group-hover:text-on-surface transition-colors">Ghi nhớ đăng nhập</span>
+</label>
+<a class="font-label-sm text-label-sm text-primary hover:underline font-bold" href="#">Quên mật khẩu?</a>
+</div>
+<!-- Submit Action -->
+<button class="w-full bg-primary-container text-on-primary py-sm rounded-lg font-headline-md text-headline-md hover:scale-[1.02] active:scale-95 transition-all duration-200 shadow-lg shadow-primary-container/20" type="submit">
+                        Đăng Nhập
+                    </button>
+</form>
+<!-- Divider -->
+<div class="relative my-lg">
+<div class="absolute inset-0 flex items-center">
+<div class="w-full border-t border-outline-variant/30"></div>
+</div>
+<div class="relative flex justify-center text-label-sm uppercase">
+<span class="bg-surface-container-lowest px-sm text-on-surface-variant">Hoặc đăng nhập với</span>
+</div>
+</div>
+<!-- Social Login -->
+<div class="grid gap-md grid-cols-1">
+<button class="flex items-center justify-center gap-sm py-sm bg-surface-container-lowest border border-outline-variant/30 rounded-lg hover:bg-surface-container-low hover:border-outline-variant/50 transition-all duration-200 shadow-sm active:scale-95 w-full group">
+<img alt="Google" class="w-5 h-5 grayscale group-hover:grayscale-0 transition-all" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3AfUlxVpIhD_c9F8Vf_9Hlwt0gmD3WR8P_bMG0Fh_EUofEjQUINTspxGAZsb9buKQ3ZEnzvvQ_1KMyT8d-NX0l0ZVL6gsWiMfeMW24rJHCv7dIhpahTL-R21ZIaqdirjBCgFTS4nA04543XQfCgkxqDOT8WqkS2SPveZcDtJEan0zmtjVXuehyKEn5M9rVJtqO8P17Iyq8VOx91x4x0XLfnh1Vha0aibdO79Qx1KGS-i-rhk7KCI7QrsV8PzaIiJ1m4QOVMOy4Zw">
+<span class="font-label-md text-label-md text-on-surface font-bold">Tiếp tục với Google</span>
+</button>
+
+</div>
+<!-- Footer Call to Action -->
+<div class="mt-lg text-center">
+<p class="font-body-md text-body-md text-on-surface-variant">
+                        Chưa có tài khoản? 
+                        <a class="text-primary font-bold hover:underline ml-xs" href="#">Đăng ký ngay</a>
+</p>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer Component -->
+
+<script>
+        // Micro-interactions for form focus effects
+        const inputs = document.querySelectorAll('input');
+        inputs.forEach(input => {
+            input.addEventListener('focus', () => {
+                input.parentElement.classList.add('scale-[1.01]');
+                input.parentElement.classList.add('transition-transform');
+            });
+            input.addEventListener('blur', () => {
+                input.parentElement.classList.remove('scale-[1.01]');
+            });
+        });
+
+        // Toggle password visibility
+        const togglePass = document.querySelector('button[type="button"]');
+        if(togglePass) {
+            togglePass.addEventListener('click', () => {
+                const passInput = togglePass.previousElementSibling;
+                const icon = togglePass.querySelector('.material-symbols-outlined');
+                if (passInput.type === 'password') {
+                    passInput.type = 'text';
+                    icon.textContent = 'visibility_off';
+                } else {
+                    passInput.type = 'password';
+                    icon.textContent = 'visibility';
+                }
+            });
+        }
+    </script>
+
+
+</body></html>
