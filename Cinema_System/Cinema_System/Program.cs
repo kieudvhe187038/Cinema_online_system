@@ -17,6 +17,7 @@ builder.Services.AddScoped<IUnitOfWork, Cinema_System.Infrastructure.UnitOfWork.
 builder.Services.AddScoped<IMovieService, MovieService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IPointConfigService, PointConfigService>();
+builder.Services.AddScoped<ISeatTypeService, SeatTypeService>();
 
 var app = builder.Build();
 

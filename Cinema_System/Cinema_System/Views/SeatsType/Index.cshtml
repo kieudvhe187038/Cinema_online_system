@@ -1,0 +1,93 @@
+@model IEnumerable<SeatTypeDTO>
+@{
+    ViewData["Title"] = "Quản Lý Loại Ghế";
+}
+
+@section Styles {
+    <style>
+        .st-wrap { max-width: 1000px; margin: 6rem auto 3rem; padding: 0 1.5rem; }
+        .st-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .st-title { font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: var(--on-surface); }
+        .st-alert { padding: .75rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: .9rem; }
+        .st-alert.success { background: #e7f5ec; color: #166534; border: 1px solid #16653433; }
+        .st-alert.error { background: #fde8e8; color: #b91c1c; border: 1px solid #b91c1c33; }
+        .st-btn { padding: .55rem 1.1rem; border: none; border-radius: var(--radius); font-weight: 600; cursor: pointer; font-family: var(--font-body); text-decoration: none; display: inline-flex; align-items: center; gap: .35rem; }
+        .st-btn-primary { background: var(--primary); color: var(--white); }
+        .st-btn-primary:hover { background: var(--primary-dark); }
+        .st-table { width: 100%; border-collapse: collapse; background: var(--white); border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-sm); }
+        .st-table th, .st-table td { padding: .85rem 1rem; text-align: left; border-bottom: 1px solid var(--surface-container); font-size: .9rem; }
+        .st-table th { background: var(--secondary-dark); color: var(--white); font-weight: 600; }
+        .st-table tr:hover td { background: var(--surface); }
+        .st-name { font-weight: 600; color: var(--on-surface); }
+        .st-tag { display: inline-block; padding: .15rem .55rem; border-radius: 999px; font-size: .75rem; font-weight: 600; background: var(--surface-container); color: var(--on-surface-variant); }
+        .st-actions { display: flex; gap: .5rem; align-items: center; }
+        .st-link { color: var(--secondary); text-decoration: none; font-weight: 600; font-size: .85rem; }
+        .st-link:hover { color: var(--primary); }
+        .st-danger { color: #b91c1c; background: none; border: none; cursor: pointer; font-weight: 600; font-size: .85rem; font-family: var(--font-body); padding: 0; }
+        .st-disabled { color: var(--on-surface-variant); font-size: .8rem; font-style: italic; }
+        .st-empty { text-align: center; padding: 3rem; color: var(--on-surface-variant); }
+    </style>
+}
+
+<div class="st-wrap">
+    <div class="st-top">
+        <h1 class="st-title">Quản Lý Loại Ghế</h1>
+        <a class="st-btn st-btn-primary" href="@Url.Action("Create", "SeatsType")">+ Thêm loại ghế</a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="st-alert success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="st-alert error">@TempData["Error"]</div>
+    }
+
+    @if (Model.Any())
+    {
+        <table class="st-table">
+            <thead>
+                <tr>
+                    <th>Tên loại ghế</th>
+                    <th>Sức chứa</th>
+                    <th>Số ô chiếm</th>
+                    <th>Số ghế đang dùng</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td><span class="st-name">@item.Name</span></td>
+                        <td><span class="st-tag">@item.Capacity người</span></td>
+                        <td><span class="st-tag">@item.ColumnSpan ô</span></td>
+                        <td>@item.SeatCount</td>
+                        <td>
+                            <div class="st-actions">
+                                <a class="st-link" href="@Url.Action("Edit", "SeatsType", new { id = item.Id })">Sửa</a>
+                                @if (item.InUse)
+                                {
+                                    <span class="st-disabled" title="Đang được ghế hoặc cấu hình giá sử dụng">Không thể xóa</span>
+                                }
+                                else
+                                {
+                                    <form method="post" action="@Url.Action("Delete", "SeatsType", new { id = item.Id })" style="display:inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="st-danger"
+                                                onclick="return confirm('Xóa loại ghế @item.Name?');">Xóa</button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="st-empty">Chưa có loại ghế nào. Bấm "Thêm loại ghế" để tạo mới.</div>
+    }
+</div>
