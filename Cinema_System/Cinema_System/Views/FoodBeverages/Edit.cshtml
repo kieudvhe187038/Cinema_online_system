@@ -1,0 +1,96 @@
+@model FoodBeverageFormViewModel
+@{
+    ViewData["Title"] = "Sửa Món";
+}
+
+@section Styles {
+<style>
+    .fb-wrap { max-width: 580px; margin: 6rem auto 3rem; padding: 0 1.5rem; }
+    .fb-title { font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: var(--on-surface); margin-bottom: 1.5rem; }
+    .fb-card { background: var(--white); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); padding: 1.75rem; }
+    .fb-field { margin-bottom: 1.1rem; }
+    .fb-field label { display: block; font-weight: 600; color: var(--on-surface-variant); margin-bottom: .4rem; font-size: .9rem; }
+    .fb-field input, .fb-field textarea, .fb-field select { width: 100%; padding: .6rem .8rem; border: 1px solid var(--outline-variant); border-radius: var(--radius); background: var(--white); font-family: var(--font-body); font-size: .9rem; box-sizing: border-box; }
+    .fb-field textarea { min-height: 90px; resize: vertical; }
+    .fb-field input:focus, .fb-field textarea:focus, .fb-field select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(243,112,33,.15); }
+    .fb-error { color: #b91c1c; font-size: .82rem; margin-top: .3rem; display: block; }
+    .fb-summary { color: #b91c1c; font-size: .9rem; margin-bottom: 1rem; }
+    .fb-preview { margin-top: .5rem; width: 80px; height: 80px; object-fit: cover; border-radius: var(--radius); border: 1px solid var(--outline-variant); }
+    .fb-hint { font-size: .78rem; color: var(--on-surface-variant); margin-top: .25rem; }
+    .fb-actions { display: flex; gap: .75rem; margin-top: 1.5rem; }
+    .fb-btn { padding: .6rem 1.3rem; border: none; border-radius: var(--radius); font-weight: 600; cursor: pointer; font-family: var(--font-body); text-decoration: none; display: inline-flex; align-items: center; font-size: .9rem; }
+    .fb-btn-primary { background: var(--primary); color: var(--white); }
+    .fb-btn-primary:hover { background: var(--primary-dark); }
+    .fb-btn-ghost { background: var(--surface-container); color: var(--on-surface); }
+</style>
+}
+
+<div class="fb-wrap">
+    <h1 class="fb-title">Sửa Món: @Model.Name</h1>
+    <div class="fb-card">
+        <form method="post" action="@Url.Action("Edit", "FoodBeverages", new { id = Model.Id })">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+            <div asp-validation-summary="ModelOnly" class="fb-summary"></div>
+
+            <div class="fb-field">
+                <label asp-for="Name"></label>
+                <input asp-for="Name" />
+                <span asp-validation-for="Name" class="fb-error"></span>
+            </div>
+
+            <div class="fb-field">
+                <label asp-for="Price"></label>
+                <input asp-for="Price" type="number" min="0" step="1000" />
+                <span asp-validation-for="Price" class="fb-error"></span>
+            </div>
+
+            <div class="fb-field">
+                <label asp-for="StockStatus"></label>
+                <select asp-for="StockStatus">
+                    <option value="In Stock">Còn hàng</option>
+                    <option value="Out of Stock">Hết hàng</option>
+                </select>
+                <span asp-validation-for="StockStatus" class="fb-error"></span>
+            </div>
+
+            <div class="fb-field">
+                <label asp-for="Description"></label>
+                <textarea asp-for="Description"></textarea>
+            </div>
+
+            <div class="fb-field">
+                <label asp-for="ImageUrl"></label>
+                <input asp-for="ImageUrl" id="imgUrlInput" />
+                <p class="fb-hint">Nhập URL hình ảnh của món.</p>
+                @if (!string.IsNullOrEmpty(Model.ImageUrl))
+                {
+                    <img id="imgPreview" class="fb-preview" src="@Model.ImageUrl" alt="preview"
+                         onerror="this.style.display='none'" />
+                }
+                else
+                {
+                    <img id="imgPreview" class="fb-preview" alt="preview" style="display:none" />
+                }
+            </div>
+
+            <div class="fb-actions">
+                <button type="submit" class="fb-btn fb-btn-primary">Lưu thay đổi</button>
+                <a class="fb-btn fb-btn-ghost" href="@Url.Action("Index", "FoodBeverages")">Hủy</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        const imgInput = document.getElementById('imgUrlInput');
+        const imgPreview = document.getElementById('imgPreview');
+        imgInput?.addEventListener('input', () => {
+            const url = imgInput.value.trim();
+            imgPreview.style.display = url ? 'block' : 'none';
+            imgPreview.src = url;
+        });
+    </script>
+}
