@@ -26,7 +26,7 @@
     <h1 class="ue-title">Sửa Thông Tin Người Dùng</h1>
 
     <div class="ue-card">
-        <form method="post" action="@Url.Action("Edit", "Users")">
+        <form method="post" action="@Url.Action("Edit", "Users", new { id = Model.Id })">
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="Id" />
 

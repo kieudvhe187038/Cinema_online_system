@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Cinema_System.Controllers;
 
+[Route("Admin/[controller]")]
 public class UsersController : Controller
 {
     private readonly IUserService _userService;
@@ -13,6 +14,7 @@ public class UsersController : Controller
         _userService = userService;
     }
 
+    [HttpGet("")]
     public async Task<IActionResult> Index(
         string? search, Guid? roleId, string? status, int page = 1)
     {
@@ -20,6 +22,7 @@ public class UsersController : Controller
         return View(vm);
     }
 
+    [HttpGet("Details/{id}")]
     public async Task<IActionResult> Details(Guid id)
     {
         var user = await _userService.GetUserByIdAsync(id);
@@ -29,7 +32,7 @@ public class UsersController : Controller
         return View(user);
     }
 
-    [HttpGet]
+    [HttpGet("Edit/{id}")]
     public async Task<IActionResult> Edit(Guid id)
     {
         var vm = await _userService.GetUserForEditAsync(id);
@@ -38,7 +41,7 @@ public class UsersController : Controller
         return View(vm);
     }
 
-    [HttpPost]
+    [HttpPost("Edit/{id}")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(UserEditViewModel model)
     {
@@ -60,7 +63,7 @@ public class UsersController : Controller
         return RedirectToAction(nameof(Details), new { id = model.Id });
     }
 
-    [HttpPost]
+    [HttpPost("ToggleStatus")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ToggleStatus(Guid id, bool active)
     {
@@ -73,7 +76,7 @@ public class UsersController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    [HttpPost]
+    [HttpPost("AssignRole")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AssignRole(Guid id, Guid roleId)
     {
@@ -84,7 +87,7 @@ public class UsersController : Controller
         return RedirectToAction(nameof(Details), new { id });
     }
 
-    [HttpPost]
+    [HttpPost("ResetPassword")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ResetPassword(Guid id)
     {
