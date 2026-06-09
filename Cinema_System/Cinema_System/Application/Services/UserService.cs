@@ -11,7 +11,7 @@ namespace Cinema_System.Application.Services;
 public class UserService : IUserService
 {
     private const string StatusActive = "Active";
-    private const string StatusInactive = "Inactive";
+    private const string StatusInactive = "Locked";
 
     private readonly IUnitOfWork _unitOfWork;
 
