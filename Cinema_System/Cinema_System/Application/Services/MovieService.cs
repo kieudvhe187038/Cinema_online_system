@@ -1,66 +1,72 @@
 using Cinema_System.Application.DTOs;
 using Cinema_System.Application.Interfaces;
-using Cinema_System.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace Cinema_System.Application.Services;
 
 public class MovieService : IMovieService
 {
-    private readonly CinemaWebDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public MovieService(CinemaWebDbContext context)
+    public MovieService(IUnitOfWork unitOfWork)
     {
-        _context = context;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<IEnumerable<MovieDTO>> GetAllMoviesAsync()
     {
-        var movies = await _context.Movies
-            .Select(m => MapToDTO(m))
-            .ToListAsync();
+        var movies = await _unitOfWork.Movies.GetAllAsync(
+            include: q => q.Include(m => m.Showtimes)
+        );
 
-        return movies;
+        return movies.Select(MapToDTO);
     }
 
     public async Task<IEnumerable<MovieDTO>> GetNowShowingMoviesAsync()
     {
-        var movies = await _context.Movies
-            .Where(m => m.Status == "Now Showing")
-            .Select(m => MapToDTO(m))
-            .ToListAsync();
+        var movies = await _unitOfWork.Movies.GetAllAsync(
+            predicate: m => m.Status == "Now Showing",
+            include: q => q.Include(m => m.Showtimes)
+        );
 
-        return movies;
+        return movies.Select(MapToDTO);
     }
 
     public async Task<IEnumerable<MovieDTO>> GetComingSoonMoviesAsync()
     {
-        var movies = await _context.Movies
-            .Where(m => m.Status == "Coming Soon")
-            .Select(m => MapToDTO(m))
-            .ToListAsync();
+        var movies = await _unitOfWork.Movies.GetAllAsync(
+            predicate: m => m.Status == "Coming Soon",
+            include: q => q.Include(m => m.Showtimes)
+        );
 
-        return movies;
+        return movies.Select(MapToDTO);
     }
 
     public async Task<MovieDTO> GetMovieByIdAsync(Guid id)
     {
-        var movie = await _context.Movies
-            .Where(m => m.Id == id)
-            .Select(m => MapToDTO(m))
-            .FirstOrDefaultAsync();
+        var movie = await _unitOfWork.Movies.FirstOrDefaultAsync(
+            predicate: m => m.Id == id,
+            include: q => q.Include(m => m.Showtimes)
+        );
 
-        return movie;
+        return movie == null ? null : MapToDTO(movie);
     }
 
     public async Task<IEnumerable<MovieDTO>> GetSpecialShowtimeMoviesAsync()
     {
-        var movies = await _context.Movies
-            .Where(m => m.Showtimes.Any(s => s.Status == "Special" || s.Status == "Special Screening" || (s.Status != null && EF.Functions.Like(s.Status, "%Đặc%"))))
-            .Select(m => MapToDTO(m))
-            .ToListAsync();
+        var movies = await _unitOfWork.Movies.GetAllAsync(
+            include: q => q.Include(m => m.Showtimes)
+        );
 
-        return movies;
+        var specialMovies = movies.Where(m =>
+            m.Showtimes.Any(s =>
+                s.Status == "Special" ||
+                s.Status == "Special Screening" ||
+                (s.Status != null && s.Status.Contains("Đặc"))
+            )
+        );
+
+        return specialMovies.Select(MapToDTO);
     }
 
     private static MovieDTO MapToDTO(Domain.Entities.Movie m)
