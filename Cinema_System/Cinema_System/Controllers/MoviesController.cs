@@ -21,5 +21,18 @@ namespace Cinema_System.Controllers
             var vm = await _movieService.GetMoviesPageAsync(tab, page, pageSize);
             return View(vm);
         }
+
+        public async Task<IActionResult> Search(string q, int page = 1)
+        {
+            if (string.IsNullOrWhiteSpace(q))
+            {
+                return RedirectToAction("Index");
+            }
+
+            var pageSize = 4;
+            var vm = await _movieService.SearchMoviesAsync(q, page, pageSize);
+            ViewData["SearchKeyword"] = q;
+            return View("Index", vm);
+        }
     }
 }

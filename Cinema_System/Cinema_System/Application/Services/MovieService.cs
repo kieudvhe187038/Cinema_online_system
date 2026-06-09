@@ -94,4 +94,49 @@ public class MovieService : IMovieService
 
         return _mapper.Map<IEnumerable<MovieDTO>>(movies);
     }
+
+    public async Task<Cinema_System.Application.ViewModels.MoviesPageViewModel> SearchMoviesAsync(string keyword, int page, int pageSize)
+    {
+        var searchTerm = keyword?.Trim().ToLowerInvariant() ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            return new Cinema_System.Application.ViewModels.MoviesPageViewModel
+            {
+                SelectedTab = "search",
+                SearchKeyword = string.Empty,
+                Movies = new List<MovieDTO>(),
+                CurrentPage = page,
+                TotalPages = 1,
+                PageSize = pageSize
+            };
+        }
+
+        var searchResults = await _unitOfWork.Movies.GetAllAsync(
+            predicate: m =>
+                (m.Title != null && m.Title.ToLower().Contains(searchTerm)) ||
+                (m.Description != null && m.Description.ToLower().Contains(searchTerm)) ||
+                (m.Director != null && m.Director.ToLower().Contains(searchTerm)) ||
+                (m.CastMembers != null && m.CastMembers.ToLower().Contains(searchTerm)),
+            includeProperties: new[] { "Showtimes" }
+        );
+
+        var movieDtos = _mapper.Map<List<MovieDTO>>(searchResults);
+        var totalCount = movieDtos.Count;
+        var totalPages = totalCount == 0 ? 1 : (int)Math.Ceiling(totalCount / (double)pageSize);
+        if (page < 1) page = 1;
+        if (page > totalPages) page = totalPages;
+
+        var items = movieDtos.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+        return new Cinema_System.Application.ViewModels.MoviesPageViewModel
+        {
+            SelectedTab = "search",
+            SearchKeyword = searchTerm,
+            Movies = items,
+            CurrentPage = page,
+            TotalPages = totalPages,
+            PageSize = pageSize
+        };
+    }
 }
