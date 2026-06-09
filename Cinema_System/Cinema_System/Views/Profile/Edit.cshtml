@@ -1,0 +1,60 @@
+@model Cinema_System.Application.ViewModels.UpdateProfileViewModel
+@{
+    ViewData["Title"] = "Chỉnh sửa hồ sơ";
+}
+
+<!-- Nhúng Tailwind ngay trong view để không phải sửa _Layout chung của nhóm -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<div class="min-h-screen bg-gray-100 py-10 px-4">
+    <div class="max-w-xl mx-auto rounded-2xl bg-white p-8 shadow-md">
+        <h1 class="mb-6 text-xl font-bold text-gray-800">✏️ Chỉnh sửa hồ sơ</h1>
+
+        <form asp-action="Edit" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+
+            <!-- Tóm tắt lỗi chung -->
+            <div asp-validation-summary="ModelOnly" class="mb-3 text-sm text-red-600"></div>
+
+            <!-- Họ tên -->
+            <div class="mb-4">
+                <label asp-for="FullName" class="mb-1 block text-sm font-medium text-gray-700"></label>
+                <input asp-for="FullName"
+                       class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" />
+                <span asp-validation-for="FullName" class="text-sm text-red-600"></span>
+            </div>
+
+            <!-- Email (chỉ xem) -->
+            <div class="mb-4">
+                <label asp-for="Email" class="mb-1 block text-sm font-medium text-gray-700"></label>
+                <input asp-for="Email" readonly
+                       class="w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-gray-500" />
+            </div>
+
+            <!-- Số điện thoại -->
+            <div class="mb-4">
+                <label asp-for="Phone" class="mb-1 block text-sm font-medium text-gray-700"></label>
+                <input asp-for="Phone"
+                       class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" />
+                <span asp-validation-for="Phone" class="text-sm text-red-600"></span>
+            </div>
+
+            <!-- Nút -->
+            <div class="mt-6 flex gap-3">
+                <button type="submit"
+                        class="flex-1 rounded-xl bg-indigo-600 px-4 py-3 font-semibold text-white hover:bg-indigo-700 transition">
+                    Lưu thay đổi
+                </button>
+                <a asp-action="Index"
+                   class="flex-1 rounded-xl border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700 hover:bg-gray-50 transition">
+                    Hủy
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
