@@ -26,5 +26,9 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<Genre> Genres { get; }
 
+    IGenericRepository<FoodBeverage> FoodBeverages { get; }
+
+    IGenericRepository<BookingFood> BookingFoods { get; }
+
     Task<int> SaveChangesAsync();
 }
