@@ -62,7 +62,7 @@
         <select name="status">
             <option value="">-- Tất cả trạng thái --</option>
             <option value="Active" selected="@(Model.Status == "Active")">Đang hoạt động</option>
-            <option value="Inactive" selected="@(Model.Status == "Inactive")">Vô hiệu</option>
+            <option value="Locked" selected="@(Model.Status == "Locked")">Vô hiệu</option>
         </select>
         <button type="submit" class="um-btn um-btn-primary">Lọc</button>
         <a href="@Url.Action("Index", "Users")" class="um-btn um-btn-ghost">Xóa lọc</a>
