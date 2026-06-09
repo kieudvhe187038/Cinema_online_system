@@ -1,0 +1,120 @@
+@model PointRateViewModel
+@{
+    ViewData["Title"] = "Quản Lý Tỉ Lệ Tích Điểm";
+}
+
+@section Styles {
+    <style>
+        .pm-wrap { max-width: 760px; margin: 6rem auto 3rem; padding: 0 1.5rem; }
+        .pm-title { font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: var(--on-surface); margin-bottom: .35rem; }
+        .pm-sub { color: var(--on-surface-variant); margin-bottom: 1.5rem; }
+        .pm-alert { padding: .75rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: .9rem; }
+        .pm-alert.success { background: #e7f5ec; color: #166534; border: 1px solid #16653433; }
+        .pm-summary { color: #b91c1c; font-size: .9rem; margin-bottom: 1rem; }
+        .pm-card { background: var(--white); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); padding: 1.75rem; margin-bottom: 1.5rem; }
+        .pm-card h3 { font-family: var(--font-head); font-weight: 700; color: var(--on-surface); margin-bottom: 1rem; }
+        .pm-field { margin-bottom: 1.1rem; }
+        .pm-field label { display: block; font-weight: 600; color: var(--on-surface-variant); margin-bottom: .4rem; font-size: .9rem; }
+        .pm-field input { width: 100%; padding: .6rem .8rem; border: 1px solid var(--outline-variant); border-radius: var(--radius); background: var(--white); font-family: var(--font-body); }
+        .pm-field input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(243,112,33,.15); }
+        .pm-hint { color: var(--on-surface-variant); font-size: .82rem; margin-top: .35rem; }
+        .pm-error { color: #b91c1c; font-size: .82rem; margin-top: .3rem; display: block; }
+        .pm-meta { color: var(--on-surface-variant); font-size: .82rem; }
+        .pm-actions { margin-top: 1.25rem; }
+        .pm-btn { padding: .6rem 1.4rem; border: none; border-radius: var(--radius); font-weight: 600; cursor: pointer; font-family: var(--font-body); }
+        .pm-btn-primary { background: var(--primary); color: var(--white); }
+        .pm-btn-primary:hover { background: var(--primary-dark); }
+        .pm-preview { background: linear-gradient(135deg, var(--secondary), var(--secondary-dark)); color: var(--white); border-radius: var(--radius-xl); padding: 1.5rem; }
+        .pm-preview h3 { color: var(--white); }
+        .pm-preview .pm-row { display: flex; justify-content: space-between; align-items: center; padding: .6rem 0; border-bottom: 1px solid rgba(255,255,255,.15); }
+        .pm-preview .pm-row:last-child { border-bottom: none; }
+        .pm-preview .pm-big { font-size: 1.4rem; font-weight: 800; color: var(--primary); }
+        .pm-preview input { padding: .5rem .7rem; border: none; border-radius: var(--radius); width: 180px; text-align: right; font-family: var(--font-body); }
+    </style>
+}
+
+<div class="pm-wrap">
+    <h1 class="pm-title">Quản Lý Tỉ Lệ Tích Điểm</h1>
+    <p class="pm-sub">Cấu hình số điểm khách hàng nhận được trên mỗi đồng chi tiêu khi mua vé.</p>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="pm-alert success">@TempData["Success"]</div>
+    }
+
+    <div class="pm-card">
+        <h3>Tỉ lệ hiện tại</h3>
+        <form method="post" action="@Url.Action("Index", "Points")">
+            @Html.AntiForgeryToken()
+
+            <div asp-validation-summary="ModelOnly" class="pm-summary"></div>
+
+            <div class="pm-field">
+                <label asp-for="Rate"></label>
+                <input asp-for="Rate" id="rateInput" type="number" step="any" min="0" max="1" />
+                <span asp-validation-for="Rate" class="pm-error"></span>
+                <p class="pm-hint">
+                    Số điểm cộng cho mỗi 1đ. Ví dụ <strong>0.0001</strong> nghĩa là cứ <strong>10.000đ</strong> được <strong>1 điểm</strong>.
+                </p>
+            </div>
+
+            @if (Model.UpdatedAt.HasValue)
+            {
+                <p class="pm-meta">Cập nhật lần cuối: @Model.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")</p>
+            }
+
+            <div class="pm-actions">
+                <button type="submit" class="pm-btn pm-btn-primary">Lưu thay đổi</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="pm-preview pm-card">
+        <h3>Mô phỏng quy đổi</h3>
+        <div class="pm-row">
+            <span>Hóa đơn (VND)</span>
+            <input type="number" id="amountInput" value="100000" min="0" step="1000" />
+        </div>
+        <div class="pm-row">
+            <span>Điểm nhận được</span>
+            <span class="pm-big" id="pointsResult">—</span>
+        </div>
+        <div class="pm-row">
+            <span>Quy đổi tương đương</span>
+            <span id="inverseResult">—</span>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            var rateInput = document.getElementById('rateInput');
+            var amountInput = document.getElementById('amountInput');
+            var pointsResult = document.getElementById('pointsResult');
+            var inverseResult = document.getElementById('inverseResult');
+
+            function fmt(n) { return n.toLocaleString('vi-VN'); }
+
+            function update() {
+                var rate = parseFloat(rateInput.value) || 0;
+                var amount = parseFloat(amountInput.value) || 0;
+
+                var points = Math.floor(amount * rate);
+                pointsResult.textContent = fmt(points) + ' điểm';
+
+                if (rate > 0) {
+                    var perPoint = Math.round(1 / rate);
+                    inverseResult.textContent = 'Cứ ' + fmt(perPoint) + 'đ = 1 điểm';
+                } else {
+                    inverseResult.textContent = 'Không tích điểm';
+                }
+            }
+
+            rateInput.addEventListener('input', update);
+            amountInput.addEventListener('input', update);
+            update();
+        })();
+    </script>
+}

@@ -8,5 +8,7 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<Role> Roles { get; }
 
+    IGenericRepository<SystemConfig> SystemConfigs { get; }
+
     Task<int> SaveChangesAsync();
 }
