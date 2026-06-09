@@ -17,4 +17,7 @@ public class MovieDTO
     public DateOnly? ReleaseDate { get; set; }
     public string? AgeRating { get; set; }
     public string? Status { get; set; }
+    public List<string> GenreNames { get; set; } = new();
+    public DateTime? CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 }

@@ -1,0 +1,188 @@
+@model MovieListViewModel
+@{
+    ViewData["Title"] = "Quản Lý Phim";
+}
+
+@section Styles {
+<style>
+    .mv-wrap { max-width: 1200px; margin: 6rem auto 3rem; padding: 0 1.5rem; }
+    .mv-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: .75rem; }
+    .mv-title { font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: var(--on-surface); }
+    .mv-alert { padding: .75rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: .9rem; }
+    .mv-alert.success { background: #e7f5ec; color: #166534; border: 1px solid #16653433; }
+    .mv-alert.error   { background: #fde8e8; color: #b91c1c; border: 1px solid #b91c1c33; }
+    .mv-btn { padding: .55rem 1.1rem; border: none; border-radius: var(--radius); font-weight: 600; cursor: pointer; font-family: var(--font-body); text-decoration: none; display: inline-flex; align-items: center; gap: .35rem; font-size: .9rem; }
+    .mv-btn-primary { background: var(--primary); color: var(--white); }
+    .mv-btn-primary:hover { background: var(--primary-dark); }
+    .mv-filters { display: flex; gap: .6rem; flex-wrap: wrap; margin-bottom: 1.25rem; align-items: center; }
+    .mv-filters input[type=text] { padding: .5rem .8rem; border: 1px solid var(--outline-variant); border-radius: var(--radius); font-family: var(--font-body); font-size: .9rem; min-width: 220px; }
+    .mv-filters select { padding: .5rem .8rem; border: 1px solid var(--outline-variant); border-radius: var(--radius); font-family: var(--font-body); font-size: .9rem; background: var(--white); }
+    .mv-filters button { padding: .5rem 1rem; border: none; border-radius: var(--radius); background: var(--secondary-dark); color: var(--white); font-weight: 600; cursor: pointer; font-family: var(--font-body); font-size: .9rem; }
+    .mv-filters a.clear { color: var(--on-surface-variant); font-size: .85rem; text-decoration: none; }
+    .mv-table { width: 100%; border-collapse: collapse; background: var(--white); border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-sm); }
+    .mv-table th, .mv-table td { padding: .8rem 1rem; text-align: left; border-bottom: 1px solid var(--surface-container); font-size: .875rem; vertical-align: middle; }
+    .mv-table th { background: var(--secondary-dark); color: var(--white); font-weight: 600; white-space: nowrap; }
+    .mv-table tr:hover td { background: var(--surface); }
+    .mv-poster { width: 44px; height: 62px; object-fit: cover; border-radius: 4px; }
+    .mv-poster-ph { width: 44px; height: 62px; background: var(--surface-container); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: .65rem; color: var(--on-surface-variant); text-align: center; }
+    .mv-name { font-weight: 600; color: var(--on-surface); max-width: 200px; }
+    .mv-genres { display: flex; flex-wrap: wrap; gap: .25rem; }
+    .mv-genre-tag { background: var(--surface-container); color: var(--on-surface-variant); font-size: .72rem; padding: .1rem .45rem; border-radius: 999px; font-weight: 500; }
+    .mv-status { display: inline-flex; align-items: center; padding: .2rem .65rem; border-radius: 999px; font-size: .78rem; font-weight: 600; }
+    .mv-status.now { background: #e7f5ec; color: #166534; }
+    .mv-status.coming { background: #dbeafe; color: #1e40af; }
+    .mv-status.inactive { background: var(--surface-container); color: var(--on-surface-variant); }
+    .mv-actions { display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; }
+    .mv-link { color: var(--secondary); text-decoration: none; font-weight: 600; font-size: .82rem; }
+    .mv-link:hover { color: var(--primary); }
+    .mv-toggle-on  { background: #dcfce7; color: #166534; border: 1px solid #16653433; padding: .25rem .65rem; border-radius: var(--radius); font-size: .8rem; font-weight: 600; cursor: pointer; font-family: var(--font-body); }
+    .mv-toggle-off { background: #fde8e8; color: #b91c1c; border: 1px solid #b91c1c33; padding: .25rem .65rem; border-radius: var(--radius); font-size: .8rem; font-weight: 600; cursor: pointer; font-family: var(--font-body); }
+    .mv-empty { text-align: center; padding: 3rem; color: var(--on-surface-variant); }
+    .mv-info { font-size: .85rem; color: var(--on-surface-variant); margin-bottom: .75rem; }
+    .mv-pagination { display: flex; gap: .4rem; justify-content: center; margin-top: 1.5rem; flex-wrap: wrap; }
+    .mv-page-btn { padding: .45rem .85rem; border: 1px solid var(--outline-variant); border-radius: var(--radius); text-decoration: none; font-size: .85rem; color: var(--on-surface); background: var(--white); }
+    .mv-page-btn:hover { background: var(--surface); }
+    .mv-page-btn.active { background: var(--primary); color: var(--white); border-color: var(--primary); font-weight: 700; }
+    .mv-page-btn.disabled { opacity: .4; pointer-events: none; }
+</style>
+}
+
+<div class="mv-wrap">
+    <div class="mv-top">
+        <h1 class="mv-title">Quản Lý Phim</h1>
+        <a class="mv-btn mv-btn-primary" href="@Url.Action("Create", "MovieManagement")">+ Thêm phim</a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="mv-alert success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="mv-alert error">@TempData["Error"]</div>
+    }
+
+    <form method="get" action="@Url.Action("Index", "MovieManagement")" class="mv-filters">
+        <input type="text" name="search" value="@Model.Search" placeholder="Tìm theo tên phim..." />
+        <select name="status">
+            <option value="">-- Tất cả trạng thái --</option>
+            <option value="Now Showing" selected="@(Model.StatusFilter == "Now Showing")">Đang chiếu</option>
+            <option value="Coming Soon" selected="@(Model.StatusFilter == "Coming Soon")">Sắp chiếu</option>
+            <option value="Inactive" selected="@(Model.StatusFilter == "Inactive")">Tạm ngừng</option>
+        </select>
+        <button type="submit">Lọc</button>
+        @if (!string.IsNullOrEmpty(Model.Search) || !string.IsNullOrEmpty(Model.StatusFilter))
+        {
+            <a class="clear" href="@Url.Action("Index", "MovieManagement")">Xóa bộ lọc</a>
+        }
+    </form>
+
+    <p class="mv-info">Tổng cộng: <strong>@Model.TotalCount</strong> phim</p>
+
+    @if (Model.Movies.Any())
+    {
+        <table class="mv-table">
+            <thead>
+                <tr>
+                    <th>Poster</th>
+                    <th>Tên phim</th>
+                    <th>Thể loại</th>
+                    <th>Thời lượng</th>
+                    <th>Khởi chiếu</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var movie in Model.Movies)
+                {
+                    <tr>
+                        <td>
+                            @if (!string.IsNullOrEmpty(movie.PosterUrl))
+                            {
+                                <img class="mv-poster" src="@movie.PosterUrl" alt="@movie.Title"
+                                     onerror="this.style.display='none'" />
+                            }
+                            else
+                            {
+                                <div class="mv-poster-ph">No Image</div>
+                            }
+                        </td>
+                        <td><span class="mv-name">@movie.Title</span></td>
+                        <td>
+                            <div class="mv-genres">
+                                @foreach (var g in movie.GenreNames)
+                                {
+                                    <span class="mv-genre-tag">@g</span>
+                                }
+                                @if (!movie.GenreNames.Any())
+                                {
+                                    <span style="color:var(--on-surface-variant);font-size:.8rem">—</span>
+                                }
+                            </div>
+                        </td>
+                        <td>@(movie.DurationMinutes.HasValue ? $"{movie.DurationMinutes} phút" : "—")</td>
+                        <td>@(movie.ReleaseDate.HasValue ? movie.ReleaseDate.Value.ToString("dd/MM/yyyy") : "—")</td>
+                        <td>
+                            @{
+                                var statusClass = movie.Status switch
+                                {
+                                    "Now Showing" => "now",
+                                    "Coming Soon" => "coming",
+                                    _ => "inactive"
+                                };
+                                var statusLabel = movie.Status switch
+                                {
+                                    "Now Showing" => "Đang chiếu",
+                                    "Coming Soon" => "Sắp chiếu",
+                                    "Inactive" => "Tạm ngừng",
+                                    _ => movie.Status ?? "—"
+                                };
+                            }
+                            <span class="mv-status @statusClass">@statusLabel</span>
+                        </td>
+                        <td>
+                            <div class="mv-actions">
+                                <a class="mv-link" href="@Url.Action("Edit", "MovieManagement", new { id = movie.Id })">Sửa</a>
+                                <form method="post" action="@Url.Action("ToggleStatus", "MovieManagement", new { id = movie.Id })" style="display:inline">
+                                    @Html.AntiForgeryToken()
+                                    @if (movie.Status == "Inactive")
+                                    {
+                                        <button type="submit" class="mv-toggle-on"
+                                                onclick="return confirm('Kích hoạt phim @Html.Raw(movie.Title.Replace("'", "\\'"))?')">Kích hoạt</button>
+                                    }
+                                    else
+                                    {
+                                        <button type="submit" class="mv-toggle-off"
+                                                onclick="return confirm('Tạm ngừng phim @Html.Raw(movie.Title.Replace("'", "\\'"))?')">Tạm ngừng</button>
+                                    }
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (Model.TotalPages > 1)
+        {
+            <div class="mv-pagination">
+                <a class="mv-page-btn @(Model.CurrentPage == 1 ? "disabled" : "")"
+                   href="@Url.Action("Index", "MovieManagement", new { search = Model.Search, status = Model.StatusFilter, page = Model.CurrentPage - 1 })">&laquo;</a>
+
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    <a class="mv-page-btn @(i == Model.CurrentPage ? "active" : "")"
+                       href="@Url.Action("Index", "MovieManagement", new { search = Model.Search, status = Model.StatusFilter, page = i })">@i</a>
+                }
+
+                <a class="mv-page-btn @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")"
+                   href="@Url.Action("Index", "MovieManagement", new { search = Model.Search, status = Model.StatusFilter, page = Model.CurrentPage + 1 })">&raquo;</a>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="mv-empty">Không có phim nào. Bấm "+ Thêm phim" để thêm mới.</div>
+    }
+</div>
