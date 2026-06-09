@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Cinema_System.Controllers;
 
-[Route("Manager/[controller]")]
+[Route("Manager/PointSetting")]
 public class PointsController : Controller
 {
     private readonly IPointConfigService _pointConfigService;
