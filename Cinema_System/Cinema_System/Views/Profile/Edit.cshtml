@@ -3,68 +3,79 @@
     ViewData["Title"] = "Chỉnh sửa hồ sơ";
 }
 
-<!-- Nhúng Tailwind ngay trong view để không phải sửa _Layout chung của nhóm -->
 <script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    primary: '#F37021',
+                    'primary-dark': '#d85f15',
+                    secondary: '#00488D',
+                    tertiary: '#002F59',
+                    light: '#F8F9FA',
+                },
+                fontFamily: {
+                    heading: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    body: ['"Be Vietnam Pro"', 'sans-serif'],
+                }
+            }
+        }
+    }
+</script>
 
-<div class="min-h-screen bg-gray-100 py-10 px-4">
+<div class="min-h-screen bg-light font-body py-10 px-4">
     <div class="max-w-xl mx-auto rounded-2xl bg-white p-8 shadow-md">
-        <h1 class="mb-6 text-xl font-bold text-gray-800">✏️ Chỉnh sửa hồ sơ</h1>
+        <h1 class="mb-6 text-xl font-bold font-heading text-tertiary">✏️ Chỉnh sửa hồ sơ</h1>
 
-        <!-- enctype=multipart/form-data: BẮT BUỘC khi upload file -->
         <form asp-action="Edit" method="post" enctype="multipart/form-data">
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="Id" />
 
-            <!-- Tóm tắt lỗi chung -->
             <div asp-validation-summary="ModelOnly" class="mb-3 text-sm text-red-600"></div>
 
-            <!-- Preview ảnh đại diện -->
             <div class="mb-5 text-center">
                 <img id="avatarPreview"
                      src="@(string.IsNullOrEmpty(Model.CurrentAvatarUrl) ? "https://placehold.co/120x120?text=Avatar" : Model.CurrentAvatarUrl)"
                      class="mx-auto h-28 w-28 rounded-full border-4 border-gray-200 object-cover" />
             </div>
 
-            <!-- Ô chọn ảnh -->
             <div class="mb-4">
                 <label asp-for="AvatarFile" class="mb-1 block text-sm font-medium text-gray-700"></label>
                 <input asp-for="AvatarFile" type="file" accept="image/*" onchange="previewAvatar(this)"
                        class="block w-full rounded-lg border border-gray-300 text-sm
-                file:mr-4 file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-indigo-700" />
+                file:mr-4 file:border-0 file:bg-primary/10 file:px-4 file:py-2 file:text-primary" />
                 <span asp-validation-for="AvatarFile" class="text-sm text-red-600"></span>
             </div>
 
-            <!-- Họ tên -->
             <div class="mb-4">
                 <label asp-for="FullName" class="mb-1 block text-sm font-medium text-gray-700"></label>
                 <input asp-for="FullName"
-                       class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" />
+                       class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none" />
                 <span asp-validation-for="FullName" class="text-sm text-red-600"></span>
             </div>
 
-            <!-- Email (chỉ xem) -->
             <div class="mb-4">
                 <label asp-for="Email" class="mb-1 block text-sm font-medium text-gray-700"></label>
                 <input asp-for="Email" readonly
                        class="w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-gray-500" />
             </div>
 
-            <!-- Số điện thoại -->
             <div class="mb-4">
                 <label asp-for="Phone" class="mb-1 block text-sm font-medium text-gray-700"></label>
                 <input asp-for="Phone"
-                       class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" />
+                       class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none" />
                 <span asp-validation-for="Phone" class="text-sm text-red-600"></span>
             </div>
 
-            <!-- Nút -->
             <div class="mt-6 flex gap-3">
                 <button type="submit"
-                        class="flex-1 rounded-xl bg-indigo-600 px-4 py-3 font-semibold text-white hover:bg-indigo-700 transition">
+                        class="flex-1 rounded-xl bg-primary px-4 py-3 font-semibold text-white hover:bg-primary-dark transition">
                     Lưu thay đổi
                 </button>
                 <a asp-action="Index"
-                   class="flex-1 rounded-xl border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700 hover:bg-gray-50 transition">
+                   class="flex-1 rounded-xl border-2 border-secondary px-4 py-3 text-center font-semibold text-secondary hover:bg-secondary hover:text-white transition">
                     Hủy
                 </a>
             </div>
@@ -75,7 +86,6 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
-        // Xem trước ảnh ngay khi chọn, chưa cần upload lên server
         function previewAvatar(input) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
