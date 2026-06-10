@@ -5,7 +5,6 @@ using Cinema_System.Domain.Entities;
 
 namespace Cinema_System.Application.Services
 {
-    // TẦNG NGHIỆP VỤ: xử lý logic, gọi UnitOfWork/Repository. Không biết gì về HTTP/MVC.
     public class ProfileService : IProfileService
     {
         private readonly IUnitOfWork _uow;
@@ -32,7 +31,7 @@ namespace Cinema_System.Application.Services
 
             user.FullName = dto.FullName;
             user.Phone = dto.Phone;
-            if(!string.IsNullOrEmpty(dto.AvatarUrl)) // chỉ đổi avatar khi có ảnh mới
+            if(!string.IsNullOrEmpty(dto.AvatarUrl))
                 user.AvatarUrl = dto.AvatarUrl;
             user.UpdatedAt = DateTime.Now;
 
@@ -47,11 +46,20 @@ namespace Cinema_System.Application.Services
             var user = await repo.GetByIdAsync(userId);
             if (user == null) return (false, "Không tìm thấy người dùng");
 
-            // (Sau nâng cấp BCrypt.Verify(oldPass, user.PasswordHash))
-            if (user.PasswordHash != oldPass)
+            bool matched;
+            try
+            {
+                matched = BCrypt.Net.BCrypt.Verify(oldPass, user.PasswordHash);
+            }
+            catch
+            {
+                matched = false;
+            }
+            if (!matched)
                 return (false, "Mật khẩu hiện tại không đúng");
 
-            user.PasswordHash = newPass;
+            // Lưu mật khẩu mới dưới dạng hash (KHÔNG lưu mật khẩu thô)
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPass);
             user.UpdatedAt = DateTime.Now;
             repo.Update(user);
             await _uow.SaveChangesAsync();
