@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600&display=swap" rel="stylesheet">
 <script>
     tailwind.config = {
+        important: true,
         theme: {
             extend: {
                 colors: {
@@ -37,8 +38,8 @@
 
             <div class="mb-5 text-center">
                 <img id="avatarPreview"
-                     src="@(string.IsNullOrEmpty(Model.CurrentAvatarUrl) ? "https://placehold.co/120x120?text=Avatar" : Model.CurrentAvatarUrl)"
-                     class="mx-auto h-28 w-28 rounded-full border-4 border-gray-200 object-cover" />
+                     src="@(string.IsNullOrEmpty(Model.CurrentAvatarUrl) ? "https://placehold.co/96x96?text=Avatar" : Model.CurrentAvatarUrl)"
+                     class="mx-auto h-24 w-24 rounded-full border-4 border-primary/20 object-cover" />
             </div>
 
             <div class="mb-4">
@@ -46,6 +47,7 @@
                 <input asp-for="AvatarFile" type="file" accept="image/*" onchange="previewAvatar(this)"
                        class="block w-full rounded-lg border border-gray-300 text-sm
                 file:mr-4 file:border-0 file:bg-primary/10 file:px-4 file:py-2 file:text-primary" />
+                <p class="mt-1 text-xs text-gray-400">Chấp nhận jpg, jpeg, png, gif — tối đa 2MB</p>
                 <span asp-validation-for="AvatarFile" class="text-sm text-red-600"></span>
             </div>
 
@@ -64,7 +66,8 @@
 
             <div class="mb-4">
                 <label asp-for="Phone" class="mb-1 block text-sm font-medium text-gray-700"></label>
-                <input asp-for="Phone"
+                <input asp-for="Phone" type="tel" inputmode="numeric" maxlength="10"
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                        class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none" />
                 <span asp-validation-for="Phone" class="text-sm text-red-600"></span>
             </div>

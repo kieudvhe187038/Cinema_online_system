@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Cinema_System.Infrastructure.Repositories
 {
-    // Hiện thực Repository: CHỖ DUY NHẤT được phép đụng DbContext.
     public class GenericRepository<T> : IGenericRepository<T> where T : class
     {
         private readonly CinemaWebDbContext _context;
@@ -23,9 +22,19 @@ namespace Cinema_System.Infrastructure.Repositories
             params Expression<Func<T, object>>[] includes)
         {
             IQueryable<T> query = _dbSet;
-            foreach(var inc in includes) // nối các bảng liên quan (vd Role)
+            foreach(var inc in includes)
                 query = query.Include(inc);
             return await query.FirstOrDefaultAsync(predicate);
+        }
+
+        public async Task<List<T>> GetAllAsync(
+            Expression<Func<T, bool>> predicate,
+            params Expression<Func<T, object>>[] includes)
+        {
+            IQueryable<T> query = _dbSet;
+            foreach(var inc in includes)
+                query = query.Include(inc);
+            return await query.Where(predicate).ToListAsync();
         }
 
         public void Update(T entity) => _dbSet.Update(entity);

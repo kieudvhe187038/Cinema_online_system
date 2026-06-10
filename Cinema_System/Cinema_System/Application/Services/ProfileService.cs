@@ -18,7 +18,7 @@ namespace Cinema_System.Application.Services
         {
             var user = await _uow.Repository<User>()
                 .FirstOrDefaultAsync(u => u.Id == userId, u => u.Role);
-            if(user == null) return null;
+            if (user == null) return null;
 
             return _mapper.Map<ProfileDto>(user);
         }
@@ -27,11 +27,11 @@ namespace Cinema_System.Application.Services
         {
             var repo = _uow.Repository<User>();
             var user = await repo.GetByIdAsync(userId);
-            if( user == null ) return false;
+            if (user == null) return false;
 
             user.FullName = dto.FullName;
             user.Phone = dto.Phone;
-            if(!string.IsNullOrEmpty(dto.AvatarUrl))
+            if (!string.IsNullOrEmpty(dto.AvatarUrl))
                 user.AvatarUrl = dto.AvatarUrl;
             user.UpdatedAt = DateTime.Now;
 
@@ -58,12 +58,24 @@ namespace Cinema_System.Application.Services
             if (!matched)
                 return (false, "Mật khẩu hiện tại không đúng");
 
-            // Lưu mật khẩu mới dưới dạng hash (KHÔNG lưu mật khẩu thô)
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPass);
             user.UpdatedAt = DateTime.Now;
             repo.Update(user);
             await _uow.SaveChangesAsync();
             return (true, null);
+        }
+
+        public async Task<List<PointHistoryDto>> GetPointHistoryAsync(Guid userId)
+        {
+            // Lấy tất cả giao dịch điểm của user
+            var list = await _uow.Repository<RewardPointHistory>()
+                .GetAllAsync(h => h.UserId == userId);
+
+            // Mới nhất lên đầu, rồi map sang DTO
+            return list
+                .OrderByDescending(h => h.CreatedAt)
+                .Select(h => _mapper.Map<PointHistoryDto>(h))
+                .ToList();
         }
     }
 }

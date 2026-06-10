@@ -1,0 +1,64 @@
+﻿@model List<Cinema_System.Application.ViewModels.PointHistoryViewModel>
+@{
+    ViewData["Title"] = "Lịch sử điểm";
+}
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+    tailwind.config = {
+        important: true,
+        theme: {
+            extend: {
+                colors: {
+                    primary: '#F37021', 'primary-dark': '#d85f15',
+                    secondary: '#00488D', 
+                    tertiary: '#002F59', 
+                    light: '#F8F9FA',
+                },
+                fontFamily: {
+                    heading: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    body: ['"Be Vietnam Pro"', 'sans-serif'],
+                }
+            }
+        }
+    }
+</script>
+
+<div class ="min-h-screen bg-light font-body py-10 px-4">
+    <div class="max-w-2xl mx-auto">
+        <div class="mb-6 flex items-center justify-between">
+            <h1 class="text-xl font-bold font-heading text-tertiary">⭐ Lịch sử điểm</h1>
+            <a asp-action="Index" class="text-sm font-semibold text-secondary hover:underline">← Về hồ sơ</a>
+        </div>
+
+        <div class="rounded-2xl bg-white p-6 shadow-md">
+            @if(Model == null || !Model.Any())
+            {
+                <p class="text-center text-gray-500 py-6">Chưa có giao dịch điểm nào.</p>
+            }
+            else
+            {
+                <ul class="divide-y divide-gray-100">
+                    @foreach(var item in Model)
+                    {
+                        <li class="flex items-center justify-between py-4">
+                            <div>
+                                <p class="font-semibold text-gray-800">@item.ActionLabel</p>
+                                <p class="text-sm text-gray-500">
+                                    @(string.IsNullOrEmpty(item.Description) ? "-" : item.Description)
+                                </p>
+                                <p class="text-xs text-gray-400">
+                                    @item.CreatedAt?.ToString("dd/MM/yyyy HH:mm")
+                                </p>
+                            </div>
+                            <span class="text-lg font-bold @(item.IsPositive ? "text-green-600" : "text-red-600")">
+                                @item.PointsDisplay
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+</div>

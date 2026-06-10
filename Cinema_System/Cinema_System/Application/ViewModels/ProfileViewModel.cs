@@ -2,16 +2,12 @@
 {
     public class ProfileViewModel
     {
-        //ViewModel = "Túi đựng dữ liệu" Controller gửi sang View để hiển thị thông tin hồ sơ.
-        //Các thuộc tính tương ứng cột trong bảng Users (theo thiết kế DB của nhóm).
         public Guid Id { get; set; }
         public Guid RoleId { get; set; }
         public string FullName { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string? Phone { get; set; }
-        public DateTime? DateOfBirth { get; set; }   // lấy từ Users.date_of_birth
-
-        // Tuổi tính từ ngày sinh — dùng so với Movies.age_rating khi đặt vé.
+        public DateTime? DateOfBirth { get; set; }
         public int? Age
         {
             get

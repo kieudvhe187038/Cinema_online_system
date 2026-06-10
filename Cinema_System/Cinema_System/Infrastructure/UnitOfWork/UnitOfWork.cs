@@ -11,7 +11,6 @@ namespace Cinema_System.Infrastructure.UnitOfWork
 
         public UnitOfWork(CinemaWebDbContext context) => _context = context;
 
-        // Trả về repository cho từng loại Entity, tái sử dụng nếu đã tạo
         public IGenericRepository<T> Repository<T>() where T : class
         {
             if (_repositories.TryGetValue(typeof(T), out var repo))

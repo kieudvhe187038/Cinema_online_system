@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Cinema_System.Controllers
 {
-    // Controller GỌN: chỉ nhận request, gọi Service, trả View. KHÔNG đụng DbContext.
     public class ProfileController : Controller
     {
         private readonly IProfileService _profileService;
@@ -20,11 +19,9 @@ namespace Cinema_System.Controllers
             _mapper = mapper;
         }
 
-        // Chưa có Login => tạm hardcode staff4. Sau đổi sang Session/Claims.
         private Guid GetCurrentUserId()
-            => Guid.Parse("00000000-0000-0000-0002-00000000000e");
+            => Guid.Parse("00000000-0000-0000-0002-0000000003e9"); // user001 - Nguyễn Anh Linh (Customer)
 
-        // ===== 1. XEM HỒ SƠ =====
         public async Task<IActionResult> Index()
         {
             var dto = await _profileService.GetProfileAsync(GetCurrentUserId());
@@ -34,7 +31,6 @@ namespace Cinema_System.Controllers
             return View(vm);
         }
 
-        // ===== 2. CẬP NHẬT HỒ SƠ - hiện form =====
         public async Task<IActionResult> Edit()
         {
             var dto = await _profileService.GetProfileAsync(GetCurrentUserId());
@@ -51,7 +47,6 @@ namespace Cinema_System.Controllers
             return View(vm);
         }
 
-        // ===== 2+3. LƯU CẬP NHẬT + UPLOAD AVATAR =====
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(UpdateProfileViewModel vm)
@@ -63,7 +58,6 @@ namespace Cinema_System.Controllers
                 return View(vm);
             }
 
-            // Lưu file ảnh (việc IO của tầng Presentation), rồi chỉ đưa ĐƯỜNG DẪN cho Service.
             string? avatarUrl = null;
             if (vm.AvatarFile != null && vm.AvatarFile.Length > 0)
             {
@@ -75,7 +69,15 @@ namespace Cinema_System.Controllers
                     return View(vm);
                 }
 
-                var uploadDir = Path.Combine(_env.WebRootPath, "uploads", "avatars");
+                // Giới hạn DUNG LƯỢNG ảnh: tối đa 2MB
+                const long maxBytes = 2 * 1024 * 1024; // 2MB = 2 * 1024 * 1024 byte
+                if(vm.AvatarFile.Length > maxBytes)
+                {
+                    ModelState.AddModelError("AvatarFile", "Ảnh quá lớn — tối đa 2MB");
+                    return View(vm);
+                }
+
+            var uploadDir = Path.Combine(_env.WebRootPath, "uploads", "avatars");
                 Directory.CreateDirectory(uploadDir);
                 var fileName = Guid.NewGuid().ToString() + ext;
                 using (var stream = new FileStream(Path.Combine(uploadDir, fileName), FileMode.Create))
@@ -93,7 +95,6 @@ namespace Cinema_System.Controllers
             return RedirectToAction("Index");
         }
 
-        // ===== 4. ĐỔI MẬT KHẨU =====
         public IActionResult ChangePassword() => View(new ChangePasswordViewModel());
 
         [HttpPost]
@@ -113,6 +114,14 @@ namespace Cinema_System.Controllers
 
             TempData["Success"] = "Đổi mật khẩu thành công!";
             return RedirectToAction("Index");
+        }
+
+        // ===== 5. XEM LỊCH SỬ ĐIỂM =====
+        public async Task<IActionResult> PointHistory()
+        {
+            var dtos = await _profileService.GetPointHistoryAsync(GetCurrentUserId());
+            var vm = dtos.Select(d => _mapper.Map<PointHistoryViewModel>(d)).ToList();
+            return View(vm); // truyền List<PointHistoryViewModel> ra View
         }
     }
 }
