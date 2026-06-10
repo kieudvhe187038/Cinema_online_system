@@ -112,8 +112,8 @@
     .fb-badge.instock   .fb-badge-dot { background: #16a34a; }
     .fb-badge.outstock  { background: #fef9c3; color: #92400e; }
     .fb-badge.outstock  .fb-badge-dot { background: #d97706; }
-    .fb-badge.hidden    { background: #f3f4f6; color: #4b5563; }
-    .fb-badge.hidden    .fb-badge-dot { background: #9ca3af; }
+    .fb-badge.discontinued    { background: #f3f4f6; color: #4b5563; }
+    .fb-badge.discontinued    .fb-badge-dot { background: #9ca3af; }
 
     .fb-actions { display: flex; align-items: center; gap: .35rem; }
     .fb-act-btn {
@@ -192,7 +192,7 @@
                             ("", "Tất cả tình trạng"),
                             ("In Stock", "Còn hàng"),
                             ("Out of Stock", "Hết hàng"),
-                            ("Hidden", "Đã ẩn"),
+                            ("Discontinued", "Ngừng bán"),
                         };
                         foreach (var (val, text) in statusOpts)
                         {
@@ -249,13 +249,13 @@
                     {
                         "In Stock"     => "instock",
                         "Out of Stock" => "outstock",
-                        _              => "hidden"
+                        _              => "discontinued"
                     };
                     var badgeLabel = item.StockStatus switch
                     {
                         "In Stock"     => "Còn hàng",
                         "Out of Stock" => "Hết hàng",
-                        "Hidden"       => "Đã ẩn",
+                        "Discontinued"  => "Ngừng bán",
                         _              => item.StockStatus ?? "—"
                     };
                     <tr>
@@ -299,7 +299,7 @@
                                       action="@Url.Action("ToggleVisibility", "FoodBeverages", new { id = item.Id })"
                                       style="display:inline">
                                     @Html.AntiForgeryToken()
-                                    @if (item.StockStatus == "Hidden")
+                                    @if (item.StockStatus == "Discontinued")
                                     {
                                         <button type="submit" class="fb-act-btn show-btn" title="Hiện món"
                                                 onclick="return confirm('Hiện lại món này?')">

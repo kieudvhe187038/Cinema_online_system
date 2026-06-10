@@ -110,7 +110,7 @@ public class FoodBeverageService : IFoodBeverageService
         if (item is null)
             return Result.Failure("Không tìm thấy món ăn/thức uống.");
 
-        item.StockStatus = item.StockStatus == "Hidden" ? "In Stock" : "Hidden";
+        item.StockStatus = item.StockStatus == "Discontinued" ? "In Stock" : "Discontinued";
 
         _unitOfWork.FoodBeverages.Update(item);
         await _unitOfWork.SaveChangesAsync();
