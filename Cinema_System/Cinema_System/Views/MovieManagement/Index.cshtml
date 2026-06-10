@@ -187,7 +187,7 @@
                             ("", "Tất cả trạng thái"),
                             ("Now Showing", "Đang chiếu"),
                             ("Coming Soon", "Sắp chiếu"),
-                            ("Inactive", "Ngừng chiếu"),
+                            ("Stopped", "Ngừng chiếu"),
                         };
                         foreach (var (val, text) in statusOpts)
                         {
@@ -278,7 +278,7 @@
                     {
                         "Now Showing" => "Đang chiếu",
                         "Coming Soon" => "Sắp chiếu",
-                        "Inactive"    => "Ngừng chiếu",
+                        "Stopped"    => "Ngừng chiếu",
                         _ => movie.Status ?? "—"
                     };
                     <tr>
@@ -327,7 +327,7 @@
                                       action="@Url.Action("ToggleStatus", "MovieManagement", new { id = movie.Id })"
                                       style="display:inline">
                                     @Html.AntiForgeryToken()
-                                    @if (movie.Status == "Inactive")
+                                    @if (movie.Status == "Stopped")
                                     {
                                         <button type="submit" class="mv-act-btn tog-on" title="Kích hoạt"
                                                 onclick="return confirm('Kích hoạt phim này?')">
