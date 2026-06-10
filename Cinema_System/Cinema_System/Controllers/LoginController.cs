@@ -43,11 +43,17 @@ public class LoginController : AuthControllerBase
     }
 
     [HttpGet("/login")]
-    public IActionResult Login(string? returnUrl = null)
+    public IActionResult Login(string? returnUrl = null, string? error = null)
     {
         if (User.Identity?.IsAuthenticated == true)
         {
             return RedirectToAction("Index", "Home");
+        }
+
+        // Thông báo khi user huỷ đăng nhập Google (hoặc handshake thất bại).
+        if (error == "google_cancelled")
+        {
+            TempData["Message"] = "Bạn đã huỷ đăng nhập bằng Google.";
         }
 
         // Tự điền thông tin đăng nhập đã ghi nhớ từ lần trước (nếu có).

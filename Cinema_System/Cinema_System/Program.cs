@@ -71,6 +71,16 @@ if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(goo
             options.ClientId = googleClientId;
             options.ClientSecret = googleClientSecret;
             options.SignInScheme = "External";
+
+            // Khi user bấm "Huỷ" trên màn hình Google, hoặc cookie correlation bị mất
+            // ("Correlation failed"), middleware sẽ ném AuthenticationFailureException trước khi
+            // tới controller. Xử lý tại đây để redirect về trang login thay vì hiện trang lỗi.
+            options.Events.OnRemoteFailure = context =>
+            {
+                context.HandleResponse();
+                context.Response.Redirect("/login?error=google_cancelled");
+                return Task.CompletedTask;
+            };
         });
 }
 
