@@ -1,108 +1,270 @@
 @model FoodBeverageListViewModel
 @{
     ViewData["Title"] = "Quản Lý Menu";
+    ViewData["SidebarNewUrl"] = Url.Action("Create", "FoodBeverages");
+    ViewData["SidebarNewLabel"] = "Thêm Món Mới";
+    Layout = "~/Views/Shared/_ManagerLayout.cshtml";
 }
 
 @section Styles {
 <style>
-    .fb-wrap { max-width: 1100px; margin: 6rem auto 3rem; padding: 0 1.5rem; }
-    .fb-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: .75rem; }
-    .fb-title { font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: var(--on-surface); }
-    .fb-alert { padding: .75rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: .9rem; }
-    .fb-alert.success { background: #e7f5ec; color: #166534; border: 1px solid #16653433; }
-    .fb-alert.error   { background: #fde8e8; color: #b91c1c; border: 1px solid #b91c1c33; }
-    .fb-btn { padding: .55rem 1.1rem; border: none; border-radius: var(--radius); font-weight: 600; cursor: pointer; font-family: var(--font-body); text-decoration: none; display: inline-flex; align-items: center; gap: .35rem; font-size: .9rem; }
-    .fb-btn-primary { background: var(--primary); color: var(--white); }
-    .fb-btn-primary:hover { background: var(--primary-dark); }
-    .fb-filters { display: flex; gap: .6rem; flex-wrap: wrap; margin-bottom: 1.25rem; align-items: center; }
-    .fb-filters input[type=text] { padding: .5rem .8rem; border: 1px solid var(--outline-variant); border-radius: var(--radius); font-family: var(--font-body); font-size: .9rem; min-width: 220px; }
-    .fb-filters select { padding: .5rem .8rem; border: 1px solid var(--outline-variant); border-radius: var(--radius); font-family: var(--font-body); font-size: .9rem; background: var(--white); }
-    .fb-filters button { padding: .5rem 1rem; border: none; border-radius: var(--radius); background: var(--secondary-dark); color: var(--white); font-weight: 600; cursor: pointer; font-family: var(--font-body); font-size: .9rem; }
-    .fb-filters a.clear { color: var(--on-surface-variant); font-size: .85rem; text-decoration: none; }
-    .fb-info { font-size: .85rem; color: var(--on-surface-variant); margin-bottom: .75rem; }
-    .fb-table { width: 100%; border-collapse: collapse; background: var(--white); border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-sm); }
-    .fb-table th, .fb-table td { padding: .85rem 1rem; text-align: left; border-bottom: 1px solid var(--surface-container); font-size: .875rem; vertical-align: middle; }
-    .fb-table th { background: var(--secondary-dark); color: var(--white); font-weight: 600; white-space: nowrap; }
-    .fb-table tr:hover td { background: var(--surface); }
-    .fb-img { width: 52px; height: 52px; object-fit: cover; border-radius: var(--radius); }
-    .fb-img-ph { width: 52px; height: 52px; background: var(--surface-container); border-radius: var(--radius); display: flex; align-items: center; justify-content: center; font-size: .65rem; color: var(--on-surface-variant); }
-    .fb-name { font-weight: 600; color: var(--on-surface); }
-    .fb-desc { color: var(--on-surface-variant); font-size: .82rem; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fb-page-top {
+        display: flex; justify-content: space-between; align-items: flex-start;
+        margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap;
+    }
+    .fb-heading {
+        font-family: var(--font-head); font-size: 1.5rem; font-weight: 800;
+        color: var(--on-surface); margin-bottom: .2rem;
+    }
+    .fb-sub { font-size: .875rem; color: #6b7280; }
+    .fb-add-btn {
+        display: inline-flex; align-items: center; gap: .4rem;
+        padding: .6rem 1.25rem; background: var(--primary); color: #fff;
+        border: none; border-radius: .6rem; font-family: var(--font-body);
+        font-size: .82rem; font-weight: 700; cursor: pointer;
+        text-decoration: none; white-space: nowrap; letter-spacing: .3px;
+        transition: background .15s;
+    }
+    .fb-add-btn:hover { background: var(--primary-dark); color: #fff; }
+    .fb-add-btn .material-symbols-outlined { font-size: 18px; }
+
+    .fb-alert { padding: .75rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: .875rem; }
+    .fb-alert.success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+    .fb-alert.error   { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+
+    .fb-filter-card {
+        background: #fff; border-radius: .75rem; padding: 1.25rem 1.5rem;
+        margin-bottom: 1.25rem; border: 1px solid #e8eaed;
+    }
+    .fb-filter-row { display: flex; gap: .875rem; flex-wrap: wrap; align-items: flex-end; }
+    .fb-filter-item { display: flex; flex-direction: column; gap: .3rem; }
+    .fb-filter-item label {
+        font-size: .75rem; font-weight: 700; color: #6b7280;
+        text-transform: uppercase; letter-spacing: .4px;
+    }
+    .fb-filter-item select, .fb-filter-item input[type=text] {
+        padding: .5rem .75rem; border: 1px solid #d1d5db; border-radius: .5rem;
+        font-family: var(--font-body); font-size: .875rem;
+        background: #fff; color: var(--on-surface); min-width: 155px;
+    }
+    .fb-filter-item select:focus, .fb-filter-item input[type=text]:focus {
+        outline: none; border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(243,112,33,.12);
+    }
+    .fb-search-wrap { position: relative; }
+    .fb-search-wrap .material-symbols-outlined {
+        position: absolute; left: .6rem; top: 50%; transform: translateY(-50%);
+        font-size: 18px; color: #9ca3af; pointer-events: none;
+    }
+    .fb-search-wrap input { padding-left: 2.25rem; min-width: 220px; }
+    .fb-filter-apply {
+        display: inline-flex; align-items: center; gap: .4rem;
+        padding: .52rem 1.1rem; background: var(--secondary-dark); color: #fff;
+        border: none; border-radius: .5rem; font-family: var(--font-body);
+        font-size: .875rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+        transition: background .15s;
+    }
+    .fb-filter-apply:hover { background: #002f6c; }
+    .fb-filter-apply .material-symbols-outlined { font-size: 18px; }
+    .fb-clear-link {
+        font-size: .82rem; color: #6b7280; text-decoration: none;
+        padding: .5rem .2rem; align-self: flex-end;
+    }
+    .fb-clear-link:hover { color: var(--primary); }
+
+    .fb-table-card {
+        background: #fff; border-radius: .75rem; border: 1px solid #e8eaed;
+        overflow: hidden; margin-bottom: 1.25rem;
+    }
+    .fb-table { width: 100%; border-collapse: collapse; }
+    .fb-table thead tr { background: #111827; }
+    .fb-table th {
+        padding: .875rem 1rem; text-align: left;
+        color: #d1d5db; font-size: .73rem; font-weight: 700;
+        letter-spacing: .6px; text-transform: uppercase; white-space: nowrap;
+    }
+    .fb-table td {
+        padding: .875rem 1rem; border-bottom: 1px solid #f3f4f6;
+        font-size: .875rem; vertical-align: middle; color: var(--on-surface);
+    }
+    .fb-table tbody tr:last-child td { border-bottom: none; }
+    .fb-table tbody tr:hover td { background: #fafafa; }
+    .fb-img { width: 52px; height: 52px; object-fit: cover; border-radius: .5rem; display: block; }
+    .fb-img-ph {
+        width: 52px; height: 52px; background: #f3f4f6; border-radius: .5rem;
+        display: flex; align-items: center; justify-content: center;
+        font-size: .6rem; color: #9ca3af;
+    }
+    .fb-item-name { font-weight: 700; font-size: .9rem; margin-bottom: .2rem; }
+    .fb-item-desc {
+        font-size: .78rem; color: #6b7280;
+        max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
     .fb-price { font-weight: 700; color: var(--primary); white-space: nowrap; }
-    .fb-badge { display: inline-flex; align-items: center; padding: .2rem .65rem; border-radius: 999px; font-size: .78rem; font-weight: 600; white-space: nowrap; }
-    .fb-badge.instock  { background: #e7f5ec; color: #166534; }
-    .fb-badge.outstock { background: #fef9c3; color: #854d0e; }
-    .fb-badge.hidden   { background: var(--surface-container); color: var(--on-surface-variant); }
-    .fb-actions { display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; }
-    .fb-link { color: var(--secondary); text-decoration: none; font-weight: 600; font-size: .82rem; }
-    .fb-link:hover { color: var(--primary); }
-    .fb-btn-hide   { background: #fef9c3; color: #854d0e; border: 1px solid #854d0e33; padding: .25rem .65rem; border-radius: var(--radius); font-size: .8rem; font-weight: 600; cursor: pointer; font-family: var(--font-body); }
-    .fb-btn-show   { background: #e7f5ec; color: #166534; border: 1px solid #16653433; padding: .25rem .65rem; border-radius: var(--radius); font-size: .8rem; font-weight: 600; cursor: pointer; font-family: var(--font-body); }
-    .fb-btn-delete { background: none; border: none; color: #b91c1c; font-weight: 600; font-size: .82rem; cursor: pointer; font-family: var(--font-body); padding: 0; }
-    .fb-btn-delete:hover { text-decoration: underline; }
-    .fb-disabled { font-size: .8rem; color: var(--on-surface-variant); font-style: italic; }
-    .fb-empty { text-align: center; padding: 3rem; color: var(--on-surface-variant); }
-    .fb-pagination { display: flex; gap: .4rem; justify-content: center; margin-top: 1.5rem; flex-wrap: wrap; }
-    .fb-page-btn { padding: .45rem .85rem; border: 1px solid var(--outline-variant); border-radius: var(--radius); text-decoration: none; font-size: .85rem; color: var(--on-surface); background: var(--white); }
-    .fb-page-btn:hover { background: var(--surface); }
-    .fb-page-btn.active { background: var(--primary); color: var(--white); border-color: var(--primary); font-weight: 700; }
+
+    .fb-badge {
+        display: inline-flex; align-items: center; gap: .35rem;
+        padding: .25rem .75rem; border-radius: 999px;
+        font-size: .78rem; font-weight: 600; white-space: nowrap;
+    }
+    .fb-badge-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .fb-badge.instock   { background: #dcfce7; color: #15803d; }
+    .fb-badge.instock   .fb-badge-dot { background: #16a34a; }
+    .fb-badge.outstock  { background: #fef9c3; color: #92400e; }
+    .fb-badge.outstock  .fb-badge-dot { background: #d97706; }
+    .fb-badge.hidden    { background: #f3f4f6; color: #4b5563; }
+    .fb-badge.hidden    .fb-badge-dot { background: #9ca3af; }
+
+    .fb-actions { display: flex; align-items: center; gap: .35rem; }
+    .fb-act-btn {
+        width: 32px; height: 32px; border-radius: .4rem; border: none;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; background: #f3f4f6; transition: background .15s;
+        text-decoration: none;
+    }
+    .fb-act-btn .material-symbols-outlined { font-size: 18px; }
+    .fb-act-btn.edit     { color: #f59e0b; }
+    .fb-act-btn.edit:hover { background: #fef3c7; }
+    .fb-act-btn.hide-btn  { color: #6b7280; }
+    .fb-act-btn.hide-btn:hover { background: #f3f4f6; }
+    .fb-act-btn.show-btn  { color: #22c55e; }
+    .fb-act-btn.show-btn:hover { background: #dcfce7; }
+    .fb-act-btn.del-btn  { color: #ef4444; }
+    .fb-act-btn.del-btn:hover { background: #fee2e2; }
+    .fb-act-btn.disabled { color: #d1d5db; cursor: not-allowed; }
+    .fb-act-btn.disabled:hover { background: #f3f4f6; }
+
+    .fb-empty {
+        text-align: center; padding: 4rem 2rem; color: #9ca3af; font-size: .9rem;
+    }
+    .fb-empty .material-symbols-outlined { font-size: 48px; display: block; margin-bottom: .75rem; }
+
+    .fb-pag-row {
+        display: flex; align-items: center; justify-content: space-between;
+        flex-wrap: wrap; gap: .75rem;
+    }
+    .fb-pag-info { font-size: .85rem; color: #6b7280; }
+    .fb-pag-info strong { color: var(--on-surface); }
+    .fb-pages { display: flex; gap: .3rem; flex-wrap: wrap; }
+    .fb-page-btn {
+        min-width: 36px; height: 36px; padding: 0 .5rem;
+        display: flex; align-items: center; justify-content: center;
+        border: 1px solid #e5e7eb; border-radius: .45rem;
+        text-decoration: none; font-size: .875rem; color: #374151;
+        background: #fff; transition: background .15s, border-color .15s;
+    }
+    .fb-page-btn:hover { background: #fff7f0; border-color: var(--primary); color: var(--primary); }
+    .fb-page-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 700; }
     .fb-page-btn.disabled { opacity: .4; pointer-events: none; }
+    .fb-page-btn.ellipsis { border: none; background: none; cursor: default; pointer-events: none; }
 </style>
 }
 
-<div class="fb-wrap">
-    <div class="fb-top">
-        <h1 class="fb-title">Quản Lý Menu Đồ Ăn & Thức Uống</h1>
-        <a class="fb-btn fb-btn-primary" href="@Url.Action("Create", "FoodBeverages")">+ Thêm món</a>
+<div class="fb-page-top">
+    <div>
+        <h1 class="fb-heading">Danh sách món ăn & thức uống</h1>
+        <p class="fb-sub">Quản lý menu và tình trạng hàng hóa toàn hệ thống</p>
     </div>
+    <a class="fb-add-btn" href="@Url.Action("Create", "FoodBeverages")">
+        <span class="material-symbols-outlined">add_circle</span>
+        THÊM MÓN MỚI
+    </a>
+</div>
 
-    @if (TempData["Success"] != null)
-    {
-        <div class="fb-alert success">@TempData["Success"]</div>
-    }
-    @if (TempData["Error"] != null)
-    {
-        <div class="fb-alert error">@TempData["Error"]</div>
-    }
+@if (TempData["Success"] != null)
+{
+    <div class="fb-alert success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="fb-alert error">@TempData["Error"]</div>
+}
 
-    <form method="get" action="@Url.Action("Index", "FoodBeverages")" class="fb-filters">
-        <input type="text" name="search" value="@Model.Search" placeholder="Tìm theo tên món..." />
-        <select name="status">
-            <option value="">-- Tất cả trạng thái --</option>
-            <option value="In Stock"    selected="@(Model.StatusFilter == "In Stock")">Còn hàng</option>
-            <option value="Out of Stock" selected="@(Model.StatusFilter == "Out of Stock")">Hết hàng</option>
-            <option value="Hidden"      selected="@(Model.StatusFilter == "Hidden")">Đã ẩn</option>
-        </select>
-        <button type="submit">Lọc</button>
-        @if (!string.IsNullOrEmpty(Model.Search) || !string.IsNullOrEmpty(Model.StatusFilter))
-        {
-            <a class="clear" href="@Url.Action("Index", "FoodBeverages")">Xóa bộ lọc</a>
-        }
+<div class="fb-filter-card">
+    <form method="get" action="@Url.Action("Index", "FoodBeverages")">
+        <div class="fb-filter-row">
+            <div class="fb-filter-item">
+                <label>Tình trạng</label>
+                <select name="status">
+                    @{
+                        var sf = Model.StatusFilter ?? "";
+                        var statusOpts = new[] {
+                            ("", "Tất cả tình trạng"),
+                            ("In Stock", "Còn hàng"),
+                            ("Out of Stock", "Hết hàng"),
+                            ("Hidden", "Đã ẩn"),
+                        };
+                        foreach (var (val, text) in statusOpts)
+                        {
+                            if (val == sf)
+                            {
+                                <option value="@val" selected>@text</option>
+                            }
+                            else
+                            {
+                                <option value="@val">@text</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+            <div class="fb-filter-item">
+                <label>Tìm kiếm</label>
+                <div class="fb-search-wrap">
+                    <span class="material-symbols-outlined">search</span>
+                    <input type="text" name="search" value="@Model.Search" placeholder="Tìm kiếm món..." />
+                </div>
+            </div>
+            <div class="fb-filter-item">
+                <button type="submit" class="fb-filter-apply">
+                    <span class="material-symbols-outlined">filter_list</span>
+                    Áp dụng bộ lọc
+                </button>
+            </div>
+            @if (!string.IsNullOrEmpty(Model.Search) || !string.IsNullOrEmpty(Model.StatusFilter))
+            {
+                <a class="fb-clear-link" href="@Url.Action("Index", "FoodBeverages")">✕ Xóa bộ lọc</a>
+            }
+        </div>
     </form>
+</div>
 
-    <p class="fb-info">Tổng cộng: <strong>@Model.TotalCount</strong> món</p>
-
+<div class="fb-table-card">
     @if (Model.Items.Any())
     {
         <table class="fb-table">
             <thead>
                 <tr>
                     <th>Hình</th>
-                    <th>Tên món</th>
+                    <th>Tên Món</th>
                     <th>Giá</th>
-                    <th>Tình trạng</th>
-                    <th>Thao tác</th>
+                    <th>Tình Trạng</th>
+                    <th>Hành Động</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var item in Model.Items)
                 {
+                    var badgeClass = item.StockStatus switch
+                    {
+                        "In Stock"     => "instock",
+                        "Out of Stock" => "outstock",
+                        _              => "hidden"
+                    };
+                    var badgeLabel = item.StockStatus switch
+                    {
+                        "In Stock"     => "Còn hàng",
+                        "Out of Stock" => "Hết hàng",
+                        "Hidden"       => "Đã ẩn",
+                        _              => item.StockStatus ?? "—"
+                    };
                     <tr>
                         <td>
                             @if (!string.IsNullOrEmpty(item.ImageUrl))
                             {
                                 <img class="fb-img" src="@item.ImageUrl" alt="@item.Name"
-                                     onerror="this.style.display='none'" />
+                                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+                                <div class="fb-img-ph" style="display:none">No img</div>
                             }
                             else
                             {
@@ -110,54 +272,66 @@
                             }
                         </td>
                         <td>
-                            <div class="fb-name">@item.Name</div>
+                            <div class="fb-item-name">@item.Name</div>
                             @if (!string.IsNullOrEmpty(item.Description))
                             {
-                                <div class="fb-desc" title="@item.Description">@item.Description</div>
+                                <div class="fb-item-desc" title="@item.Description">@item.Description</div>
                             }
                         </td>
                         <td>
                             <span class="fb-price">@item.Price.ToString("N0") ₫</span>
                         </td>
                         <td>
-                            @{
-                                var (badgeClass, badgeLabel) = item.StockStatus switch
-                                {
-                                    "In Stock"    => ("instock",  "Còn hàng"),
-                                    "Out of Stock" => ("outstock", "Hết hàng"),
-                                    "Hidden"      => ("hidden",   "Đã ẩn"),
-                                    _             => ("hidden",   item.StockStatus ?? "—")
-                                };
-                            }
-                            <span class="fb-badge @badgeClass">@badgeLabel</span>
+                            <span class="fb-badge @badgeClass">
+                                <span class="fb-badge-dot"></span>
+                                @badgeLabel
+                            </span>
                         </td>
                         <td>
                             <div class="fb-actions">
-                                <a class="fb-link" href="@Url.Action("Edit", "FoodBeverages", new { id = item.Id })">Sửa</a>
+                                <a class="fb-act-btn edit"
+                                   href="@Url.Action("Edit", "FoodBeverages", new { id = item.Id })"
+                                   title="Chỉnh sửa">
+                                    <span class="material-symbols-outlined">edit</span>
+                                </a>
 
-                                <form method="post" action="@Url.Action("ToggleVisibility", "FoodBeverages", new { id = item.Id })" style="display:inline">
+                                <form method="post"
+                                      action="@Url.Action("ToggleVisibility", "FoodBeverages", new { id = item.Id })"
+                                      style="display:inline">
                                     @Html.AntiForgeryToken()
                                     @if (item.StockStatus == "Hidden")
                                     {
-                                        <button type="submit" class="fb-btn-show">Hiện</button>
+                                        <button type="submit" class="fb-act-btn show-btn" title="Hiện món"
+                                                onclick="return confirm('Hiện lại món này?')">
+                                            <span class="material-symbols-outlined">visibility</span>
+                                        </button>
                                     }
                                     else
                                     {
-                                        <button type="submit" class="fb-btn-hide">Ẩn</button>
+                                        <button type="submit" class="fb-act-btn hide-btn" title="Ẩn món"
+                                                onclick="return confirm('Ẩn món này khỏi menu?')">
+                                            <span class="material-symbols-outlined">visibility_off</span>
+                                        </button>
                                     }
                                 </form>
 
                                 @if (!item.HasOrders)
                                 {
-                                    <form method="post" action="@Url.Action("Delete", "FoodBeverages", new { id = item.Id })" style="display:inline">
+                                    <form method="post"
+                                          action="@Url.Action("Delete", "FoodBeverages", new { id = item.Id })"
+                                          style="display:inline">
                                         @Html.AntiForgeryToken()
-                                        <button type="submit" class="fb-btn-delete"
-                                                onclick="return confirm('Xóa vĩnh viễn món @Html.Raw(item.Name.Replace("'", "\\'"))?')">Xóa</button>
+                                        <button type="submit" class="fb-act-btn del-btn" title="Xóa vĩnh viễn"
+                                                onclick="return confirm('Xóa vĩnh viễn món này?')">
+                                            <span class="material-symbols-outlined">delete</span>
+                                        </button>
                                     </form>
                                 }
                                 else
                                 {
-                                    <span class="fb-disabled" title="Món này đã có trong lịch sử đặt hàng">Không thể xóa</span>
+                                    <button class="fb-act-btn disabled" title="Đã có trong lịch sử đặt hàng" disabled>
+                                        <span class="material-symbols-outlined">delete</span>
+                                    </button>
                                 }
                             </div>
                         </td>
@@ -165,26 +339,54 @@
                 }
             </tbody>
         </table>
-
-        @if (Model.TotalPages > 1)
-        {
-            <div class="fb-pagination">
-                <a class="fb-page-btn @(Model.CurrentPage == 1 ? "disabled" : "")"
-                   href="@Url.Action("Index", "FoodBeverages", new { search = Model.Search, status = Model.StatusFilter, page = Model.CurrentPage - 1 })">&laquo;</a>
-
-                @for (int i = 1; i <= Model.TotalPages; i++)
-                {
-                    <a class="fb-page-btn @(i == Model.CurrentPage ? "active" : "")"
-                       href="@Url.Action("Index", "FoodBeverages", new { search = Model.Search, status = Model.StatusFilter, page = i })">@i</a>
-                }
-
-                <a class="fb-page-btn @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")"
-                   href="@Url.Action("Index", "FoodBeverages", new { search = Model.Search, status = Model.StatusFilter, page = Model.CurrentPage + 1 })">&raquo;</a>
-            </div>
-        }
     }
     else
     {
-        <div class="fb-empty">Chưa có món nào. Bấm "+ Thêm món" để bắt đầu.</div>
+        <div class="fb-empty">
+            <span class="material-symbols-outlined">restaurant</span>
+            Không tìm thấy món nào.
+        </div>
+    }
+</div>
+
+@{
+    int cp = Model.CurrentPage;
+    int tp = Model.TotalPages;
+    int fromItem = Model.TotalCount == 0 ? 0 : (cp - 1) * Model.PageSize + 1;
+    int toItem   = Math.Min(cp * Model.PageSize, Model.TotalCount);
+
+    var pages = new List<int?>();
+    for (int i = 1; i <= tp; i++)
+    {
+        if (i == 1 || i == tp || (i >= cp - 2 && i <= cp + 2))
+            pages.Add(i);
+        else if (pages.Count == 0 || pages[pages.Count - 1] != null)
+            pages.Add(null);
+    }
+
+    string PageUrl(int p) => Url.Action("Index", "FoodBeverages",
+        new { search = Model.Search, status = Model.StatusFilter, page = p })!;
+}
+<div class="fb-pag-row">
+    <span class="fb-pag-info">
+        Hiển thị <strong>@fromItem–@toItem</strong> trên <strong>@Model.TotalCount</strong> món
+    </span>
+    @if (tp > 1)
+    {
+        <div class="fb-pages">
+            <a class="fb-page-btn @(cp == 1 ? "disabled" : "")" href="@PageUrl(cp - 1)">&lsaquo;</a>
+            @foreach (var pg in pages)
+            {
+                if (pg == null)
+                {
+                    <span class="fb-page-btn ellipsis">…</span>
+                }
+                else
+                {
+                    <a class="fb-page-btn @(pg == cp ? "active" : "")" href="@PageUrl(pg.Value)">@pg</a>
+                }
+            }
+            <a class="fb-page-btn @(cp == tp ? "disabled" : "")" href="@PageUrl(cp + 1)">&rsaquo;</a>
+        </div>
     }
 </div>
