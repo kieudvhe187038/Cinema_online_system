@@ -60,3 +60,25 @@
   - Bảng màu + font khai báo bằng `tailwind.config` nhúng trong từng view (vì dùng Tailwind CDN,
     không có file config riêng). Tên màu: primary/primary-dark/secondary/tertiary/light.
   - Hoàn tất Inter 1 (dung): Xem hồ sơ, Cập nhật hồ sơ, Tải ảnh đại diện, Đổi mật khẩu.
+
+### [2026-06-10] Profile - Xem lịch sử điểm + Validate SĐT + Đồng bộ màu (By: dung)
+- **What changed:**
+  - Thêm chức năng **Xem lịch sử điểm** (Point History): `PointHistoryViewModel`,
+    `PointHistoryDto`, `IProfileService.GetPointHistoryAsync` + `ProfileService.GetPointHistoryAsync`,
+    map `RewardPointHistory`→DTO (AutoMapper), `ProfileController.PointHistory`, view `PointHistory.cshtml`.
+    Thêm method `GetAllAsync(predicate)` vào `IGenericRepository`/`GenericRepository`. Nút "⭐ Lịch sử điểm"
+    chỉ hiện khi `RoleName == "CUSTOMER"` trên trang hồ sơ.
+  - **Validate số điện thoại:** `UpdateProfileViewModel.Phone` thêm `[Required]` (bắt buộc nhập) + giữ
+    `[RegularExpression(@"^(0\d{9})$")]`. Ô input ở `Edit.cshtml` thêm `inputmode="numeric"` +
+    `oninput` lọc ký tự không phải số → không gõ được chữ.
+  - **Đồng bộ màu brand:** thêm `important: true` vào `tailwind.config` của cả 4 view hồ sơ; thu nhỏ avatar
+    (h-24), header xanh `secondary→tertiary`, nút chính cam `primary`.
+- **Why:** Hoàn thiện đủ chức năng Inter 1 (thêm Point History); chặn nhập SĐT sai; sửa lỗi màu hiển thị.
+- **Impact/Notes for Team:**
+  - ⚠️ **Quan trọng:** view nhúng Tailwind CDN bị **Bootstrap đè màu** vì Bootstrap có `.bg-primary` /
+    `.text-primary` / `.bg-secondary` / `.bg-light` kèm `!important` (màu xanh/xám). Class cùng tên của
+    Tailwind (không `!important`) bị thua → nút `bg-primary` ra XANH thay vì cam. **Fix:** thêm
+    `important: true` vào `tailwind.config`. Ai làm view mới nhúng Tailwind nhớ thêm dòng này.
+  - `GetAllAsync(predicate)` dùng được cho mọi entity khác (list theo điều kiện).
+  - Entity điểm thưởng: `RewardPointHistory` (bảng `Reward_Point_History`), trường `PointsChanged`,
+    `ActionType`, `Description`, `CreatedAt`.
