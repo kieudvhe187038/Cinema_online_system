@@ -199,7 +199,7 @@ public class MovieService : IMovieService
         if (movie is null)
             return Result.Failure("Không tìm thấy phim.");
 
-        movie.Status = movie.Status == "Inactive" ? "Now Showing" : "Inactive";
+        movie.Status = movie.Status == "Stopped" ? "Now Showing" : "Stopped";
         movie.UpdatedAt = DateTime.UtcNow;
         _unitOfWork.Movies.Update(movie);
         await _unitOfWork.SaveChangesAsync();
