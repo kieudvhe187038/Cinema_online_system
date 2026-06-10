@@ -1,160 +1,345 @@
 @model MovieListViewModel
 @{
-    ViewData["Title"] = "Quản Lý Phim";
+    ViewData["Title"] = "Quản lý phim";
+    ViewData["SidebarNewUrl"] = Url.Action("Create", "MovieManagement");
+    ViewData["SidebarNewLabel"] = "Add New Movie";
+    Layout = "~/Views/Shared/_ManagerLayout.cshtml";
 }
 
 @section Styles {
 <style>
-    .mv-wrap { max-width: 1200px; margin: 6rem auto 3rem; padding: 0 1.5rem; }
-    .mv-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: .75rem; }
-    .mv-title { font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: var(--on-surface); }
-    .mv-alert { padding: .75rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: .9rem; }
-    .mv-alert.success { background: #e7f5ec; color: #166534; border: 1px solid #16653433; }
-    .mv-alert.error   { background: #fde8e8; color: #b91c1c; border: 1px solid #b91c1c33; }
-    .mv-btn { padding: .55rem 1.1rem; border: none; border-radius: var(--radius); font-weight: 600; cursor: pointer; font-family: var(--font-body); text-decoration: none; display: inline-flex; align-items: center; gap: .35rem; font-size: .9rem; }
-    .mv-btn-primary { background: var(--primary); color: var(--white); }
-    .mv-btn-primary:hover { background: var(--primary-dark); }
-    .mv-filters { display: flex; gap: .6rem; flex-wrap: wrap; margin-bottom: 1.25rem; align-items: center; }
-    .mv-filters input[type=text] { padding: .5rem .8rem; border: 1px solid var(--outline-variant); border-radius: var(--radius); font-family: var(--font-body); font-size: .9rem; min-width: 220px; }
-    .mv-filters select { padding: .5rem .8rem; border: 1px solid var(--outline-variant); border-radius: var(--radius); font-family: var(--font-body); font-size: .9rem; background: var(--white); }
-    .mv-filters button { padding: .5rem 1rem; border: none; border-radius: var(--radius); background: var(--secondary-dark); color: var(--white); font-weight: 600; cursor: pointer; font-family: var(--font-body); font-size: .9rem; }
-    .mv-filters a.clear { color: var(--on-surface-variant); font-size: .85rem; text-decoration: none; }
-    .mv-table { width: 100%; border-collapse: collapse; background: var(--white); border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-sm); }
-    .mv-table th, .mv-table td { padding: .8rem 1rem; text-align: left; border-bottom: 1px solid var(--surface-container); font-size: .875rem; vertical-align: middle; }
-    .mv-table th { background: var(--secondary-dark); color: var(--white); font-weight: 600; white-space: nowrap; }
-    .mv-table tr:hover td { background: var(--surface); }
-    .mv-poster { width: 44px; height: 62px; object-fit: cover; border-radius: 4px; }
-    .mv-poster-ph { width: 44px; height: 62px; background: var(--surface-container); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: .65rem; color: var(--on-surface-variant); text-align: center; }
-    .mv-name { font-weight: 600; color: var(--on-surface); max-width: 200px; }
-    .mv-genres { display: flex; flex-wrap: wrap; gap: .25rem; }
-    .mv-genre-tag { background: var(--surface-container); color: var(--on-surface-variant); font-size: .72rem; padding: .1rem .45rem; border-radius: 999px; font-weight: 500; }
-    .mv-status { display: inline-flex; align-items: center; padding: .2rem .65rem; border-radius: 999px; font-size: .78rem; font-weight: 600; }
-    .mv-status.now { background: #e7f5ec; color: #166534; }
-    .mv-status.coming { background: #dbeafe; color: #1e40af; }
-    .mv-status.inactive { background: var(--surface-container); color: var(--on-surface-variant); }
-    .mv-actions { display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; }
-    .mv-link { color: var(--secondary); text-decoration: none; font-weight: 600; font-size: .82rem; }
-    .mv-link:hover { color: var(--primary); }
-    .mv-toggle-on  { background: #dcfce7; color: #166534; border: 1px solid #16653433; padding: .25rem .65rem; border-radius: var(--radius); font-size: .8rem; font-weight: 600; cursor: pointer; font-family: var(--font-body); }
-    .mv-toggle-off { background: #fde8e8; color: #b91c1c; border: 1px solid #b91c1c33; padding: .25rem .65rem; border-radius: var(--radius); font-size: .8rem; font-weight: 600; cursor: pointer; font-family: var(--font-body); }
-    .mv-empty { text-align: center; padding: 3rem; color: var(--on-surface-variant); }
-    .mv-info { font-size: .85rem; color: var(--on-surface-variant); margin-bottom: .75rem; }
-    .mv-pagination { display: flex; gap: .4rem; justify-content: center; margin-top: 1.5rem; flex-wrap: wrap; }
-    .mv-page-btn { padding: .45rem .85rem; border: 1px solid var(--outline-variant); border-radius: var(--radius); text-decoration: none; font-size: .85rem; color: var(--on-surface); background: var(--white); }
-    .mv-page-btn:hover { background: var(--surface); }
-    .mv-page-btn.active { background: var(--primary); color: var(--white); border-color: var(--primary); font-weight: 700; }
+    .mv-page-top {
+        display: flex; justify-content: space-between; align-items: flex-start;
+        margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap;
+    }
+    .mv-heading {
+        font-family: var(--font-head); font-size: 1.5rem; font-weight: 800;
+        color: var(--on-surface); margin-bottom: .2rem;
+    }
+    .mv-sub { font-size: .875rem; color: #6b7280; }
+    .mv-add-btn {
+        display: inline-flex; align-items: center; gap: .4rem;
+        padding: .6rem 1.25rem; background: var(--primary); color: #fff;
+        border: none; border-radius: .6rem; font-family: var(--font-body);
+        font-size: .82rem; font-weight: 700; cursor: pointer;
+        text-decoration: none; white-space: nowrap; letter-spacing: .3px;
+        transition: background .15s;
+    }
+    .mv-add-btn:hover { background: var(--primary-dark); color: #fff; }
+    .mv-add-btn .material-symbols-outlined { font-size: 18px; }
+
+    .mv-alert { padding: .75rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: .875rem; }
+    .mv-alert.success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+    .mv-alert.error   { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+
+    .mv-filter-card {
+        background: #fff; border-radius: .75rem; padding: 1.25rem 1.5rem;
+        margin-bottom: 1.25rem; border: 1px solid #e8eaed;
+    }
+    .mv-filter-row { display: flex; gap: .875rem; flex-wrap: wrap; align-items: flex-end; }
+    .mv-filter-item { display: flex; flex-direction: column; gap: .3rem; }
+    .mv-filter-item label {
+        font-size: .75rem; font-weight: 700; color: #6b7280;
+        text-transform: uppercase; letter-spacing: .4px;
+    }
+    .mv-filter-item select, .mv-filter-item input[type=text] {
+        padding: .5rem .75rem; border: 1px solid #d1d5db; border-radius: .5rem;
+        font-family: var(--font-body); font-size: .875rem;
+        background: #fff; color: var(--on-surface); min-width: 155px;
+    }
+    .mv-filter-item select:focus, .mv-filter-item input[type=text]:focus {
+        outline: none; border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(243,112,33,.12);
+    }
+    .mv-search-wrap { position: relative; }
+    .mv-search-wrap .material-symbols-outlined {
+        position: absolute; left: .6rem; top: 50%; transform: translateY(-50%);
+        font-size: 18px; color: #9ca3af; pointer-events: none;
+    }
+    .mv-search-wrap input { padding-left: 2.25rem; min-width: 220px; }
+    .mv-filter-apply {
+        display: inline-flex; align-items: center; gap: .4rem;
+        padding: .52rem 1.1rem; background: var(--secondary-dark); color: #fff;
+        border: none; border-radius: .5rem; font-family: var(--font-body);
+        font-size: .875rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+        transition: background .15s;
+    }
+    .mv-filter-apply:hover { background: #002f6c; }
+    .mv-filter-apply .material-symbols-outlined { font-size: 18px; }
+    .mv-clear-link {
+        font-size: .82rem; color: #6b7280; text-decoration: none;
+        padding: .5rem .2rem; align-self: flex-end;
+    }
+    .mv-clear-link:hover { color: var(--primary); }
+
+    .mv-table-card {
+        background: #fff; border-radius: .75rem; border: 1px solid #e8eaed;
+        overflow: hidden; margin-bottom: 1.25rem;
+    }
+    .mv-table { width: 100%; border-collapse: collapse; }
+    .mv-table thead tr { background: #111827; }
+    .mv-table th {
+        padding: .875rem 1rem; text-align: left;
+        color: #d1d5db; font-size: .73rem; font-weight: 700;
+        letter-spacing: .6px; text-transform: uppercase; white-space: nowrap;
+    }
+    .mv-table td {
+        padding: .875rem 1rem; border-bottom: 1px solid #f3f4f6;
+        font-size: .875rem; vertical-align: middle; color: var(--on-surface);
+    }
+    .mv-table tbody tr:last-child td { border-bottom: none; }
+    .mv-table tbody tr:hover td { background: #fafafa; }
+    .mv-poster { width: 42px; height: 60px; object-fit: cover; border-radius: .35rem; display: block; }
+    .mv-poster-ph {
+        width: 42px; height: 60px; background: #f3f4f6; border-radius: .35rem;
+        display: flex; align-items: center; justify-content: center;
+        font-size: .6rem; color: #9ca3af; text-align: center;
+    }
+    .mv-movie-name { font-weight: 700; font-size: .9rem; margin-bottom: .2rem; max-width: 220px; }
+    .mv-movie-date { font-size: .78rem; color: #6b7280; }
+    .mv-genres-text { color: #374151; font-size: .85rem; }
+
+    .mv-badge {
+        display: inline-flex; align-items: center; gap: .35rem;
+        padding: .25rem .75rem; border-radius: 999px;
+        font-size: .78rem; font-weight: 600; white-space: nowrap;
+    }
+    .mv-badge-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .mv-badge.now     { background: #dcfce7; color: #15803d; }
+    .mv-badge.now     .mv-badge-dot { background: #16a34a; }
+    .mv-badge.coming  { background: #fff7ed; color: #c2410c; }
+    .mv-badge.coming  .mv-badge-dot { background: #ea580c; }
+    .mv-badge.inactive { background: #f3f4f6; color: #4b5563; }
+    .mv-badge.inactive .mv-badge-dot { background: #9ca3af; }
+
+    .mv-actions { display: flex; align-items: center; gap: .35rem; }
+    .mv-act-btn {
+        width: 32px; height: 32px; border-radius: .4rem; border: none;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; background: #f3f4f6; transition: background .15s;
+        text-decoration: none;
+    }
+    .mv-act-btn .material-symbols-outlined { font-size: 18px; }
+    .mv-act-btn.view  { color: #0ea5e9; }
+    .mv-act-btn.view:hover  { background: #e0f2fe; }
+    .mv-act-btn.edit  { color: #f59e0b; }
+    .mv-act-btn.edit:hover  { background: #fef3c7; }
+    .mv-act-btn.tog-off { color: #ef4444; }
+    .mv-act-btn.tog-off:hover { background: #fee2e2; }
+    .mv-act-btn.tog-on  { color: #22c55e; }
+    .mv-act-btn.tog-on:hover  { background: #dcfce7; }
+
+    .mv-empty {
+        text-align: center; padding: 4rem 2rem; color: #9ca3af; font-size: .9rem;
+    }
+    .mv-empty .material-symbols-outlined { font-size: 48px; display: block; margin-bottom: .75rem; }
+
+    .mv-pag-row {
+        display: flex; align-items: center; justify-content: space-between;
+        flex-wrap: wrap; gap: .75rem;
+    }
+    .mv-pag-info { font-size: .85rem; color: #6b7280; }
+    .mv-pag-info strong { color: var(--on-surface); }
+    .mv-pages { display: flex; gap: .3rem; flex-wrap: wrap; }
+    .mv-page-btn {
+        min-width: 36px; height: 36px; padding: 0 .5rem;
+        display: flex; align-items: center; justify-content: center;
+        border: 1px solid #e5e7eb; border-radius: .45rem;
+        text-decoration: none; font-size: .875rem; color: #374151;
+        background: #fff; transition: background .15s, border-color .15s;
+    }
+    .mv-page-btn:hover { background: #fff7f0; border-color: var(--primary); color: var(--primary); }
+    .mv-page-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 700; }
     .mv-page-btn.disabled { opacity: .4; pointer-events: none; }
+    .mv-page-btn.ellipsis { border: none; background: none; cursor: default; pointer-events: none; }
 </style>
 }
 
-<div class="mv-wrap">
-    <div class="mv-top">
-        <h1 class="mv-title">Quản Lý Phim</h1>
-        <a class="mv-btn mv-btn-primary" href="@Url.Action("Create", "MovieManagement")">+ Thêm phim</a>
+<div class="mv-page-top">
+    <div>
+        <h1 class="mv-heading">Danh sách phim</h1>
+        <p class="mv-sub">Quản lý kho phim và trạng thái phát hành toàn hệ thống</p>
     </div>
+    <a class="mv-add-btn" href="@Url.Action("Create", "MovieManagement")">
+        <span class="material-symbols-outlined">add_circle</span>
+        THÊM PHIM MỚI
+    </a>
+</div>
 
-    @if (TempData["Success"] != null)
-    {
-        <div class="mv-alert success">@TempData["Success"]</div>
-    }
-    @if (TempData["Error"] != null)
-    {
-        <div class="mv-alert error">@TempData["Error"]</div>
-    }
+@if (TempData["Success"] != null)
+{
+    <div class="mv-alert success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="mv-alert error">@TempData["Error"]</div>
+}
 
-    <form method="get" action="@Url.Action("Index", "MovieManagement")" class="mv-filters">
-        <input type="text" name="search" value="@Model.Search" placeholder="Tìm theo tên phim..." />
-        <select name="status">
-            <option value="">-- Tất cả trạng thái --</option>
-            <option value="Now Showing" selected="@(Model.StatusFilter == "Now Showing")">Đang chiếu</option>
-            <option value="Coming Soon" selected="@(Model.StatusFilter == "Coming Soon")">Sắp chiếu</option>
-            <option value="Inactive" selected="@(Model.StatusFilter == "Inactive")">Tạm ngừng</option>
-        </select>
-        <button type="submit">Lọc</button>
-        @if (!string.IsNullOrEmpty(Model.Search) || !string.IsNullOrEmpty(Model.StatusFilter))
-        {
-            <a class="clear" href="@Url.Action("Index", "MovieManagement")">Xóa bộ lọc</a>
-        }
+<div class="mv-filter-card">
+    <form method="get" action="@Url.Action("Index", "MovieManagement")">
+        <div class="mv-filter-row">
+            <div class="mv-filter-item">
+                <label>Trạng thái</label>
+                <select name="status">
+                    @{
+                        var statusFilter = Model.StatusFilter ?? "";
+                        var statusOpts = new[] {
+                            ("", "Tất cả trạng thái"),
+                            ("Now Showing", "Đang chiếu"),
+                            ("Coming Soon", "Sắp chiếu"),
+                            ("Inactive", "Ngừng chiếu"),
+                        };
+                        foreach (var (val, text) in statusOpts)
+                        {
+                            if (val == statusFilter)
+                            {
+                                <option value="@val" selected>@text</option>
+                            }
+                            else
+                            {
+                                <option value="@val">@text</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+            <div class="mv-filter-item">
+                <label>Thể loại</label>
+                <select name="genre">
+                    @{
+                        var genreFilter = Model.GenreFilter ?? "";
+                        if (genreFilter == "")
+                        {
+                            <option value="" selected>Tất cả thể loại</option>
+                        }
+                        else
+                        {
+                            <option value="">Tất cả thể loại</option>
+                        }
+                        foreach (var g in Model.AvailableGenres)
+                        {
+                            if (g.Name == genreFilter)
+                            {
+                                <option value="@g.Name" selected>@g.Name</option>
+                            }
+                            else
+                            {
+                                <option value="@g.Name">@g.Name</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+            <div class="mv-filter-item">
+                <label>Tìm kiếm</label>
+                <div class="mv-search-wrap">
+                    <span class="material-symbols-outlined">search</span>
+                    <input type="text" name="search"  value="@Model.Search" placeholder="   Tìm kiếm phim..." />
+                </div>
+            </div>
+            <div class="mv-filter-item">
+                <button type="submit" class="mv-filter-apply">
+                    <span class="material-symbols-outlined">filter_list</span>
+                    Áp dụng bộ lọc
+                </button>
+            </div>
+            @if (!string.IsNullOrEmpty(Model.Search) || !string.IsNullOrEmpty(Model.StatusFilter) || !string.IsNullOrEmpty(Model.GenreFilter))
+            {
+                <a class="mv-clear-link" href="@Url.Action("Index", "MovieManagement")">✕ Xóa bộ lọc</a>
+            }
+        </div>
     </form>
+</div>
 
-    <p class="mv-info">Tổng cộng: <strong>@Model.TotalCount</strong> phim</p>
-
+<div class="mv-table-card">
     @if (Model.Movies.Any())
     {
         <table class="mv-table">
             <thead>
                 <tr>
                     <th>Poster</th>
-                    <th>Tên phim</th>
-                    <th>Thể loại</th>
-                    <th>Thời lượng</th>
-                    <th>Khởi chiếu</th>
-                    <th>Trạng thái</th>
-                    <th>Thao tác</th>
+                    <th>Tên Phim</th>
+                    <th>Thể Loại</th>
+                    <th>Thời Lượng</th>
+                    <th>Trạng Thái</th>
+                    <th>Hành Động</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var movie in Model.Movies)
                 {
+                    var badgeClass = movie.Status switch
+                    {
+                        "Now Showing" => "now",
+                        "Coming Soon" => "coming",
+                        _ => "inactive"
+                    };
+                    var badgeLabel = movie.Status switch
+                    {
+                        "Now Showing" => "Đang chiếu",
+                        "Coming Soon" => "Sắp chiếu",
+                        "Inactive"    => "Ngừng chiếu",
+                        _ => movie.Status ?? "—"
+                    };
                     <tr>
                         <td>
                             @if (!string.IsNullOrEmpty(movie.PosterUrl))
                             {
                                 <img class="mv-poster" src="@movie.PosterUrl" alt="@movie.Title"
-                                     onerror="this.style.display='none'" />
+                                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+                                <div class="mv-poster-ph" style="display:none">No img</div>
                             }
                             else
                             {
-                                <div class="mv-poster-ph">No Image</div>
+                                <div class="mv-poster-ph">No img</div>
                             }
                         </td>
-                        <td><span class="mv-name">@movie.Title</span></td>
                         <td>
-                            <div class="mv-genres">
-                                @foreach (var g in movie.GenreNames)
-                                {
-                                    <span class="mv-genre-tag">@g</span>
-                                }
-                                @if (!movie.GenreNames.Any())
-                                {
-                                    <span style="color:var(--on-surface-variant);font-size:.8rem">—</span>
-                                }
-                            </div>
+                            <div class="mv-movie-name">@movie.Title</div>
+                            @if (movie.ReleaseDate.HasValue)
+                            {
+                                <div class="mv-movie-date">Khởi chiếu: @movie.ReleaseDate.Value.ToString("dd/MM/yyyy")</div>
+                            }
+                        </td>
+                        <td>
+                            <span class="mv-genres-text">@(movie.GenreNames.Any() ? string.Join(", ", movie.GenreNames) : "—")</span>
                         </td>
                         <td>@(movie.DurationMinutes.HasValue ? $"{movie.DurationMinutes} phút" : "—")</td>
-                        <td>@(movie.ReleaseDate.HasValue ? movie.ReleaseDate.Value.ToString("dd/MM/yyyy") : "—")</td>
                         <td>
-                            @{
-                                var statusClass = movie.Status switch
-                                {
-                                    "Now Showing" => "now",
-                                    "Coming Soon" => "coming",
-                                    _ => "inactive"
-                                };
-                                var statusLabel = movie.Status switch
-                                {
-                                    "Now Showing" => "Đang chiếu",
-                                    "Coming Soon" => "Sắp chiếu",
-                                    "Inactive" => "Tạm ngừng",
-                                    _ => movie.Status ?? "—"
-                                };
-                            }
-                            <span class="mv-status @statusClass">@statusLabel</span>
+                            <span class="mv-badge @badgeClass">
+                                <span class="mv-badge-dot"></span>
+                                @badgeLabel
+                            </span>
                         </td>
                         <td>
                             <div class="mv-actions">
-                                <a class="mv-link" href="@Url.Action("Edit", "MovieManagement", new { id = movie.Id })">Sửa</a>
-                                <form method="post" action="@Url.Action("ToggleStatus", "MovieManagement", new { id = movie.Id })" style="display:inline">
+                                <a class="mv-act-btn view"
+                                   href="@Url.Action("Edit", "MovieManagement", new { id = movie.Id })"
+                                   title="Xem chi tiết">
+                                    <span class="material-symbols-outlined">visibility</span>
+                                </a>
+                                <a class="mv-act-btn edit"
+                                   href="@Url.Action("Edit", "MovieManagement", new { id = movie.Id })"
+                                   title="Chỉnh sửa">
+                                    <span class="material-symbols-outlined">edit</span>
+                                </a>
+                                <form method="post"
+                                      action="@Url.Action("ToggleStatus", "MovieManagement", new { id = movie.Id })"
+                                      style="display:inline">
                                     @Html.AntiForgeryToken()
                                     @if (movie.Status == "Inactive")
                                     {
-                                        <button type="submit" class="mv-toggle-on"
-                                                onclick="return confirm('Kích hoạt phim @Html.Raw(movie.Title.Replace("'", "\\'"))?')">Kích hoạt</button>
+                                        <button type="submit" class="mv-act-btn tog-on" title="Kích hoạt"
+                                                onclick="return confirm('Kích hoạt phim này?')">
+                                            <span class="material-symbols-outlined">play_circle</span>
+                                        </button>
                                     }
                                     else
                                     {
-                                        <button type="submit" class="mv-toggle-off"
-                                                onclick="return confirm('Tạm ngừng phim @Html.Raw(movie.Title.Replace("'", "\\'"))?')">Tạm ngừng</button>
+                                        <button type="submit" class="mv-act-btn tog-off" title="Ngừng chiếu"
+                                                onclick="return confirm('Ngừng chiếu phim này?')">
+                                            <span class="material-symbols-outlined">delete</span>
+                                        </button>
                                     }
                                 </form>
                             </div>
@@ -163,26 +348,54 @@
                 }
             </tbody>
         </table>
-
-        @if (Model.TotalPages > 1)
-        {
-            <div class="mv-pagination">
-                <a class="mv-page-btn @(Model.CurrentPage == 1 ? "disabled" : "")"
-                   href="@Url.Action("Index", "MovieManagement", new { search = Model.Search, status = Model.StatusFilter, page = Model.CurrentPage - 1 })">&laquo;</a>
-
-                @for (int i = 1; i <= Model.TotalPages; i++)
-                {
-                    <a class="mv-page-btn @(i == Model.CurrentPage ? "active" : "")"
-                       href="@Url.Action("Index", "MovieManagement", new { search = Model.Search, status = Model.StatusFilter, page = i })">@i</a>
-                }
-
-                <a class="mv-page-btn @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")"
-                   href="@Url.Action("Index", "MovieManagement", new { search = Model.Search, status = Model.StatusFilter, page = Model.CurrentPage + 1 })">&raquo;</a>
-            </div>
-        }
     }
     else
     {
-        <div class="mv-empty">Không có phim nào. Bấm "+ Thêm phim" để thêm mới.</div>
+        <div class="mv-empty">
+            <span class="material-symbols-outlined">movie_filter</span>
+            Không tìm thấy phim nào.
+        </div>
+    }
+</div>
+
+@{
+    int cp = Model.CurrentPage;
+    int tp = Model.TotalPages;
+    int fromItem = Model.TotalCount == 0 ? 0 : (cp - 1) * Model.PageSize + 1;
+    int toItem   = Math.Min(cp * Model.PageSize, Model.TotalCount);
+
+    var pages = new List<int?>();
+    for (int i = 1; i <= tp; i++)
+    {
+        if (i == 1 || i == tp || (i >= cp - 2 && i <= cp + 2))
+            pages.Add(i);
+        else if (pages.Count == 0 || pages[pages.Count - 1] != null)
+            pages.Add(null);
+    }
+
+    string PageUrl(int p) => Url.Action("Index", "MovieManagement",
+        new { search = Model.Search, status = Model.StatusFilter, genre = Model.GenreFilter, page = p })!;
+}
+<div class="mv-pag-row">
+    <span class="mv-pag-info">
+        Hiển thị <strong>@fromItem–@toItem</strong> trên <strong>@Model.TotalCount</strong> phim
+    </span>
+    @if (tp > 1)
+    {
+        <div class="mv-pages">
+            <a class="mv-page-btn @(cp == 1 ? "disabled" : "")" href="@PageUrl(cp - 1)">&lsaquo;</a>
+            @foreach (var pg in pages)
+            {
+                if (pg == null)
+                {
+                    <span class="mv-page-btn ellipsis">…</span>
+                }
+                else
+                {
+                    <a class="mv-page-btn @(pg == cp ? "active" : "")" href="@PageUrl(pg.Value)">@pg</a>
+                }
+            }
+            <a class="mv-page-btn @(cp == tp ? "disabled" : "")" href="@PageUrl(cp + 1)">&rsaquo;</a>
+        </div>
     }
 </div>

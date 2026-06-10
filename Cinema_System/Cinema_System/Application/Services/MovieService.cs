@@ -72,12 +72,13 @@ public class MovieService : IMovieService
     }
 
     public async Task<MovieListViewModel> GetMoviesForAdminAsync(
-        string? search, string? status, int page, int pageSize)
+        string? search, string? status, string? genre, int page, int pageSize)
     {
         var movies = await _unitOfWork.Movies.GetAllAsync(
             predicate: m =>
                 (string.IsNullOrEmpty(search) || m.Title.Contains(search)) &&
-                (string.IsNullOrEmpty(status) || m.Status == status),
+                (string.IsNullOrEmpty(status) || m.Status == status) &&
+                (string.IsNullOrEmpty(genre) || m.Genres.Any(g => g.Name == genre)),
             include: q => q.Include(m => m.Genres),
             orderBy: q => q.OrderByDescending(m => m.CreatedAt));
 
@@ -87,6 +88,7 @@ public class MovieService : IMovieService
         page = Math.Clamp(page, 1, totalPages);
 
         var paged = list.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+        var allGenres = await GetAllGenresAsync();
 
         return new MovieListViewModel
         {
@@ -96,7 +98,9 @@ public class MovieService : IMovieService
             PageSize = pageSize,
             TotalCount = total,
             Search = search,
-            StatusFilter = status
+            StatusFilter = status,
+            GenreFilter = genre,
+            AvailableGenres = allGenres.ToList()
         };
     }
 
