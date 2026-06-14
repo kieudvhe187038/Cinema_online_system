@@ -4,121 +4,74 @@
     Layout = "~/Views/Shared/_ManagerLayout.cshtml";
 }
 
-@section Styles {
-<style>
-    .fb-wrap { max-width: 620px; margin: 0 auto 2rem; padding: 0; }
-    .fb-page-header { margin-bottom: 1.5rem; }
-    .fb-page-title {
-        font-family: var(--font-head); font-size: 1.4rem; font-weight: 800;
-        color: var(--on-surface); margin-bottom: .2rem;
-    }
-    .fb-page-sub { font-size: .875rem; color: #6b7280; }
-    .fb-card {
-        background: #fff; border-radius: .75rem; border: 1px solid #e8eaed;
-        padding: 1.75rem; margin-bottom: 1.25rem;
-    }
-    .fb-card-title {
-        font-weight: 700; font-size: .95rem; color: var(--on-surface);
-        margin-bottom: 1.1rem; padding-bottom: .6rem;
-        border-bottom: 2px solid #f3f4f6;
-    }
-    .fb-field { margin-bottom: 1rem; }
-    .fb-field label {
-        display: block; font-weight: 600; color: #374151;
-        margin-bottom: .4rem; font-size: .875rem;
-    }
-    .fb-field input, .fb-field textarea, .fb-field select {
-        width: 100%; padding: .55rem .8rem; border: 1px solid #d1d5db;
-        border-radius: .5rem; font-family: var(--font-body); font-size: .9rem;
-        background: #fff; box-sizing: border-box; color: var(--on-surface);
-    }
-    .fb-field textarea { min-height: 90px; resize: vertical; }
-    .fb-field input:focus, .fb-field textarea:focus, .fb-field select:focus {
-        outline: none; border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(243,112,33,.12);
-    }
-    .fb-error { color: #b91c1c; font-size: .82rem; margin-top: .3rem; display: block; }
-    .fb-summary { color: #b91c1c; font-size: .875rem; margin-bottom: 1rem; }
-    .fb-hint { font-size: .78rem; color: #6b7280; margin-top: .3rem; }
-    .fb-img-preview {
-        margin-top: .6rem; width: 90px; height: 90px; object-fit: cover;
-        border-radius: .5rem; border: 1px solid #e5e7eb;
-    }
-    .fb-actions { display: flex; gap: .75rem; margin-top: .5rem; }
-    .fb-btn {
-        padding: .6rem 1.3rem; border: none; border-radius: .5rem;
-        font-weight: 600; cursor: pointer; font-family: var(--font-body);
-        text-decoration: none; display: inline-flex; align-items: center;
-        gap: .35rem; font-size: .9rem; transition: background .15s;
-    }
-    .fb-btn-primary { background: var(--primary); color: #fff; }
-    .fb-btn-primary:hover { background: var(--primary-dark); }
-    .fb-btn-ghost { background: #f3f4f6; color: var(--on-surface); }
-    .fb-btn-ghost:hover { background: #e5e7eb; }
-</style>
+@{
+    const string fieldInput = "w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-sm box-border focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20";
+    const string fieldLabel = "block font-semibold text-gray-700 mb-1.5 text-sm";
+    const string fieldError = "block text-red-700 text-xs mt-1";
+    const string fileInput = "w-full text-sm text-[#584237] border border-gray-300 rounded-lg p-2 cursor-pointer file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary file:text-white file:text-sm file:font-semibold hover:file:bg-primary-dark file:cursor-pointer";
 }
 
-<div class="fb-wrap">
-    <div class="fb-page-header">
-        <h1 class="fb-page-title">Sửa Món: @Model.Name</h1>
-        <p class="fb-page-sub">Cập nhật thông tin món ăn hoặc thức uống</p>
+<div class="max-w-[620px] mx-auto mb-8">
+    <div class="mb-6">
+        <h1 class="font-head text-2xl font-extrabold text-[#191c1d] mb-0.5">Sửa Món: @Model.Name</h1>
+        <p class="text-sm text-gray-500">Cập nhật thông tin món ăn hoặc thức uống</p>
     </div>
 
-    <div class="fb-card">
-        <p class="fb-card-title">Thông tin món</p>
-        <form method="post" action="@Url.Action("Edit", "FoodBeverages", new { id = Model.Id })">
+    <div class="bg-white rounded-xl border border-[#e8eaed] p-7">
+        <p class="font-bold text-base text-[#191c1d] mb-4 pb-2 border-b-2 border-gray-100">Thông tin món</p>
+        <form method="post" action="@Url.Action("Edit", "FoodBeverages", new { id = Model.Id })" enctype="multipart/form-data">
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="Id" />
-            <div asp-validation-summary="ModelOnly" class="fb-summary"></div>
+            @* Giữ lại ảnh hiện tại nếu không upload ảnh mới *@
+            <input type="hidden" asp-for="ImageUrl" />
+            <div asp-validation-summary="ModelOnly" class="text-red-700 text-sm mb-4"></div>
 
-            <div class="fb-field">
-                <label asp-for="Name">Tên món</label>
-                <input asp-for="Name" />
-                <span asp-validation-for="Name" class="fb-error"></span>
+            <div class="mb-4">
+                <label asp-for="Name" class="@fieldLabel">Tên món</label>
+                <input asp-for="Name" class="@fieldInput" />
+                <span asp-validation-for="Name" class="@fieldError"></span>
             </div>
 
-            <div class="fb-field">
-                <label asp-for="Price">Giá (₫)</label>
-                <input asp-for="Price" type="number" min="0" step="1000" />
-                <span asp-validation-for="Price" class="fb-error"></span>
+            <div class="mb-4">
+                <label asp-for="Price" class="@fieldLabel">Giá (₫)</label>
+                <input asp-for="Price" type="number" min="0" step="1000" class="@fieldInput" />
+                <span asp-validation-for="Price" class="@fieldError"></span>
             </div>
 
-            <div class="fb-field">
-                <label asp-for="StockStatus">Tình trạng</label>
-                <select asp-for="StockStatus">
+            <div class="mb-4">
+                <label asp-for="StockStatus" class="@fieldLabel">Tình trạng</label>
+                <select asp-for="StockStatus" class="@fieldInput">
                     <option value="In Stock">Còn hàng</option>
                     <option value="Out of Stock">Hết hàng</option>
                     <option value="Discontinued">Ngừng bán</option>
                 </select>
-                <span asp-validation-for="StockStatus" class="fb-error"></span>
+                <span asp-validation-for="StockStatus" class="@fieldError"></span>
             </div>
 
-            <div class="fb-field">
-                <label asp-for="Description">Mô tả</label>
-                <textarea asp-for="Description"></textarea>
+            <div class="mb-4">
+                <label asp-for="Description" class="@fieldLabel">Mô tả</label>
+                <textarea asp-for="Description" class="@fieldInput min-h-[90px] resize-y"></textarea>
             </div>
 
-            <div class="fb-field">
-                <label asp-for="ImageUrl">URL hình ảnh</label>
-                <input asp-for="ImageUrl" id="imgUrlInput" />
-                <p class="fb-hint">Dán URL hình ảnh của món.</p>
+            <div class="mb-4">
+                <label asp-for="ImageFile" class="@fieldLabel">Hình ảnh</label>
                 @if (!string.IsNullOrEmpty(Model.ImageUrl))
                 {
-                    <img id="imgPreview" class="fb-img-preview" src="@Model.ImageUrl" alt="preview"
+                    <img id="imgCurrent" class="mb-2 w-24 h-24 object-cover rounded-lg border border-gray-200" src="@Model.ImageUrl" alt="Ảnh hiện tại"
                          onerror="this.style.display='none'" />
                 }
-                else
-                {
-                    <img id="imgPreview" class="fb-img-preview" alt="preview" style="display:none" />
-                }
+                <input asp-for="ImageFile" type="file" accept="image/*" class="@fileInput" id="imgFileInput" />
+                <span asp-validation-for="ImageFile" class="@fieldError"></span>
+                <p class="text-xs text-gray-500 mt-1">Tối đa 10MB. Để trống nếu muốn giữ ảnh hiện tại.</p>
+                <img id="imgPreview" class="mt-3 w-24 h-24 object-cover rounded-lg border border-gray-200 hidden" alt="preview" />
             </div>
 
-            <div class="fb-actions">
-                <button type="submit" class="fb-btn fb-btn-primary">
+            <div class="flex gap-3 mt-2">
+                <button type="submit" class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-semibold transition-colors">
                     <span class="material-symbols-outlined" style="font-size:18px">save</span>
                     Lưu thay đổi
                 </button>
-                <a class="fb-btn fb-btn-ghost" href="@Url.Action("Index", "FoodBeverages")">Hủy</a>
+                <a class="inline-flex items-center px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-[#191c1d] rounded-lg text-sm font-semibold transition-colors" href="@Url.Action("Index", "FoodBeverages")">Hủy</a>
             </div>
         </form>
     </div>
@@ -127,12 +80,16 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
-        const imgInput = document.getElementById('imgUrlInput');
+        const imgInput = document.getElementById('imgFileInput');
         const imgPreview = document.getElementById('imgPreview');
-        imgInput?.addEventListener('input', () => {
-            const url = imgInput.value.trim();
-            imgPreview.style.display = url ? 'block' : 'none';
-            imgPreview.src = url;
+        imgInput?.addEventListener('change', () => {
+            const file = imgInput.files?.[0];
+            if (file) {
+                imgPreview.src = URL.createObjectURL(file);
+                imgPreview.classList.remove('hidden');
+            } else {
+                imgPreview.classList.add('hidden');
+            }
         });
     </script>
 }

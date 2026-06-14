@@ -8,10 +8,15 @@ namespace Cinema_System.Controllers;
 public class FoodBeveragesController : Controller
 {
     private readonly IFoodBeverageService _fbService;
+    private readonly IWebHostEnvironment _env;
 
-    public FoodBeveragesController(IFoodBeverageService fbService)
+    private const long MaxImageBytes = 10 * 1024 * 1024; // 10MB cho ảnh
+    private static readonly string[] ImageExts = { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
+
+    public FoodBeveragesController(IFoodBeverageService fbService, IWebHostEnvironment env)
     {
         _fbService = fbService;
+        _env = env;
     }
 
     [HttpGet("")]
@@ -29,8 +34,12 @@ public class FoodBeveragesController : Controller
 
     [HttpPost("Create")]
     [ValidateAntiForgeryToken]
+    [RequestSizeLimit(MaxImageBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = MaxImageBytes)]
     public async Task<IActionResult> Create(FoodBeverageFormViewModel model)
     {
+        await HandleUploadAsync(model);
+
         if (!ModelState.IsValid)
             return View(model);
 
@@ -55,8 +64,12 @@ public class FoodBeveragesController : Controller
 
     [HttpPost("Edit/{id}")]
     [ValidateAntiForgeryToken]
+    [RequestSizeLimit(MaxImageBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = MaxImageBytes)]
     public async Task<IActionResult> Edit(FoodBeverageFormViewModel model)
     {
+        await HandleUploadAsync(model);
+
         if (!ModelState.IsValid)
             return View(model);
 
@@ -89,5 +102,37 @@ public class FoodBeveragesController : Controller
         TempData[result.Succeeded ? "Success" : "Error"] =
             result.Succeeded ? "Đã xóa món khỏi menu." : result.Error;
         return RedirectToAction(nameof(Index));
+    }
+
+    // ── File upload ──────────────────────────────────────────────────────
+
+    // Lưu ảnh upload vào wwwroot/uploads/foods, gán đường dẫn vào model.
+    // Không upload ảnh mới thì giữ nguyên ImageUrl cũ (đã có trong hidden field).
+    private async Task HandleUploadAsync(FoodBeverageFormViewModel model)
+    {
+        var file = model.ImageFile;
+        if (file is null || file.Length == 0)
+            return;
+
+        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (!ImageExts.Contains(ext))
+        {
+            ModelState.AddModelError(nameof(model.ImageFile),
+                $"Định dạng không hợp lệ. Cho phép: {string.Join(", ", ImageExts)}");
+            return;
+        }
+
+        var folder = Path.Combine(_env.WebRootPath, "uploads", "foods");
+        Directory.CreateDirectory(folder);
+
+        var fileName = $"{Guid.NewGuid():N}{ext}";
+        var fullPath = Path.Combine(folder, fileName);
+
+        await using (var stream = new FileStream(fullPath, FileMode.Create))
+        {
+            await file.CopyToAsync(stream);
+        }
+
+        model.ImageUrl = $"/uploads/foods/{fileName}";
     }
 }
