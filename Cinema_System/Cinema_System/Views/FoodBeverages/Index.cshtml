@@ -6,186 +6,34 @@
     Layout = "~/Views/Shared/_ManagerLayout.cshtml";
 }
 
-@section Styles {
-<style>
-    .fb-page-top {
-        display: flex; justify-content: space-between; align-items: flex-start;
-        margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap;
-    }
-    .fb-heading {
-        font-family: var(--font-head); font-size: 1.5rem; font-weight: 800;
-        color: var(--on-surface); margin-bottom: .2rem;
-    }
-    .fb-sub { font-size: .875rem; color: #6b7280; }
-    .fb-add-btn {
-        display: inline-flex; align-items: center; gap: .4rem;
-        padding: .6rem 1.25rem; background: var(--primary); color: #fff;
-        border: none; border-radius: .6rem; font-family: var(--font-body);
-        font-size: .82rem; font-weight: 700; cursor: pointer;
-        text-decoration: none; white-space: nowrap; letter-spacing: .3px;
-        transition: background .15s;
-    }
-    .fb-add-btn:hover { background: var(--primary-dark); color: #fff; }
-    .fb-add-btn .material-symbols-outlined { font-size: 18px; }
-
-    .fb-alert { padding: .75rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: .875rem; }
-    .fb-alert.success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
-    .fb-alert.error   { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
-
-    .fb-filter-card {
-        background: #fff; border-radius: .75rem; padding: 1.25rem 1.5rem;
-        margin-bottom: 1.25rem; border: 1px solid #e8eaed;
-    }
-    .fb-filter-row { display: flex; gap: .875rem; flex-wrap: wrap; align-items: flex-end; }
-    .fb-filter-item { display: flex; flex-direction: column; gap: .3rem; }
-    .fb-filter-item label {
-        font-size: .75rem; font-weight: 700; color: #6b7280;
-        text-transform: uppercase; letter-spacing: .4px;
-    }
-    .fb-filter-item select, .fb-filter-item input[type=text] {
-        padding: .5rem .75rem; border: 1px solid #d1d5db; border-radius: .5rem;
-        font-family: var(--font-body); font-size: .875rem;
-        background: #fff; color: var(--on-surface); min-width: 155px;
-    }
-    .fb-filter-item select:focus, .fb-filter-item input[type=text]:focus {
-        outline: none; border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(243,112,33,.12);
-    }
-    .fb-search-wrap { position: relative; }
-    .fb-search-wrap .material-symbols-outlined {
-        position: absolute; left: .6rem; top: 50%; transform: translateY(-50%);
-        font-size: 18px; color: #9ca3af; pointer-events: none;
-    }
-    .fb-search-wrap input { padding-left: 2.25rem; min-width: 220px; }
-    .fb-filter-apply {
-        display: inline-flex; align-items: center; gap: .4rem;
-        padding: .52rem 1.1rem; background: var(--secondary-dark); color: #fff;
-        border: none; border-radius: .5rem; font-family: var(--font-body);
-        font-size: .875rem; font-weight: 600; cursor: pointer; white-space: nowrap;
-        transition: background .15s;
-    }
-    .fb-filter-apply:hover { background: #002f6c; }
-    .fb-filter-apply .material-symbols-outlined { font-size: 18px; }
-    .fb-clear-link {
-        font-size: .82rem; color: #6b7280; text-decoration: none;
-        padding: .5rem .2rem; align-self: flex-end;
-    }
-    .fb-clear-link:hover { color: var(--primary); }
-
-    .fb-table-card {
-        background: #fff; border-radius: .75rem; border: 1px solid #e8eaed;
-        overflow: hidden; margin-bottom: 1.25rem;
-    }
-    .fb-table { width: 100%; border-collapse: collapse; }
-    .fb-table thead tr { background: #111827; }
-    .fb-table th {
-        padding: .875rem 1rem; text-align: left;
-        color: #d1d5db; font-size: .73rem; font-weight: 700;
-        letter-spacing: .6px; text-transform: uppercase; white-space: nowrap;
-    }
-    .fb-table td {
-        padding: .875rem 1rem; border-bottom: 1px solid #f3f4f6;
-        font-size: .875rem; vertical-align: middle; color: var(--on-surface);
-    }
-    .fb-table tbody tr:last-child td { border-bottom: none; }
-    .fb-table tbody tr:hover td { background: #fafafa; }
-    .fb-img { width: 52px; height: 52px; object-fit: cover; border-radius: .5rem; display: block; }
-    .fb-img-ph {
-        width: 52px; height: 52px; background: #f3f4f6; border-radius: .5rem;
-        display: flex; align-items: center; justify-content: center;
-        font-size: .6rem; color: #9ca3af;
-    }
-    .fb-item-name { font-weight: 700; font-size: .9rem; margin-bottom: .2rem; }
-    .fb-item-desc {
-        font-size: .78rem; color: #6b7280;
-        max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .fb-price { font-weight: 700; color: var(--primary); white-space: nowrap; }
-
-    .fb-badge {
-        display: inline-flex; align-items: center; gap: .35rem;
-        padding: .25rem .75rem; border-radius: 999px;
-        font-size: .78rem; font-weight: 600; white-space: nowrap;
-    }
-    .fb-badge-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-    .fb-badge.instock   { background: #dcfce7; color: #15803d; }
-    .fb-badge.instock   .fb-badge-dot { background: #16a34a; }
-    .fb-badge.outstock  { background: #fef9c3; color: #92400e; }
-    .fb-badge.outstock  .fb-badge-dot { background: #d97706; }
-    .fb-badge.discontinued    { background: #f3f4f6; color: #4b5563; }
-    .fb-badge.discontinued    .fb-badge-dot { background: #9ca3af; }
-
-    .fb-actions { display: flex; align-items: center; gap: .35rem; }
-    .fb-act-btn {
-        width: 32px; height: 32px; border-radius: .4rem; border: none;
-        display: flex; align-items: center; justify-content: center;
-        cursor: pointer; background: #f3f4f6; transition: background .15s;
-        text-decoration: none;
-    }
-    .fb-act-btn .material-symbols-outlined { font-size: 18px; }
-    .fb-act-btn.edit     { color: #f59e0b; }
-    .fb-act-btn.edit:hover { background: #fef3c7; }
-    .fb-act-btn.hide-btn  { color: #6b7280; }
-    .fb-act-btn.hide-btn:hover { background: #f3f4f6; }
-    .fb-act-btn.show-btn  { color: #22c55e; }
-    .fb-act-btn.show-btn:hover { background: #dcfce7; }
-    .fb-act-btn.del-btn  { color: #ef4444; }
-    .fb-act-btn.del-btn:hover { background: #fee2e2; }
-    .fb-act-btn.disabled { color: #d1d5db; cursor: not-allowed; }
-    .fb-act-btn.disabled:hover { background: #f3f4f6; }
-
-    .fb-empty {
-        text-align: center; padding: 4rem 2rem; color: #9ca3af; font-size: .9rem;
-    }
-    .fb-empty .material-symbols-outlined { font-size: 48px; display: block; margin-bottom: .75rem; }
-
-    .fb-pag-row {
-        display: flex; align-items: center; justify-content: space-between;
-        flex-wrap: wrap; gap: .75rem;
-    }
-    .fb-pag-info { font-size: .85rem; color: #6b7280; }
-    .fb-pag-info strong { color: var(--on-surface); }
-    .fb-pages { display: flex; gap: .3rem; flex-wrap: wrap; }
-    .fb-page-btn {
-        min-width: 36px; height: 36px; padding: 0 .5rem;
-        display: flex; align-items: center; justify-content: center;
-        border: 1px solid #e5e7eb; border-radius: .45rem;
-        text-decoration: none; font-size: .875rem; color: #374151;
-        background: #fff; transition: background .15s, border-color .15s;
-    }
-    .fb-page-btn:hover { background: #fff7f0; border-color: var(--primary); color: var(--primary); }
-    .fb-page-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 700; }
-    .fb-page-btn.disabled { opacity: .4; pointer-events: none; }
-    .fb-page-btn.ellipsis { border: none; background: none; cursor: default; pointer-events: none; }
-</style>
-}
-
-<div class="fb-page-top">
+<div class="flex justify-between items-start mb-6 gap-4 flex-wrap">
     <div>
-        <h1 class="fb-heading">Danh sách món ăn & thức uống</h1>
-        <p class="fb-sub">Quản lý menu và tình trạng hàng hóa toàn hệ thống</p>
+        <h1 class="font-head text-2xl font-extrabold text-[#191c1d] mb-0.5">Danh sách món ăn & thức uống</h1>
+        <p class="text-sm text-gray-500">Quản lý menu và tình trạng hàng hóa toàn hệ thống</p>
     </div>
-    <a class="fb-add-btn" href="@Url.Action("Create", "FoodBeverages")">
-        <span class="material-symbols-outlined">add_circle</span>
+    <a class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg text-xs font-bold tracking-wide whitespace-nowrap transition-colors"
+       href="@Url.Action("Create", "FoodBeverages")">
+        <span class="material-symbols-outlined" style="font-size:18px">add_circle</span>
         THÊM MÓN MỚI
     </a>
 </div>
 
 @if (TempData["Success"] != null)
 {
-    <div class="fb-alert success">@TempData["Success"]</div>
+    <div class="px-4 py-3 rounded-lg mb-4 text-sm bg-green-50 text-green-700 border border-green-200">@TempData["Success"]</div>
 }
 @if (TempData["Error"] != null)
 {
-    <div class="fb-alert error">@TempData["Error"]</div>
+    <div class="px-4 py-3 rounded-lg mb-4 text-sm bg-red-50 text-red-700 border border-red-200">@TempData["Error"]</div>
 }
 
-<div class="fb-filter-card">
+<div class="bg-white rounded-xl p-5 mb-5 border border-[#e8eaed]">
     <form method="get" action="@Url.Action("Index", "FoodBeverages")">
-        <div class="fb-filter-row">
-            <div class="fb-filter-item">
-                <label>Tình trạng</label>
-                <select name="status">
+        <div class="flex gap-3.5 flex-wrap items-end">
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">Tình trạng</label>
+                <select name="status"
+                        class="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white min-w-[155px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20">
                     @{
                         var sf = Model.StatusFilter ?? "";
                         var statusOpts = new[] {
@@ -208,109 +56,104 @@
                     }
                 </select>
             </div>
-            <div class="fb-filter-item">
-                <label>Tìm kiếm</label>
-                <div class="fb-search-wrap">
-                    <span class="material-symbols-outlined">search</span>
-                    <input type="text" name="search" value="@Model.Search" placeholder="Tìm kiếm món..." />
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">Tìm kiếm</label>
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" style="font-size:18px">search</span>
+                    <input type="text" name="search" value="@Model.Search" placeholder="Tìm kiếm món..."
+                           class="pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm bg-white min-w-[220px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
                 </div>
             </div>
-            <div class="fb-filter-item">
-                <button type="submit" class="fb-filter-apply">
-                    <span class="material-symbols-outlined">filter_list</span>
+            <div class="flex flex-col gap-1.5">
+                <button type="submit"
+                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-secondary-dark hover:bg-[#002f6c] text-white rounded-lg text-sm font-semibold whitespace-nowrap transition-colors">
+                    <span class="material-symbols-outlined" style="font-size:18px">filter_list</span>
                     Áp dụng bộ lọc
                 </button>
             </div>
             @if (!string.IsNullOrEmpty(Model.Search) || !string.IsNullOrEmpty(Model.StatusFilter))
             {
-                <a class="fb-clear-link" href="@Url.Action("Index", "FoodBeverages")">✕ Xóa bộ lọc</a>
+                <a class="text-sm text-gray-500 hover:text-primary py-2 self-end" href="@Url.Action("Index", "FoodBeverages")">✕ Xóa bộ lọc</a>
             }
         </div>
     </form>
 </div>
 
-<div class="fb-table-card">
+<div class="bg-white rounded-xl border border-[#e8eaed] overflow-hidden mb-5">
     @if (Model.Items.Any())
     {
-        <table class="fb-table">
+        <table class="w-full border-collapse">
             <thead>
-                <tr>
-                    <th>Hình</th>
-                    <th>Tên Món</th>
-                    <th>Giá</th>
-                    <th>Tình Trạng</th>
-                    <th>Hành Động</th>
+                <tr class="bg-gray-900">
+                    <th class="px-4 py-3.5 text-left text-gray-300 text-xs font-bold tracking-wide uppercase whitespace-nowrap">Hình</th>
+                    <th class="px-4 py-3.5 text-left text-gray-300 text-xs font-bold tracking-wide uppercase whitespace-nowrap">Tên Món</th>
+                    <th class="px-4 py-3.5 text-left text-gray-300 text-xs font-bold tracking-wide uppercase whitespace-nowrap">Giá</th>
+                    <th class="px-4 py-3.5 text-left text-gray-300 text-xs font-bold tracking-wide uppercase whitespace-nowrap">Tình Trạng</th>
+                    <th class="px-4 py-3.5 text-left text-gray-300 text-xs font-bold tracking-wide uppercase whitespace-nowrap">Hành Động</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var item in Model.Items)
                 {
-                    var badgeClass = item.StockStatus switch
+                    var badge = item.StockStatus switch
                     {
-                        "In Stock"     => "instock",
-                        "Out of Stock" => "outstock",
-                        _              => "discontinued"
+                        "In Stock"     => ("bg-green-100 text-green-700", "bg-green-600", "Còn hàng"),
+                        "Out of Stock" => ("bg-yellow-100 text-yellow-800", "bg-amber-600", "Hết hàng"),
+                        "Discontinued" => ("bg-gray-100 text-gray-600", "bg-gray-400", "Ngừng bán"),
+                        _              => ("bg-gray-100 text-gray-600", "bg-gray-400", item.StockStatus ?? "—")
                     };
-                    var badgeLabel = item.StockStatus switch
-                    {
-                        "In Stock"     => "Còn hàng",
-                        "Out of Stock" => "Hết hàng",
-                        "Discontinued"  => "Ngừng bán",
-                        _              => item.StockStatus ?? "—"
-                    };
-                    <tr>
-                        <td>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3.5 border-b border-gray-100 text-sm align-middle">
                             @if (!string.IsNullOrEmpty(item.ImageUrl))
                             {
-                                <img class="fb-img" src="@item.ImageUrl" alt="@item.Name"
+                                <img class="w-13 h-13 object-cover rounded-lg block" style="width:52px;height:52px" src="@item.ImageUrl" alt="@item.Name"
                                      onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
-                                <div class="fb-img-ph" style="display:none">No img</div>
+                                <div class="bg-gray-100 rounded-lg items-center justify-center text-[.6rem] text-gray-400" style="width:52px;height:52px;display:none">No img</div>
                             }
                             else
                             {
-                                <div class="fb-img-ph">No img</div>
+                                <div class="bg-gray-100 rounded-lg flex items-center justify-center text-[.6rem] text-gray-400" style="width:52px;height:52px">No img</div>
                             }
                         </td>
-                        <td>
-                            <div class="fb-item-name">@item.Name</div>
+                        <td class="px-4 py-3.5 border-b border-gray-100 text-sm align-middle">
+                            <div class="font-bold text-sm mb-0.5">@item.Name</div>
                             @if (!string.IsNullOrEmpty(item.Description))
                             {
-                                <div class="fb-item-desc" title="@item.Description">@item.Description</div>
+                                <div class="text-xs text-gray-500 max-w-[220px] truncate" title="@item.Description">@item.Description</div>
                             }
                         </td>
-                        <td>
-                            <span class="fb-price">@item.Price.ToString("N0") ₫</span>
+                        <td class="px-4 py-3.5 border-b border-gray-100 text-sm align-middle">
+                            <span class="font-bold text-primary whitespace-nowrap">@item.Price.ToString("N0") ₫</span>
                         </td>
-                        <td>
-                            <span class="fb-badge @badgeClass">
-                                <span class="fb-badge-dot"></span>
-                                @badgeLabel
+                        <td class="px-4 py-3.5 border-b border-gray-100 text-sm align-middle">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap @badge.Item1">
+                                <span class="w-[7px] h-[7px] rounded-full shrink-0 @badge.Item2"></span>
+                                @badge.Item3
                             </span>
                         </td>
-                        <td>
-                            <div class="fb-actions">
-                                <a class="fb-act-btn edit"
-                                   href="@Url.Action("Edit", "FoodBeverages", new { id = item.Id })"
-                                   title="Chỉnh sửa">
-                                    <span class="material-symbols-outlined">edit</span>
+                        <td class="px-4 py-3.5 border-b border-gray-100 text-sm align-middle">
+                            <div class="flex items-center gap-1.5">
+                                <a class="w-8 h-8 rounded-md flex items-center justify-center bg-gray-100 text-amber-500 hover:bg-amber-100 transition-colors"
+                                   href="@Url.Action("Edit", "FoodBeverages", new { id = item.Id })" title="Chỉnh sửa">
+                                    <span class="material-symbols-outlined" style="font-size:18px">edit</span>
                                 </a>
 
                                 <form method="post"
                                       action="@Url.Action("ToggleVisibility", "FoodBeverages", new { id = item.Id })"
-                                      style="display:inline">
+                                      class="inline">
                                     @Html.AntiForgeryToken()
                                     @if (item.StockStatus == "Discontinued")
                                     {
-                                        <button type="submit" class="fb-act-btn show-btn" title="Hiện món"
+                                        <button type="submit" class="w-8 h-8 rounded-md flex items-center justify-center bg-gray-100 text-green-500 hover:bg-green-100 transition-colors" title="Hiện món"
                                                 onclick="return confirm('Hiện lại món này?')">
-                                            <span class="material-symbols-outlined">visibility</span>
+                                            <span class="material-symbols-outlined" style="font-size:18px">visibility</span>
                                         </button>
                                     }
                                     else
                                     {
-                                        <button type="submit" class="fb-act-btn hide-btn" title="Ẩn món"
+                                        <button type="submit" class="w-8 h-8 rounded-md flex items-center justify-center bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors" title="Ẩn món"
                                                 onclick="return confirm('Ẩn món này khỏi menu?')">
-                                            <span class="material-symbols-outlined">visibility_off</span>
+                                            <span class="material-symbols-outlined" style="font-size:18px">visibility_off</span>
                                         </button>
                                     }
                                 </form>
@@ -319,18 +162,18 @@
                                 {
                                     <form method="post"
                                           action="@Url.Action("Delete", "FoodBeverages", new { id = item.Id })"
-                                          style="display:inline">
+                                          class="inline">
                                         @Html.AntiForgeryToken()
-                                        <button type="submit" class="fb-act-btn del-btn" title="Xóa vĩnh viễn"
+                                        <button type="submit" class="w-8 h-8 rounded-md flex items-center justify-center bg-gray-100 text-red-500 hover:bg-red-100 transition-colors" title="Xóa vĩnh viễn"
                                                 onclick="return confirm('Xóa vĩnh viễn món này?')">
-                                            <span class="material-symbols-outlined">delete</span>
+                                            <span class="material-symbols-outlined" style="font-size:18px">delete</span>
                                         </button>
                                     </form>
                                 }
                                 else
                                 {
-                                    <button class="fb-act-btn disabled" title="Đã có trong lịch sử đặt hàng" disabled>
-                                        <span class="material-symbols-outlined">delete</span>
+                                    <button class="w-8 h-8 rounded-md flex items-center justify-center bg-gray-100 text-gray-300 cursor-not-allowed" title="Đã có trong lịch sử đặt hàng" disabled>
+                                        <span class="material-symbols-outlined" style="font-size:18px">delete</span>
                                     </button>
                                 }
                             </div>
@@ -342,8 +185,8 @@
     }
     else
     {
-        <div class="fb-empty">
-            <span class="material-symbols-outlined">restaurant</span>
+        <div class="text-center py-16 px-8 text-gray-400 text-sm">
+            <span class="material-symbols-outlined block mb-3" style="font-size:48px">restaurant</span>
             Không tìm thấy món nào.
         </div>
     }
@@ -366,27 +209,33 @@
 
     string PageUrl(int p) => Url.Action("Index", "FoodBeverages",
         new { search = Model.Search, status = Model.StatusFilter, page = p })!;
+
+    const string pgBtn = "min-w-9 h-9 px-2 flex items-center justify-center border border-gray-200 rounded-md text-sm text-gray-700 bg-white hover:bg-[#fff7f0] hover:border-primary hover:text-primary transition-colors";
 }
-<div class="fb-pag-row">
-    <span class="fb-pag-info">
-        Hiển thị <strong>@fromItem–@toItem</strong> trên <strong>@Model.TotalCount</strong> món
+<div class="flex items-center justify-between flex-wrap gap-3">
+    <span class="text-sm text-gray-500">
+        Hiển thị <strong class="text-[#191c1d]">@fromItem–@toItem</strong> trên <strong class="text-[#191c1d]">@Model.TotalCount</strong> món
     </span>
     @if (tp > 1)
     {
-        <div class="fb-pages">
-            <a class="fb-page-btn @(cp == 1 ? "disabled" : "")" href="@PageUrl(cp - 1)">&lsaquo;</a>
+        <div class="flex gap-1.5 flex-wrap">
+            <a class="@pgBtn @(cp == 1 ? "opacity-40 pointer-events-none" : "")" href="@PageUrl(cp - 1)">&lsaquo;</a>
             @foreach (var pg in pages)
             {
                 if (pg == null)
                 {
-                    <span class="fb-page-btn ellipsis">…</span>
+                    <span class="min-w-9 h-9 px-2 flex items-center justify-center text-gray-400">…</span>
+                }
+                else if (pg == cp)
+                {
+                    <a class="min-w-9 h-9 px-2 flex items-center justify-center border border-primary rounded-md text-sm bg-primary text-white font-bold" href="@PageUrl(pg.Value)">@pg</a>
                 }
                 else
                 {
-                    <a class="fb-page-btn @(pg == cp ? "active" : "")" href="@PageUrl(pg.Value)">@pg</a>
+                    <a class="@pgBtn" href="@PageUrl(pg.Value)">@pg</a>
                 }
             }
-            <a class="fb-page-btn @(cp == tp ? "disabled" : "")" href="@PageUrl(cp + 1)">&rsaquo;</a>
+            <a class="@pgBtn @(cp == tp ? "opacity-40 pointer-events-none" : "")" href="@PageUrl(cp + 1)">&rsaquo;</a>
         </div>
     }
 </div>

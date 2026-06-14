@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace Cinema_System.Application.ViewModels;
 
@@ -14,9 +15,13 @@ public class FoodBeverageFormViewModel
     [Display(Name = "Mô tả")]
     public string? Description { get; set; }
 
-    [Display(Name = "Hình ảnh (URL)")]
+    // Đường dẫn ảnh đã lưu (hiển thị ảnh hiện tại khi sửa, giữ lại nếu không upload mới)
     [StringLength(500)]
     public string? ImageUrl { get; set; }
+
+    // File ảnh upload từ form (controller xử lý lưu rồi gán vào ImageUrl)
+    [Display(Name = "Hình ảnh")]
+    public IFormFile? ImageFile { get; set; }
 
     [Required(ErrorMessage = "Vui lòng nhập giá")]
     [Range(0, 10_000_000, ErrorMessage = "Giá phải từ 0 đến 10,000,000")]
