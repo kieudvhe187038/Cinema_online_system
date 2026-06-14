@@ -2,14 +2,14 @@ using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Cinema_System.Controllers;
+namespace Cinema_System.Controllers.Manager;
 
 [Route("Manager/PointSetting")]
-public class PointsController : Controller
+public class ManagerPointController : Controller
 {
     private readonly IPointConfigService _pointConfigService;
 
-    public PointsController(IPointConfigService pointConfigService)
+    public ManagerPointController(IPointConfigService pointConfigService)
     {
         _pointConfigService = pointConfigService;
     }

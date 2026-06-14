@@ -27,7 +27,7 @@
     <h1 class="rf-title">Sửa Loại Phòng</h1>
 
     <div class="rf-card">
-        <form method="post" action="@Url.Action("Edit", "RoomTypes", new { id = Model.Id })">
+        <form method="post" action="@Url.Action("Edit", "ManagerRoomType", new { id = Model.Id })">
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="Id" />
             <div asp-validation-summary="ModelOnly" class="rf-summary"></div>
@@ -46,7 +46,7 @@
 
             <div class="rf-actions">
                 <button type="submit" class="rf-btn rf-btn-primary">Lưu thay đổi</button>
-                <a class="rf-btn rf-btn-ghost" href="@Url.Action("Index", "RoomTypes")">Hủy</a>
+                <a class="rf-btn rf-btn-ghost" href="@Url.Action("Index", "ManagerRoomType")">Hủy</a>
             </div>
         </form>
     </div>

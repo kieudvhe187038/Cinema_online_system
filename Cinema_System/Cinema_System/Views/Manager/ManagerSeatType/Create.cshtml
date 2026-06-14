@@ -27,7 +27,7 @@
     <h1 class="sf-title">Thêm Loại Ghế</h1>
 
     <div class="sf-card">
-        <form method="post" action="@Url.Action("Create", "SeatsType")">
+        <form method="post" action="@Url.Action("Create", "ManagerSeatType")">
             @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="sf-summary"></div>
 
@@ -53,7 +53,7 @@
 
             <div class="sf-actions">
                 <button type="submit" class="sf-btn sf-btn-primary">Thêm mới</button>
-                <a class="sf-btn sf-btn-ghost" href="@Url.Action("Index", "SeatsType")">Hủy</a>
+                <a class="sf-btn sf-btn-ghost" href="@Url.Action("Index", "ManagerSeatType")">Hủy</a>
             </div>
         </form>
     </div>

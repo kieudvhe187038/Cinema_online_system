@@ -39,7 +39,7 @@
 <div class="ud-wrap">
     <div class="ud-top">
         <h1 class="ud-title">@Model.FullName</h1>
-        <a class="ud-btn ud-btn-ghost" href="@Url.Action("Index", "Users")">← Danh sách</a>
+        <a class="ud-btn ud-btn-ghost" href="@Url.Action("Index", "AdminUser")">← Danh sách</a>
     </div>
 
     @if (TempData["Success"] != null)
@@ -77,7 +77,7 @@
 
     <div class="ud-card">
         <h3 class="ud-section-title">Phân quyền vai trò</h3>
-        <form method="post" action="@Url.Action("AssignRole", "Users")" class="ud-row">
+        <form method="post" action="@Url.Action("AssignRole", "AdminUser")" class="ud-row">
             @Html.AntiForgeryToken()
             <input type="hidden" name="id" value="@Model.Id" />
             <select name="roleId">
@@ -93,16 +93,16 @@
     <div class="ud-card">
         <h3 class="ud-section-title">Thao tác tài khoản</h3>
         <div class="ud-row">
-            <a class="ud-btn ud-btn-primary" href="@Url.Action("Edit", "Users", new { id = Model.Id })">Sửa thông tin</a>
+            <a class="ud-btn ud-btn-primary" href="@Url.Action("Edit", "AdminUser", new { id = Model.Id })">Sửa thông tin</a>
 
-            <form method="post" action="@Url.Action("ResetPassword", "Users")" style="display:inline">
+            <form method="post" action="@Url.Action("ResetPassword", "AdminUser")" style="display:inline">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="id" value="@Model.Id" />
                 <button type="submit" class="ud-btn ud-btn-secondary"
                         onclick="return confirm('Đặt lại mật khẩu cho người dùng này?');">Reset mật khẩu</button>
             </form>
 
-            <form method="post" action="@Url.Action("ToggleStatus", "Users")" style="display:inline">
+            <form method="post" action="@Url.Action("ToggleStatus", "AdminUser")" style="display:inline">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="id" value="@Model.Id" />
                 <input type="hidden" name="active" value="@(isActive ? "false" : "true")" />
