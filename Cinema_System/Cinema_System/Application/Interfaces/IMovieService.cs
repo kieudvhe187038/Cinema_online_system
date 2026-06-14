@@ -7,7 +7,7 @@ public interface IMovieService
     Task<IEnumerable<MovieDTO>> GetAllMoviesAsync();
     Task<IEnumerable<MovieDTO>> GetNowShowingMoviesAsync();
     Task<IEnumerable<MovieDTO>> GetComingSoonMoviesAsync();
-    Task<IEnumerable<MovieDTO>> GetSpecialShowtimeMoviesAsync(); 
+    Task<IEnumerable<MovieDTO>> GetSpecialShowtimeMoviesAsync();  
     Task<IEnumerable<MovieDTO>> GetFilteredMoviesAsync(string? genre, string? ageRating, string? status);
     Task<IEnumerable<string>> GetAllGenresAsync();
     Task<IEnumerable<string>> GetAllAgeRatingsAsync();
