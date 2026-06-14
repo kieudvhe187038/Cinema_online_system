@@ -26,7 +26,7 @@
     <h1 class="ue-title">Sửa Thông Tin Người Dùng</h1>
 
     <div class="ue-card">
-        <form method="post" action="@Url.Action("Edit", "Users", new { id = Model.Id })">
+        <form method="post" action="@Url.Action("Edit", "AdminUser", new { id = Model.Id })">
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="Id" />
 
@@ -69,7 +69,7 @@
 
             <div class="ue-actions">
                 <button type="submit" class="ue-btn ue-btn-primary">Lưu thay đổi</button>
-                <a class="ue-btn ue-btn-ghost" href="@Url.Action("Details", "Users", new { id = Model.Id })">Hủy</a>
+                <a class="ue-btn ue-btn-ghost" href="@Url.Action("Details", "AdminUser", new { id = Model.Id })">Hủy</a>
             </div>
         </form>
     </div>

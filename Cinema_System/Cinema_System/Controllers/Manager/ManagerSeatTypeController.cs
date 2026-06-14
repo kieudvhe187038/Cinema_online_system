@@ -2,14 +2,14 @@ using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Cinema_System.Controllers;
+namespace Cinema_System.Controllers.Manager;
 
-[Route("Manager/[controller]")]
-public class SeatsTypeController : Controller
+[Route("Manager/SeatType")]
+public class ManagerSeatTypeController : Controller
 {
     private readonly ISeatTypeService _seatTypeService;
 
-    public SeatsTypeController(ISeatTypeService seatTypeService)
+    public ManagerSeatTypeController(ISeatTypeService seatTypeService)
     {
         _seatTypeService = seatTypeService;
     }

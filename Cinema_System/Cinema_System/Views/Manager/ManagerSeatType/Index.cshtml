@@ -32,7 +32,7 @@
 <div class="st-wrap">
     <div class="st-top">
         <h1 class="st-title">Quản Lý Loại Ghế</h1>
-        <a class="st-btn st-btn-primary" href="@Url.Action("Create", "SeatsType")">+ Thêm loại ghế</a>
+        <a class="st-btn st-btn-primary" href="@Url.Action("Create", "ManagerSeatType")">+ Thêm loại ghế</a>
     </div>
 
     @if (TempData["Success"] != null)
@@ -66,14 +66,14 @@
                         <td>@item.SeatCount</td>
                         <td>
                             <div class="st-actions">
-                                <a class="st-link" href="@Url.Action("Edit", "SeatsType", new { id = item.Id })">Sửa</a>
+                                <a class="st-link" href="@Url.Action("Edit", "ManagerSeatType", new { id = item.Id })">Sửa</a>
                                 @if (item.InUse)
                                 {
                                     <span class="st-disabled" title="Đang được ghế hoặc cấu hình giá sử dụng">Không thể xóa</span>
                                 }
                                 else
                                 {
-                                    <form method="post" action="@Url.Action("Delete", "SeatsType", new { id = item.Id })" style="display:inline">
+                                    <form method="post" action="@Url.Action("Delete", "ManagerSeatType", new { id = item.Id })" style="display:inline">
                                         @Html.AntiForgeryToken()
                                         <button type="submit" class="st-danger"
                                                 onclick="return confirm('Xóa loại ghế @item.Name?');">Xóa</button>

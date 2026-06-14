@@ -27,7 +27,7 @@
     <h1 class="rf-title">Thêm Loại Phòng</h1>
 
     <div class="rf-card">
-        <form method="post" action="@Url.Action("Create", "RoomTypes")">
+        <form method="post" action="@Url.Action("Create", "ManagerRoomType")">
             @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="rf-summary"></div>
 
@@ -45,7 +45,7 @@
 
             <div class="rf-actions">
                 <button type="submit" class="rf-btn rf-btn-primary">Thêm mới</button>
-                <a class="rf-btn rf-btn-ghost" href="@Url.Action("Index", "RoomTypes")">Hủy</a>
+                <a class="rf-btn rf-btn-ghost" href="@Url.Action("Index", "ManagerRoomType")">Hủy</a>
             </div>
         </form>
     </div>

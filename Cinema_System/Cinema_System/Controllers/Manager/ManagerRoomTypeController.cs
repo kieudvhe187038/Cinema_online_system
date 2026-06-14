@@ -2,14 +2,14 @@ using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Cinema_System.Controllers;
+namespace Cinema_System.Controllers.Manager;
 
-[Route("Manager/[controller]")]
-public class RoomTypesController : Controller
+[Route("Manager/RoomType")]
+public class ManagerRoomTypeController : Controller
 {
     private readonly IRoomTypeService _roomTypeService;
 
-    public RoomTypesController(IRoomTypeService roomTypeService)
+    public ManagerRoomTypeController(IRoomTypeService roomTypeService)
     {
         _roomTypeService = roomTypeService;
     }

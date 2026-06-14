@@ -65,7 +65,7 @@
             <option value="Locked" selected="@(Model.Status == "Locked")">Vô hiệu</option>
         </select>
         <button type="submit" class="um-btn um-btn-primary">Lọc</button>
-        <a href="@Url.Action("Index", "Users")" class="um-btn um-btn-ghost">Xóa lọc</a>
+        <a href="@Url.Action("Index", "AdminUser")" class="um-btn um-btn-ghost">Xóa lọc</a>
     </form>
 
     <p class="um-meta">Tổng cộng @Model.TotalCount người dùng</p>
@@ -101,9 +101,9 @@
                         </td>
                         <td>
                             <div class="um-actions">
-                                <a class="um-link" href="@Url.Action("Details", "Users", new { id = user.Id })">Xem</a>
-                                <a class="um-link" href="@Url.Action("Edit", "Users", new { id = user.Id })">Sửa</a>
-                                <form method="post" action="@Url.Action("ToggleStatus", "Users")" style="display:inline">
+                                <a class="um-link" href="@Url.Action("Details", "AdminUser", new { id = user.Id })">Xem</a>
+                                <a class="um-link" href="@Url.Action("Edit", "AdminUser", new { id = user.Id })">Sửa</a>
+                                <form method="post" action="@Url.Action("ToggleStatus", "AdminUser")" style="display:inline">
                                     @Html.AntiForgeryToken()
                                     <input type="hidden" name="id" value="@user.Id" />
                                     <input type="hidden" name="active" value="@(isActive ? "false" : "true")" />
@@ -130,7 +130,7 @@
                 @for (int p = 1; p <= Model.TotalPages; p++)
                 {
                     <a class="@(p == Model.CurrentPage ? "active" : "")"
-                       href="@Url.Action("Index", "Users", new { search = Model.Search, roleId = Model.RoleId, status = Model.Status, page = p })">@p</a>
+                       href="@Url.Action("Index", "AdminUser", new { search = Model.Search, roleId = Model.RoleId, status = Model.Status, page = p })">@p</a>
                 }
             </div>
         }

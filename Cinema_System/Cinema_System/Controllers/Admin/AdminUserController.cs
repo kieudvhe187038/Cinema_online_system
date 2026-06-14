@@ -2,14 +2,14 @@ using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Cinema_System.Controllers;
+namespace Cinema_System.Controllers.Admin;
 
-[Route("Admin/[controller]")]
-public class UsersController : Controller
+[Route("Admin/User")]
+public class AdminUserController : Controller
 {
     private readonly IUserService _userService;
 
-    public UsersController(IUserService userService)
+    public AdminUserController(IUserService userService)
     {
         _userService = userService;
     }

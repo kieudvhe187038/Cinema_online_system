@@ -33,7 +33,7 @@
 <div class="rt-wrap">
     <div class="rt-top">
         <h1 class="rt-title">Quản Lý Loại Phòng</h1>
-        <a class="rt-btn rt-btn-primary" href="@Url.Action("Create", "RoomTypes")">+ Thêm loại phòng</a>
+        <a class="rt-btn rt-btn-primary" href="@Url.Action("Create", "ManagerRoomType")">+ Thêm loại phòng</a>
     </div>
 
     @if (TempData["Success"] != null)
@@ -65,14 +65,14 @@
                         <td><span class="rt-tag">@item.RoomCount phòng</span></td>
                         <td>
                             <div class="rt-actions">
-                                <a class="rt-link" href="@Url.Action("Edit", "RoomTypes", new { id = item.Id })">Sửa</a>
+                                <a class="rt-link" href="@Url.Action("Edit", "ManagerRoomType", new { id = item.Id })">Sửa</a>
                                 @if (item.InUse)
                                 {
                                     <span class="rt-disabled" title="Đang được phòng hoặc cấu hình giá sử dụng">Không thể xóa</span>
                                 }
                                 else
                                 {
-                                    <form method="post" action="@Url.Action("Delete", "RoomTypes", new { id = item.Id })" style="display:inline">
+                                    <form method="post" action="@Url.Action("Delete", "ManagerRoomType", new { id = item.Id })" style="display:inline">
                                         @Html.AntiForgeryToken()
                                         <button type="submit" class="rt-danger"
                                                 onclick="return confirm('Xóa loại phòng @item.Name?');">Xóa</button>
