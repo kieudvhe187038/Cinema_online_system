@@ -8,7 +8,7 @@ public class HomeViewModel
     public string? SelectedAgeRating { get; set; }
     public string? SelectedStatus { get; set; }
 
-    public IEnumerable<string> AvailableGenres { get; set; } = new List<string>();
+    public IEnumerable<string> AvailableGenres { get; set; } = new List<string>(); 
     public IEnumerable<string> AvailableAgeRatings { get; set; } = new List<string>();
     public IEnumerable<string> AvailableStatuses { get; set; } = new List<string>();
 
