@@ -6,133 +6,77 @@
     <title>@ViewData["Title"] - CineStar</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    @await RenderSectionAsync("Styles", required: false)
+
+    <!-- Tailwind CSS (Play CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#f37021',
+                        'primary-dark': '#c95a10',
+                        secondary: '#004b8d',
+                        'secondary-dark': '#001c3a',
+                    },
+                    fontFamily: {
+                        head: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        body: ['"Be Vietnam Pro"', 'sans-serif'],
+                    },
+                },
+            },
+        };
+    </script>
     <style>
-        body { background: #f4f6f8; overflow-x: hidden; }
-
-        /* ── Sidebar ── */
-        .mgr-sidebar {
-            position: fixed; top: 0; left: 0; bottom: 0; width: 240px;
-            background: #fff; border-right: 1px solid #e8eaed;
-            display: flex; flex-direction: column; z-index: 100;
-        }
-        .mgr-logo-area {
-            padding: 1.25rem 1.5rem 1rem;
-            border-bottom: 1px solid #f0f0f0;
-            flex-shrink: 0;
-        }
-        .mgr-logo-name {
-            font-family: var(--font-head); font-size: 1.5rem;
-            font-weight: 800; color: var(--primary); letter-spacing: -.5px; line-height: 1;
-        }
-        .mgr-logo-sub {
-            font-size: .7rem; color: #8a94a6; margin-top: .2rem;
-            font-weight: 500; text-transform: uppercase; letter-spacing: .5px;
-        }
-        .mgr-nav { flex: 1; padding: .75rem 0; overflow-y: auto; }
-        .mgr-nav-section {
-            padding: .6rem 1.25rem .25rem;
-            font-size: .68rem; font-weight: 700; color: #9ca3af;
-            text-transform: uppercase; letter-spacing: .6px;
-        }
-        .mgr-nav-item {
-            display: flex; align-items: center; gap: .7rem;
-            padding: .6rem 1rem; margin: .1rem .75rem;
-            border-radius: .5rem; color: #374151;
-            text-decoration: none; font-size: .875rem; font-weight: 500;
-            transition: background .15s, color .15s;
-        }
-        .mgr-nav-item:hover { background: #fff7f0; color: var(--primary); }
-        .mgr-nav-item.active { background: var(--primary); color: #fff; }
-        .mgr-nav-item .material-symbols-outlined { font-size: 20px; flex-shrink: 0; }
-        .mgr-nav-sep { margin: .5rem 1.25rem; border: none; border-top: 1px solid #f0f0f0; }
-        .mgr-sidebar-footer {
-            padding: 1rem 1.25rem; border-top: 1px solid #f0f0f0; flex-shrink: 0;
-        }
-        .mgr-new-btn {
-            display: flex; align-items: center; justify-content: center; gap: .4rem;
-            width: 100%; padding: .65rem; background: var(--primary); color: #fff;
-            border: none; border-radius: .6rem; font-family: var(--font-body);
-            font-size: .875rem; font-weight: 600; cursor: pointer;
-            text-decoration: none; transition: background .15s;
-        }
-        .mgr-new-btn:hover { background: var(--primary-dark); color: #fff; }
-        .mgr-new-btn .material-symbols-outlined { font-size: 18px; }
-
-        /* ── Topbar ── */
-        .mgr-topbar {
-            position: fixed; top: 0; left: 240px; right: 0; height: 60px;
-            background: #fff; border-bottom: 1px solid #e8eaed;
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 0 1.75rem; z-index: 90;
-        }
-        .mgr-topbar-title {
-            font-family: var(--font-head); font-size: 1.05rem;
-            font-weight: 700; color: var(--secondary-dark); letter-spacing: .3px;
-        }
-        .mgr-topbar-right { display: flex; align-items: center; gap: .6rem; }
-        .mgr-icon-btn {
-            width: 36px; height: 36px; border: none; background: #f4f6f8;
-            border-radius: 50%; cursor: pointer; color: #374151;
-            display: flex; align-items: center; justify-content: center;
-            position: relative; transition: background .15s;
-        }
-        .mgr-icon-btn:hover { background: #ffe8d6; color: var(--primary); }
-        .mgr-icon-btn .material-symbols-outlined { font-size: 20px; }
-        .mgr-notif-dot {
-            position: absolute; top: 7px; right: 7px;
-            width: 7px; height: 7px; border-radius: 50%;
-            background: #ef4444; border: 1.5px solid #fff;
-        }
-   
-        
-
-        /* ── Main content ── */
-        .mgr-content { margin-left: 240px; padding-top: 60px; min-height: 100vh; }
-        .mgr-page { padding: 1.75rem; }
+        body { font-family: 'Be Vietnam Pro', sans-serif; }
+        .material-symbols-outlined { font-size: 20px; line-height: 1; }
     </style>
+    @await RenderSectionAsync("Styles", required: false)
 </head>
-<body>
+<body class="bg-[#f4f6f8] overflow-x-hidden text-[#191c1d]">
 @{
     var ctrl = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
     var newUrl  = ViewData["SidebarNewUrl"]?.ToString();
     var newLabel = ViewData["SidebarNewLabel"]?.ToString() ?? "Thêm mới";
     var topTitle = ViewData["Title"]?.ToString() ?? "Quản Lý";
+
+    const string navBase = "flex items-center gap-3 px-4 py-2.5 mx-3 my-0.5 rounded-lg text-sm font-medium transition-colors";
+    const string navIdle = "text-gray-700 hover:bg-[#fff7f0] hover:text-primary";
+    const string navActive = "bg-primary text-white";
 }
 
 <!-- Sidebar -->
-<aside class="mgr-sidebar">
-    <div class="mgr-logo-area">
-        <div class="mgr-logo-name">CineStar</div>
-        <div class="mgr-logo-sub">Theater Manager</div>
+<aside class="fixed inset-y-0 left-0 w-60 bg-white border-r border-[#e8eaed] flex flex-col z-[100]">
+    <div class="px-6 pt-5 pb-4 border-b border-[#f0f0f0] shrink-0">
+        <div class="font-head text-2xl font-extrabold text-primary tracking-tight leading-none">CineStar</div>
+        <div class="text-[.7rem] text-[#8a94a6] mt-0.5 font-medium uppercase tracking-wide">Theater Manager</div>
     </div>
 
-    <nav class="mgr-nav">
-        <a class="mgr-nav-item" href="#">
+    <nav class="flex-1 py-3 overflow-y-auto">
+        <a class="@navBase @navIdle" href="#">
             <span class="material-symbols-outlined">grid_view</span>
             <span>Dashboard</span>
         </a>
-        <a class="mgr-nav-item @(ctrl == "MovieManagement" ? "active" : "")"
+        <a class="@navBase @(ctrl == "MovieManagement" ? navActive : navIdle)"
            asp-controller="MovieManagement" asp-action="Index">
             <span class="material-symbols-outlined">movie</span>
             <span>Movie Catalog</span>
         </a>
-        <a class="mgr-nav-item" href="#">
+        <a class="@navBase @navIdle" href="#">
             <span class="material-symbols-outlined">schedule</span>
             <span>Showtimes</span>
         </a>
-        <a class="mgr-nav-item" href="#">
+        <a class="@navBase @navIdle" href="#">
             <span class="material-symbols-outlined">confirmation_number</span>
             <span>Bookings</span>
         </a>
-        <hr class="mgr-nav-sep" />
-        <a class="mgr-nav-item @(ctrl == "FoodBeverages" ? "active" : "")"
+        <hr class="my-2 mx-6 border-t border-[#f0f0f0]" />
+        <a class="@navBase @(ctrl == "FoodBeverages" ? navActive : navIdle)"
            asp-controller="FoodBeverages" asp-action="Index">
             <span class="material-symbols-outlined">restaurant</span>
             <span>Đồ Ăn &amp; Thức Uống</span>
         </a>
-        <a class="mgr-nav-item" href="#">
+        <a class="@navBase @navIdle" href="#">
             <span class="material-symbols-outlined">settings</span>
             <span>Settings</span>
         </a>
@@ -140,9 +84,10 @@
 
     @if (!string.IsNullOrEmpty(newUrl))
     {
-        <div class="mgr-sidebar-footer">
-            <a class="mgr-new-btn" href="@newUrl">
-                <span class="material-symbols-outlined">add</span>
+        <div class="px-5 py-4 border-t border-[#f0f0f0] shrink-0">
+            <a class="flex items-center justify-center gap-1.5 w-full py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-semibold transition-colors"
+               href="@newUrl">
+                <span class="material-symbols-outlined" style="font-size:18px">add</span>
                 @newLabel
             </a>
         </div>
@@ -150,23 +95,22 @@
 </aside>
 
 <!-- Topbar -->
-<header class="mgr-topbar">
-    <span class="mgr-topbar-title">@topTitle</span>
-    <div class="mgr-topbar-right">
-        <button class="mgr-icon-btn">
+<header class="fixed top-0 left-60 right-0 h-[60px] bg-white border-b border-[#e8eaed] flex items-center justify-between px-7 z-[90]">
+    <span class="font-head text-[1.05rem] font-bold text-secondary-dark tracking-wide">@topTitle</span>
+    <div class="flex items-center gap-2.5">
+        <button class="relative w-9 h-9 rounded-full bg-[#f4f6f8] hover:bg-[#ffe8d6] text-gray-700 hover:text-primary flex items-center justify-center transition-colors">
             <span class="material-symbols-outlined">notifications</span>
-            <span class="mgr-notif-dot"></span>
+            <span class="absolute top-[7px] right-[7px] w-[7px] h-[7px] rounded-full bg-red-500 border-[1.5px] border-white"></span>
         </button>
-        <button class="mgr-icon-btn">
+        <button class="w-9 h-9 rounded-full bg-[#f4f6f8] hover:bg-[#ffe8d6] text-gray-700 hover:text-primary flex items-center justify-center transition-colors">
             <span class="material-symbols-outlined">help</span>
         </button>
-        
     </div>
 </header>
 
 <!-- Main -->
-<div class="mgr-content">
-    <main class="mgr-page">
+<div class="ml-60 pt-[60px] min-h-screen">
+    <main class="p-7">
         @RenderBody()
     </main>
 </div>
