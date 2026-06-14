@@ -71,7 +71,7 @@ public class MovieService : IMovieService
         return _mapper.Map<IEnumerable<GenreDTO>>(genres);
     }
 
-    public async Task<MovieListViewModel> GetMoviesForAdminAsync(
+    public async Task<MovieListViewModel> GetMoviesForManagerAsync(
         string? search, string? status, string? genre, int page, int pageSize)
     {
         var movies = await _unitOfWork.Movies.GetAllAsync(
