@@ -18,10 +18,6 @@ builder.Services.AddDbContext<CinemaWebDbContext>(options =>
 builder.Services.AddScoped<IUnitOfWork, Cinema_System.Infrastructure.UnitOfWork.UnitOfWork>();
 builder.Services.AddScoped<IMovieService, MovieService>();
 builder.Services.AddScoped<IFoodBeverageService, FoodBeverageService>();
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IPointConfigService, PointConfigService>();
-builder.Services.AddScoped<ISeatTypeService, SeatTypeService>();
-builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
 
 var app = builder.Build();
 
