@@ -18,7 +18,7 @@
             <li class="tab @(Model.SelectedTab == "now" ? "active" : "")">
                 <a asp-controller="Movies" asp-action="Index" asp-route-tab="now" asp-route-page="1">PHIM ĐANG CHIẾU</a>
             </li>
-            <li class="tab @(Model.SelectedTab == "special" ? "active" : "")">
+            <li class="tab @(Model.SelectedTab == "special" ? "active" : "")"> 
                 <a asp-controller="Movies" asp-action="Index" asp-route-tab="special" asp-route-page="1">SUẤT CHIẾU ĐẶC BIỆT</a>
             </li>
         </ul>
