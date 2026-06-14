@@ -10,10 +10,9 @@ public class MovieManagementController : Controller
     private readonly IMovieService _movieService;
     private readonly IWebHostEnvironment _env;
 
-    // Giới hạn upload: 100MB cho video trailer
-    private const long MaxUploadBytes = 100 * 1024 * 1024;
+    // Giới hạn upload: 10MB cho ảnh poster/banner
+    private const long MaxUploadBytes = 10 * 1024 * 1024;
     private static readonly string[] ImageExts = { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
-    private static readonly string[] VideoExts = { ".mp4", ".webm", ".ogg", ".mov" };
 
     public MovieManagementController(IMovieService movieService, IWebHostEnvironment env)
     {
@@ -119,9 +118,7 @@ public class MovieManagementController : Controller
 
         var banner = await SaveFileAsync(model.BannerFile, "banners", ImageExts, nameof(model.BannerFile));
         if (banner != null) model.BannerUrl = banner;
-
-        var trailer = await SaveFileAsync(model.TrailerFile, "trailers", VideoExts, nameof(model.TrailerFile));
-        if (trailer != null) model.TrailerUrl = trailer;
+        // Trailer giờ nhập bằng URL (model.TrailerUrl), không upload file.
     }
 
     // Trả về đường dẫn tương đối (vd "/uploads/posters/xxx.jpg") nếu lưu thành công, null nếu không có file.
