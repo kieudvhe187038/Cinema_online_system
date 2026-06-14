@@ -19,10 +19,9 @@
     <form method="post" action="@Url.Action("Edit", "MovieManagement", new { id = Model.Id })" enctype="multipart/form-data">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="Id" />
-        @* Giữ lại đường dẫn file hiện tại nếu không upload file mới *@
+        @* Giữ lại đường dẫn ảnh hiện tại nếu không upload ảnh mới (trailer nhập trực tiếp nên không cần hidden) *@
         <input type="hidden" asp-for="PosterUrl" />
         <input type="hidden" asp-for="BannerUrl" />
-        <input type="hidden" asp-for="TrailerUrl" />
 
         <div class="@card">
             <p class="@sectionTitle">Thông tin cơ bản</p>
@@ -120,14 +119,10 @@
                     <p class="text-xs text-[#584237] mt-1">Để trống nếu muốn giữ ảnh hiện tại.</p>
                 </div>
                 <div class="mb-3.5 col-span-2">
-                    <label asp-for="TrailerFile" class="@fieldLabel"></label>
-                    @if (!string.IsNullOrEmpty(Model.TrailerUrl))
-                    {
-                        <video src="@Model.TrailerUrl" controls class="w-full max-h-64 rounded-lg mb-2 border border-[#e0c0b2] bg-black"></video>
-                    }
-                    <input asp-for="TrailerFile" type="file" accept="video/*" class="@fileInput" />
-                    <span asp-validation-for="TrailerFile" class="@fieldError"></span>
-                    <p class="text-xs text-[#584237] mt-1">Tối đa 100MB. Để trống nếu muốn giữ video hiện tại.</p>
+                    <label asp-for="TrailerUrl" class="@fieldLabel"></label>
+                    <input asp-for="TrailerUrl" placeholder="https://youtube.com/..." class="@fieldInput" />
+                    <span asp-validation-for="TrailerUrl" class="@fieldError"></span>
+                    <p class="text-xs text-[#584237] mt-1">Dán link trailer (vd YouTube).</p>
                 </div>
             </div>
         </div>

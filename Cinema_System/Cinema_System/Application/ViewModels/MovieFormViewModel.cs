@@ -20,25 +20,26 @@ public class MovieFormViewModel : IValidatableObject
     [Display(Name = "Mô tả")]
     public string? Description { get; set; }
 
-    // Đường dẫn file đã lưu (dùng để hiển thị ảnh/video hiện tại khi sửa, và giữ lại nếu không upload mới)
+    // Trailer nhập trực tiếp bằng URL (vd link YouTube), không upload file.
+    [Display(Name = "Trailer URL")]
     [StringLength(500)]
+    [Url(ErrorMessage = "Trailer phải là một URL hợp lệ")]
     public string? TrailerUrl { get; set; }
 
+    // Đường dẫn ảnh đã upload (lưu vào DB cột poster_url/banner_url).
+    // Khi sửa: giữ lại giá trị cũ nếu không upload ảnh mới.
     [StringLength(500)]
     public string? PosterUrl { get; set; }
 
     [StringLength(500)]
     public string? BannerUrl { get; set; }
 
-    // File upload từ form (controller xử lý lưu file rồi gán vào *Url ở trên)
+    // Ô upload ảnh từ form (controller lưu file rồi gán đường dẫn vào *Url ở trên).
     [Display(Name = "Poster (ảnh)")]
     public IFormFile? PosterFile { get; set; }
 
     [Display(Name = "Banner (ảnh)")]
     public IFormFile? BannerFile { get; set; }
-
-    [Display(Name = "Trailer (video)")]
-    public IFormFile? TrailerFile { get; set; }
 
     [Display(Name = "Đạo diễn")]
     [StringLength(255)]
