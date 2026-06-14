@@ -10,9 +10,9 @@ public class MovieService : IMovieService
     private readonly IUnitOfWork _unitOfWork;
     private readonly AutoMapper.IMapper _mapper;
 
-    public MovieService(IUnitOfWork unitOfWork, AutoMapper.IMapper mapper)  
+    public MovieService(IUnitOfWork unitOfWork, AutoMapper.IMapper mapper)   
     {
-        _unitOfWork = unitOfWork;
+        _unitOfWork = unitOfWork; 
         _mapper = mapper;
     }
 

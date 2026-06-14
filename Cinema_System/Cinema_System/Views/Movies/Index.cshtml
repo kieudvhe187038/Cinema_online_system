@@ -12,7 +12,7 @@
 <section class="movies-tabs-section">
     <div class="section-container">
         <ul class="movies-tabs">
-            <li class="tab @(Model.SelectedTab == "coming" ? "active" : "")">
+            <li class="tab @(Model.SelectedTab == "coming" ? "active" : "")"> 
                 <a asp-controller="Movies" asp-action="Index" asp-route-tab="coming" asp-route-page="1">PHIM SẮP CHIẾU</a>
             </li>
             <li class="tab @(Model.SelectedTab == "now" ? "active" : "")">
