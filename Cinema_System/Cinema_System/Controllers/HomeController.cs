@@ -19,9 +19,9 @@ namespace Cinema_System.Controllers
 
         public async Task<IActionResult> Index(string? genre, string? ageRating, string? status)
         {
-            var genres = await _movieService.GetAllGenresAsync();
-            var ageRatings = await _movieService.GetAllAgeRatingsAsync();
-            var statuses = await _movieService.GetAllMovieStatusesAsync();
+            var availableGenres = await _movieService.GetAllGenresAsync();
+            var availableAgeRatings = await _movieService.GetAllAgeRatingsAsync();
+            var availableStatuses = await _movieService.GetAllMovieStatusesAsync();
 
             var filteredMovies = string.IsNullOrWhiteSpace(genre) && string.IsNullOrWhiteSpace(ageRating) && string.IsNullOrWhiteSpace(status)
                 ? Enumerable.Empty<Cinema_System.Application.DTOs.MovieDTO>()
@@ -31,21 +31,22 @@ namespace Cinema_System.Controllers
             var comingSoonMovies = await _movieService.GetComingSoonMoviesAsync();
             var specialShowtimeMovies = await _movieService.GetSpecialShowtimeMoviesAsync();
 
-            var viewModel = new HomeViewModel
+            var homeViewModel = new HomeViewModel
             {
                 SelectedGenre = genre,
                 SelectedAgeRating = ageRating,
                 SelectedStatus = status,
-                AvailableGenres = genres,
-                AvailableAgeRatings = ageRatings,
-                AvailableStatuses = statuses,  
+                AvailableGenres = availableGenres,
+                AvailableAgeRatings = availableAgeRatings,
+                AvailableStatuses = availableStatuses,  
                 FilteredMovies = filteredMovies,
                 NowShowingMovies = nowShowingMovies,
                 ComingSoonMovies = comingSoonMovies,
                 SpecialShowtimeMovies = specialShowtimeMovies
             };
 
-            return View(viewModel);
+            _logger.LogInformation("Home page loaded with filters: Genre={Genre}, AgeRating={AgeRating}, Status={Status}", genre, ageRating, status);
+            return View(homeViewModel);
         }
 
         public IActionResult Privacy()

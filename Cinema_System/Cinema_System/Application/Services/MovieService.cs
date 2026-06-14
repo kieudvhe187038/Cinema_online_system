@@ -7,6 +7,9 @@ namespace Cinema_System.Application.Services;
 
 public class MovieService : IMovieService
 {
+    private const string ShowtimesIncludeProperty = "Showtimes";
+    private const string StoppedMovieStatusLower = "stopped";
+
     private readonly IUnitOfWork _unitOfWork;
     private readonly AutoMapper.IMapper _mapper;
 
@@ -18,96 +21,103 @@ public class MovieService : IMovieService
 
     public async Task<Cinema_System.Application.ViewModels.MoviesPageViewModel> GetMoviesPageAsync(string tab, int page, int pageSize)
     {
-        IEnumerable<MovieDTO> source = tab?.ToLower() switch
+        IEnumerable<MovieDTO> moviesForTab = tab?.ToLower() switch
         {
             "coming" => (await GetComingSoonMoviesAsync()).ToList(),
             "special" => (await GetSpecialShowtimeMoviesAsync()).ToList(),
             _ => (await GetNowShowingMoviesAsync()).ToList(),
         };
 
-        var totalCount = source.Count();
+        var totalCount = moviesForTab.Count();
         var totalPages = totalCount == 0 ? 1 : (int)Math.Ceiling(totalCount / (double)pageSize);
         if (page < 1) page = 1;
         if (page > totalPages) page = totalPages;
 
-        var items = source.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+        var pagedMovies = moviesForTab.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
-        var vm = new Cinema_System.Application.ViewModels.MoviesPageViewModel
+        var moviesPageViewModel = new Cinema_System.Application.ViewModels.MoviesPageViewModel
         {
             SelectedTab = tab?.ToLower() ?? "now",
-            Movies = items,
+            Movies = pagedMovies,
             CurrentPage = page,
             TotalPages = totalPages,
             PageSize = pageSize
         };
 
-        return vm;
+        return moviesPageViewModel;
     }
 
     public async Task<IEnumerable<MovieDTO>> GetAllMoviesAsync()
     {
-        var movies = await _unitOfWork.Movies.GetAllAsync(
-            includeProperties: new[] { "Showtimes" }
+        var allMovies = await _unitOfWork.Movies.GetAllAsync(
+            includeProperties: new[] { ShowtimesIncludeProperty }
         );
 
-        return _mapper.Map<IEnumerable<MovieDTO>>(movies);
+        return _mapper.Map<IEnumerable<MovieDTO>>(allMovies);
     }
 
     public async Task<IEnumerable<MovieDTO>> GetNowShowingMoviesAsync()
     {
-        var movies = await _unitOfWork.Movies.GetAllAsync(
-            predicate: m => m.Status == "Now Showing",
-            includeProperties: new[] { "Showtimes" }
+        var nowShowingMovies = await _unitOfWork.Movies.GetAllAsync(
+            predicate: movie => movie.Status == "Now Showing",
+            includeProperties: new[] { ShowtimesIncludeProperty }
         );
 
-        return _mapper.Map<IEnumerable<MovieDTO>>(movies);
+        return _mapper.Map<IEnumerable<MovieDTO>>(nowShowingMovies);
     }
 
     public async Task<IEnumerable<MovieDTO>> GetComingSoonMoviesAsync()
     {
-        var movies = await _unitOfWork.Movies.GetAllAsync(
-            predicate: m => m.Status == "Coming Soon",
-            includeProperties: new[] { "Showtimes" }
+        var comingSoonMovies = await _unitOfWork.Movies.GetAllAsync(
+            predicate: movie => movie.Status == "Coming Soon",
+            includeProperties: new[] { ShowtimesIncludeProperty }
         );
 
-        return _mapper.Map<IEnumerable<MovieDTO>>(movies);
+        return _mapper.Map<IEnumerable<MovieDTO>>(comingSoonMovies);
     }
 
     public async Task<IEnumerable<MovieDTO>> GetFilteredMoviesAsync(string? genre, string? ageRating, string? status)
     {
-        var movies = await _unitOfWork.Movies.GetAllAsync(
-            includeProperties: new[] { "Showtimes", "Genres" }
+        var allMovies = await _unitOfWork.Movies.GetAllAsync(
+            includeProperties: new[] { ShowtimesIncludeProperty, "Genres" }
         );
 
-        var filtered = movies.Where(m =>
-            (string.IsNullOrWhiteSpace(genre) || (m.Genres != null && m.Genres.Any(g => string.Equals(g.Name, genre, StringComparison.OrdinalIgnoreCase)))) &&
-            (string.IsNullOrWhiteSpace(ageRating) || string.Equals(m.AgeRating, ageRating, StringComparison.OrdinalIgnoreCase)) &&
-            (string.IsNullOrWhiteSpace(status) || string.Equals(m.Status, status, StringComparison.OrdinalIgnoreCase))
+        var filteredMovies = allMovies.Where(movie =>
+            movie.Status != null && movie.Status.ToLower() != StoppedMovieStatusLower &&
+            (string.IsNullOrWhiteSpace(genre) || (movie.Genres != null && movie.Genres.Any(genreEntity => genreEntity.Name != null && genreEntity.Name.ToLower() == genre.ToLower()))) &&
+            (string.IsNullOrWhiteSpace(ageRating) || (movie.AgeRating != null && movie.AgeRating.ToLower() == ageRating.ToLower())) &&
+            (string.IsNullOrWhiteSpace(status) || (movie.Status != null && movie.Status.ToLower() == status.ToLower()))
         );
 
-        return _mapper.Map<IEnumerable<MovieDTO>>(filtered);
+        return _mapper.Map<IEnumerable<MovieDTO>>(filteredMovies);
     }
 
     public async Task<IEnumerable<string>> GetAllGenresAsync()
     {
         var genres = await _unitOfWork.Genres.GetAllAsync(
-            orderBy: q => q.OrderBy(g => g.Name)
+            orderBy: genresQuery => genresQuery.OrderBy(genre => genre.Name)
         );
 
         return genres
-            .Select(g => g.Name)
+            .Select(genre => genre.Name)
             .Where(name => !string.IsNullOrWhiteSpace(name))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(name => name)
             .ToList();
     }
 
+    private async Task<IEnumerable<Domain.Entities.Movie>> GetVisibleMoviesAsync()
+    {
+        return (await _unitOfWork.Movies.GetAllAsync())
+            .Where(movie => movie.Status != null && movie.Status.ToLower() != StoppedMovieStatusLower);
+    }
+
     public async Task<IEnumerable<string>> GetAllAgeRatingsAsync()
     {
-        var movies = await _unitOfWork.Movies.GetAllAsync();
-        var ratings = movies
-            .Select(m => m.AgeRating)
-            .Where(rating => !string.IsNullOrWhiteSpace(rating))
+        var visibleMovies = await GetVisibleMoviesAsync();
+        var ratings = visibleMovies
+            .Select(movie => movie.AgeRating)
+            .Where(ageRatingValue => !string.IsNullOrWhiteSpace(ageRatingValue))
             .Select(rating => rating!)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
@@ -125,10 +135,10 @@ public class MovieService : IMovieService
 
     public async Task<IEnumerable<string>> GetAllMovieStatusesAsync()
     {
-        var movies = await _unitOfWork.Movies.GetAllAsync();
-        return movies
-            .Select(m => m.Status)
-            .Where(status => !string.IsNullOrWhiteSpace(status))
+        var visibleMovies = await GetVisibleMoviesAsync();
+        return visibleMovies
+            .Select(movie => movie.Status)
+            .Where(statusValue => !string.IsNullOrWhiteSpace(statusValue))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(status => status)
             .ToList()!;
@@ -137,8 +147,8 @@ public class MovieService : IMovieService
     public async Task<MovieDTO?> GetMovieByIdAsync(Guid id)
     {
         var movie = await _unitOfWork.Movies.FirstOrDefaultAsync(
-            predicate: m => m.Id == id,
-            includeProperties: new[] { "Showtimes" }
+            predicate: movieEntity => movieEntity.Id == id,
+            includeProperties: new[] { ShowtimesIncludeProperty }
         );
 
         return movie == null ? null : _mapper.Map<MovieDTO>(movie);
@@ -146,16 +156,17 @@ public class MovieService : IMovieService
 
     public async Task<IEnumerable<MovieDTO>> GetSpecialShowtimeMoviesAsync()
     {
-        var movies = await _unitOfWork.Movies.GetAllAsync(
-            predicate: m => m.Showtimes.Any(s =>
-                s.Status == "Special" ||
-                s.Status == "Special Screening" ||
-                (s.Status != null && s.Status.Contains("Đặc"))
-            ),
-            includeProperties: new[] { "Showtimes" }
+        var specialShowtimeMovies = await _unitOfWork.Movies.GetAllAsync(
+            predicate: movie => movie.Status != null && movie.Status.ToLower() != StoppedMovieStatusLower &&
+                movie.Showtimes.Any(showtime =>
+                    showtime.Status == "Special" ||
+                    showtime.Status == "Special Screening" ||
+                    (showtime.Status != null && showtime.Status.Contains("Đặc"))
+                ),
+            includeProperties: new[] { ShowtimesIncludeProperty }
         );
 
-        return _mapper.Map<IEnumerable<MovieDTO>>(movies);
+        return _mapper.Map<IEnumerable<MovieDTO>>(specialShowtimeMovies);
     }
 
     public async Task<Cinema_System.Application.ViewModels.MoviesPageViewModel> SearchMoviesAsync(string keyword, int page, int pageSize)
@@ -176,27 +187,28 @@ public class MovieService : IMovieService
         }
 
         var searchResults = await _unitOfWork.Movies.GetAllAsync(
-            predicate: m =>
-                (m.Title != null && m.Title.ToLower().Contains(searchTerm)) ||
-                (m.Description != null && m.Description.ToLower().Contains(searchTerm)) ||
-                (m.Director != null && m.Director.ToLower().Contains(searchTerm)) ||
-                (m.CastMembers != null && m.CastMembers.ToLower().Contains(searchTerm)),
-            includeProperties: new[] { "Showtimes" }
+            predicate: movie =>
+                movie.Status != null && movie.Status.ToLower() != StoppedMovieStatusLower &&
+                ((movie.Title != null && movie.Title.ToLower().Contains(searchTerm)) ||
+                (movie.Description != null && movie.Description.ToLower().Contains(searchTerm)) ||
+                (movie.Director != null && movie.Director.ToLower().Contains(searchTerm)) ||
+                (movie.CastMembers != null && movie.CastMembers.ToLower().Contains(searchTerm))),
+            includeProperties: new[] { ShowtimesIncludeProperty }
         );
 
-        var movieDtos = _mapper.Map<List<MovieDTO>>(searchResults);
-        var totalCount = movieDtos.Count;
+        var searchResultsDto = _mapper.Map<List<MovieDTO>>(searchResults);
+        var totalCount = searchResultsDto.Count;
         var totalPages = totalCount == 0 ? 1 : (int)Math.Ceiling(totalCount / (double)pageSize);
         if (page < 1) page = 1;
         if (page > totalPages) page = totalPages;
 
-        var items = movieDtos.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+        var pagedSearchResults = searchResultsDto.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
         return new Cinema_System.Application.ViewModels.MoviesPageViewModel
         {
             SelectedTab = "search",
             SearchKeyword = searchTerm,
-            Movies = items,
+            Movies = pagedSearchResults,
             CurrentPage = page,
             TotalPages = totalPages,
             PageSize = pageSize
