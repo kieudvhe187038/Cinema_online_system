@@ -9,7 +9,7 @@ window.addEventListener('scroll', function () {
     } else {
         header.classList.remove('scrolled');
     }
-});
+}); 
 
 // Quick booking select highlight
 document.querySelectorAll('.book-field select').forEach(function (select) {
