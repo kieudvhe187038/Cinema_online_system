@@ -6,181 +6,34 @@
     Layout = "~/Views/Shared/_ManagerLayout.cshtml";
 }
 
-@section Styles {
-<style>
-    .mv-page-top {
-        display: flex; justify-content: space-between; align-items: flex-start;
-        margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap;
-    }
-    .mv-heading {
-        font-family: var(--font-head); font-size: 1.5rem; font-weight: 800;
-        color: var(--on-surface); margin-bottom: .2rem;
-    }
-    .mv-sub { font-size: .875rem; color: #6b7280; }
-    .mv-add-btn {
-        display: inline-flex; align-items: center; gap: .4rem;
-        padding: .6rem 1.25rem; background: var(--primary); color: #fff;
-        border: none; border-radius: .6rem; font-family: var(--font-body);
-        font-size: .82rem; font-weight: 700; cursor: pointer;
-        text-decoration: none; white-space: nowrap; letter-spacing: .3px;
-        transition: background .15s;
-    }
-    .mv-add-btn:hover { background: var(--primary-dark); color: #fff; }
-    .mv-add-btn .material-symbols-outlined { font-size: 18px; }
-
-    .mv-alert { padding: .75rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: .875rem; }
-    .mv-alert.success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
-    .mv-alert.error   { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
-
-    .mv-filter-card {
-        background: #fff; border-radius: .75rem; padding: 1.25rem 1.5rem;
-        margin-bottom: 1.25rem; border: 1px solid #e8eaed;
-    }
-    .mv-filter-row { display: flex; gap: .875rem; flex-wrap: wrap; align-items: flex-end; }
-    .mv-filter-item { display: flex; flex-direction: column; gap: .3rem; }
-    .mv-filter-item label {
-        font-size: .75rem; font-weight: 700; color: #6b7280;
-        text-transform: uppercase; letter-spacing: .4px;
-    }
-    .mv-filter-item select, .mv-filter-item input[type=text] {
-        padding: .5rem .75rem; border: 1px solid #d1d5db; border-radius: .5rem;
-        font-family: var(--font-body); font-size: .875rem;
-        background: #fff; color: var(--on-surface); min-width: 155px;
-    }
-    .mv-filter-item select:focus, .mv-filter-item input[type=text]:focus {
-        outline: none; border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(243,112,33,.12);
-    }
-    .mv-search-wrap { position: relative; }
-    .mv-search-wrap .material-symbols-outlined {
-        position: absolute; left: .6rem; top: 50%; transform: translateY(-50%);
-        font-size: 18px; color: #9ca3af; pointer-events: none;
-    }
-    .mv-search-wrap input { padding-left: 2.25rem; min-width: 220px; }
-    .mv-filter-apply {
-        display: inline-flex; align-items: center; gap: .4rem;
-        padding: .52rem 1.1rem; background: var(--secondary-dark); color: #fff;
-        border: none; border-radius: .5rem; font-family: var(--font-body);
-        font-size: .875rem; font-weight: 600; cursor: pointer; white-space: nowrap;
-        transition: background .15s;
-    }
-    .mv-filter-apply:hover { background: #002f6c; }
-    .mv-filter-apply .material-symbols-outlined { font-size: 18px; }
-    .mv-clear-link {
-        font-size: .82rem; color: #6b7280; text-decoration: none;
-        padding: .5rem .2rem; align-self: flex-end;
-    }
-    .mv-clear-link:hover { color: var(--primary); }
-
-    .mv-table-card {
-        background: #fff; border-radius: .75rem; border: 1px solid #e8eaed;
-        overflow: hidden; margin-bottom: 1.25rem;
-    }
-    .mv-table { width: 100%; border-collapse: collapse; }
-    .mv-table thead tr { background: #111827; }
-    .mv-table th {
-        padding: .875rem 1rem; text-align: left;
-        color: #d1d5db; font-size: .73rem; font-weight: 700;
-        letter-spacing: .6px; text-transform: uppercase; white-space: nowrap;
-    }
-    .mv-table td {
-        padding: .875rem 1rem; border-bottom: 1px solid #f3f4f6;
-        font-size: .875rem; vertical-align: middle; color: var(--on-surface);
-    }
-    .mv-table tbody tr:last-child td { border-bottom: none; }
-    .mv-table tbody tr:hover td { background: #fafafa; }
-    .mv-poster { width: 42px; height: 60px; object-fit: cover; border-radius: .35rem; display: block; }
-    .mv-poster-ph {
-        width: 42px; height: 60px; background: #f3f4f6; border-radius: .35rem;
-        display: flex; align-items: center; justify-content: center;
-        font-size: .6rem; color: #9ca3af; text-align: center;
-    }
-    .mv-movie-name { font-weight: 700; font-size: .9rem; margin-bottom: .2rem; max-width: 220px; }
-    .mv-movie-date { font-size: .78rem; color: #6b7280; }
-    .mv-genres-text { color: #374151; font-size: .85rem; }
-
-    .mv-badge {
-        display: inline-flex; align-items: center; gap: .35rem;
-        padding: .25rem .75rem; border-radius: 999px;
-        font-size: .78rem; font-weight: 600; white-space: nowrap;
-    }
-    .mv-badge-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-    .mv-badge.now     { background: #dcfce7; color: #15803d; }
-    .mv-badge.now     .mv-badge-dot { background: #16a34a; }
-    .mv-badge.coming  { background: #fff7ed; color: #c2410c; }
-    .mv-badge.coming  .mv-badge-dot { background: #ea580c; }
-    .mv-badge.inactive { background: #f3f4f6; color: #4b5563; }
-    .mv-badge.inactive .mv-badge-dot { background: #9ca3af; }
-
-    .mv-actions { display: flex; align-items: center; gap: .35rem; }
-    .mv-act-btn {
-        width: 32px; height: 32px; border-radius: .4rem; border: none;
-        display: flex; align-items: center; justify-content: center;
-        cursor: pointer; background: #f3f4f6; transition: background .15s;
-        text-decoration: none;
-    }
-    .mv-act-btn .material-symbols-outlined { font-size: 18px; }
-    .mv-act-btn.view  { color: #0ea5e9; }
-    .mv-act-btn.view:hover  { background: #e0f2fe; }
-    .mv-act-btn.edit  { color: #f59e0b; }
-    .mv-act-btn.edit:hover  { background: #fef3c7; }
-    .mv-act-btn.tog-off { color: #ef4444; }
-    .mv-act-btn.tog-off:hover { background: #fee2e2; }
-    .mv-act-btn.tog-on  { color: #22c55e; }
-    .mv-act-btn.tog-on:hover  { background: #dcfce7; }
-
-    .mv-empty {
-        text-align: center; padding: 4rem 2rem; color: #9ca3af; font-size: .9rem;
-    }
-    .mv-empty .material-symbols-outlined { font-size: 48px; display: block; margin-bottom: .75rem; }
-
-    .mv-pag-row {
-        display: flex; align-items: center; justify-content: space-between;
-        flex-wrap: wrap; gap: .75rem;
-    }
-    .mv-pag-info { font-size: .85rem; color: #6b7280; }
-    .mv-pag-info strong { color: var(--on-surface); }
-    .mv-pages { display: flex; gap: .3rem; flex-wrap: wrap; }
-    .mv-page-btn {
-        min-width: 36px; height: 36px; padding: 0 .5rem;
-        display: flex; align-items: center; justify-content: center;
-        border: 1px solid #e5e7eb; border-radius: .45rem;
-        text-decoration: none; font-size: .875rem; color: #374151;
-        background: #fff; transition: background .15s, border-color .15s;
-    }
-    .mv-page-btn:hover { background: #fff7f0; border-color: var(--primary); color: var(--primary); }
-    .mv-page-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 700; }
-    .mv-page-btn.disabled { opacity: .4; pointer-events: none; }
-    .mv-page-btn.ellipsis { border: none; background: none; cursor: default; pointer-events: none; }
-</style>
-}
-
-<div class="mv-page-top">
+<div class="flex justify-between items-start mb-6 gap-4 flex-wrap">
     <div>
-        <h1 class="mv-heading">Danh sách phim</h1>
-        <p class="mv-sub">Quản lý kho phim và trạng thái phát hành toàn hệ thống</p>
+        <h1 class="font-head text-2xl font-extrabold text-[#191c1d] mb-0.5">Danh sách phim</h1>
+        <p class="text-sm text-gray-500">Quản lý kho phim và trạng thái phát hành toàn hệ thống</p>
     </div>
-    <a class="mv-add-btn" href="@Url.Action("Create", "MovieManagement")">
-        <span class="material-symbols-outlined">add_circle</span>
+    <a class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg text-xs font-bold tracking-wide whitespace-nowrap transition-colors"
+       href="@Url.Action("Create", "MovieManagement")">
+        <span class="material-symbols-outlined" style="font-size:18px">add_circle</span>
         THÊM PHIM MỚI
     </a>
 </div>
 
 @if (TempData["Success"] != null)
 {
-    <div class="mv-alert success">@TempData["Success"]</div>
+    <div class="px-4 py-3 rounded-lg mb-4 text-sm bg-green-50 text-green-700 border border-green-200">@TempData["Success"]</div>
 }
 @if (TempData["Error"] != null)
 {
-    <div class="mv-alert error">@TempData["Error"]</div>
+    <div class="px-4 py-3 rounded-lg mb-4 text-sm bg-red-50 text-red-700 border border-red-200">@TempData["Error"]</div>
 }
 
-<div class="mv-filter-card">
+<div class="bg-white rounded-xl p-5 mb-5 border border-[#e8eaed]">
     <form method="get" action="@Url.Action("Index", "MovieManagement")">
-        <div class="mv-filter-row">
-            <div class="mv-filter-item">
-                <label>Trạng thái</label>
-                <select name="status">
+        <div class="flex gap-3.5 flex-wrap items-end">
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">Trạng thái</label>
+                <select name="status"
+                        class="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white min-w-[155px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20">
                     @{
                         var statusFilter = Model.StatusFilter ?? "";
                         var statusOpts = new[] {
@@ -203,9 +56,10 @@
                     }
                 </select>
             </div>
-            <div class="mv-filter-item">
-                <label>Thể loại</label>
-                <select name="genre">
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">Thể loại</label>
+                <select name="genre"
+                        class="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white min-w-[155px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20">
                     @{
                         var genreFilter = Model.GenreFilter ?? "";
                         if (genreFilter == "")
@@ -230,115 +84,109 @@
                     }
                 </select>
             </div>
-            <div class="mv-filter-item">
-                <label>Tìm kiếm</label>
-                <div class="mv-search-wrap">
-                    <span class="material-symbols-outlined">search</span>
-                    <input type="text" name="search"  value="@Model.Search" placeholder="   Tìm kiếm phim..." />
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">Tìm kiếm</label>
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" style="font-size:18px">search</span>
+                    <input type="text" name="search" value="@Model.Search" placeholder="Tìm kiếm phim..."
+                           class="pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm bg-white min-w-[220px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
                 </div>
             </div>
-            <div class="mv-filter-item">
-                <button type="submit" class="mv-filter-apply">
-                    <span class="material-symbols-outlined">filter_list</span>
+            <div class="flex flex-col gap-1.5">
+                <button type="submit"
+                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-secondary-dark hover:bg-[#002f6c] text-white rounded-lg text-sm font-semibold whitespace-nowrap transition-colors">
+                    <span class="material-symbols-outlined" style="font-size:18px">filter_list</span>
                     Áp dụng bộ lọc
                 </button>
             </div>
             @if (!string.IsNullOrEmpty(Model.Search) || !string.IsNullOrEmpty(Model.StatusFilter) || !string.IsNullOrEmpty(Model.GenreFilter))
             {
-                <a class="mv-clear-link" href="@Url.Action("Index", "MovieManagement")">✕ Xóa bộ lọc</a>
+                <a class="text-sm text-gray-500 hover:text-primary py-2 self-end" href="@Url.Action("Index", "MovieManagement")">✕ Xóa bộ lọc</a>
             }
         </div>
     </form>
 </div>
 
-<div class="mv-table-card">
+<div class="bg-white rounded-xl border border-[#e8eaed] overflow-hidden mb-5">
     @if (Model.Movies.Any())
     {
-        <table class="mv-table">
+        <table class="w-full border-collapse">
             <thead>
-                <tr>
-                    <th>Poster</th>
-                    <th>Tên Phim</th>
-                    <th>Thể Loại</th>
-                    <th>Thời Lượng</th>
-                    <th>Trạng Thái</th>
-                    <th>Hành Động</th>
+                <tr class="bg-gray-900">
+                    <th class="px-4 py-3.5 text-left text-gray-300 text-xs font-bold tracking-wide uppercase whitespace-nowrap">Poster</th>
+                    <th class="px-4 py-3.5 text-left text-gray-300 text-xs font-bold tracking-wide uppercase whitespace-nowrap">Tên Phim</th>
+                    <th class="px-4 py-3.5 text-left text-gray-300 text-xs font-bold tracking-wide uppercase whitespace-nowrap">Thể Loại</th>
+                    <th class="px-4 py-3.5 text-left text-gray-300 text-xs font-bold tracking-wide uppercase whitespace-nowrap">Thời Lượng</th>
+                    <th class="px-4 py-3.5 text-left text-gray-300 text-xs font-bold tracking-wide uppercase whitespace-nowrap">Trạng Thái</th>
+                    <th class="px-4 py-3.5 text-left text-gray-300 text-xs font-bold tracking-wide uppercase whitespace-nowrap">Hành Động</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var movie in Model.Movies)
                 {
-                    var badgeClass = movie.Status switch
+                    var badge = movie.Status switch
                     {
-                        "Now Showing" => "now",
-                        "Coming Soon" => "coming",
-                        _ => "inactive"
+                        "Now Showing" => ("bg-green-100 text-green-700", "bg-green-600", "Đang chiếu"),
+                        "Coming Soon" => ("bg-orange-50 text-orange-700", "bg-orange-500", "Sắp chiếu"),
+                        "Stopped"     => ("bg-gray-100 text-gray-600", "bg-gray-400", "Ngừng chiếu"),
+                        _             => ("bg-gray-100 text-gray-600", "bg-gray-400", movie.Status ?? "—")
                     };
-                    var badgeLabel = movie.Status switch
-                    {
-                        "Now Showing" => "Đang chiếu",
-                        "Coming Soon" => "Sắp chiếu",
-                        "Stopped"    => "Ngừng chiếu",
-                        _ => movie.Status ?? "—"
-                    };
-                    <tr>
-                        <td>
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3.5 border-b border-gray-100 text-sm align-middle">
                             @if (!string.IsNullOrEmpty(movie.PosterUrl))
                             {
-                                <img class="mv-poster" src="@movie.PosterUrl" alt="@movie.Title"
+                                <img class="w-[42px] h-[60px] object-cover rounded block" src="@movie.PosterUrl" alt="@movie.Title"
                                      onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
-                                <div class="mv-poster-ph" style="display:none">No img</div>
+                                <div class="w-[42px] h-[60px] bg-gray-100 rounded items-center justify-center text-[.6rem] text-gray-400 text-center" style="display:none">No img</div>
                             }
                             else
                             {
-                                <div class="mv-poster-ph">No img</div>
+                                <div class="w-[42px] h-[60px] bg-gray-100 rounded flex items-center justify-center text-[.6rem] text-gray-400 text-center">No img</div>
                             }
                         </td>
-                        <td>
-                            <div class="mv-movie-name">@movie.Title</div>
+                        <td class="px-4 py-3.5 border-b border-gray-100 text-sm align-middle">
+                            <div class="font-bold text-sm mb-0.5 max-w-[220px]">@movie.Title</div>
                             @if (movie.ReleaseDate.HasValue)
                             {
-                                <div class="mv-movie-date">Khởi chiếu: @movie.ReleaseDate.Value.ToString("dd/MM/yyyy")</div>
+                                <div class="text-xs text-gray-500">Khởi chiếu: @movie.ReleaseDate.Value.ToString("dd/MM/yyyy")</div>
                             }
                         </td>
-                        <td>
-                            <span class="mv-genres-text">@(movie.GenreNames.Any() ? string.Join(", ", movie.GenreNames) : "—")</span>
+                        <td class="px-4 py-3.5 border-b border-gray-100 text-sm align-middle">
+                            <span class="text-gray-700">@(movie.GenreNames.Any() ? string.Join(", ", movie.GenreNames) : "—")</span>
                         </td>
-                        <td>@(movie.DurationMinutes.HasValue ? $"{movie.DurationMinutes} phút" : "—")</td>
-                        <td>
-                            <span class="mv-badge @badgeClass">
-                                <span class="mv-badge-dot"></span>
-                                @badgeLabel
+                        <td class="px-4 py-3.5 border-b border-gray-100 text-sm align-middle">@(movie.DurationMinutes.HasValue ? $"{movie.DurationMinutes} phút" : "—")</td>
+                        <td class="px-4 py-3.5 border-b border-gray-100 text-sm align-middle">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap @badge.Item1">
+                                <span class="w-[7px] h-[7px] rounded-full shrink-0 @badge.Item2"></span>
+                                @badge.Item3
                             </span>
                         </td>
-                        <td>
-                            <div class="mv-actions">
-                                <a class="mv-act-btn view"
-                                   href="@Url.Action("Edit", "MovieManagement", new { id = movie.Id })"
-                                   title="Xem chi tiết">
-                                    <span class="material-symbols-outlined">visibility</span>
+                        <td class="px-4 py-3.5 border-b border-gray-100 text-sm align-middle">
+                            <div class="flex items-center gap-1.5">
+                                <a class="w-8 h-8 rounded-md flex items-center justify-center bg-gray-100 text-sky-500 hover:bg-sky-100 transition-colors"
+                                   href="@Url.Action("Edit", "MovieManagement", new { id = movie.Id })" title="Xem chi tiết">
+                                    <span class="material-symbols-outlined" style="font-size:18px">visibility</span>
                                 </a>
-                                <a class="mv-act-btn edit"
-                                   href="@Url.Action("Edit", "MovieManagement", new { id = movie.Id })"
-                                   title="Chỉnh sửa">
-                                    <span class="material-symbols-outlined">edit</span>
+                                <a class="w-8 h-8 rounded-md flex items-center justify-center bg-gray-100 text-amber-500 hover:bg-amber-100 transition-colors"
+                                   href="@Url.Action("Edit", "MovieManagement", new { id = movie.Id })" title="Chỉnh sửa">
+                                    <span class="material-symbols-outlined" style="font-size:18px">edit</span>
                                 </a>
                                 <form method="post"
                                       action="@Url.Action("ToggleStatus", "MovieManagement", new { id = movie.Id })"
-                                      style="display:inline">
+                                      class="inline">
                                     @Html.AntiForgeryToken()
                                     @if (movie.Status == "Stopped")
                                     {
-                                        <button type="submit" class="mv-act-btn tog-on" title="Kích hoạt"
+                                        <button type="submit" class="w-8 h-8 rounded-md flex items-center justify-center bg-gray-100 text-green-500 hover:bg-green-100 transition-colors" title="Kích hoạt"
                                                 onclick="return confirm('Kích hoạt phim này?')">
-                                            <span class="material-symbols-outlined">play_circle</span>
+                                            <span class="material-symbols-outlined" style="font-size:18px">play_circle</span>
                                         </button>
                                     }
                                     else
                                     {
-                                        <button type="submit" class="mv-act-btn tog-off" title="Ngừng chiếu"
+                                        <button type="submit" class="w-8 h-8 rounded-md flex items-center justify-center bg-gray-100 text-red-500 hover:bg-red-100 transition-colors" title="Ngừng chiếu"
                                                 onclick="return confirm('Ngừng chiếu phim này?')">
-                                            <span class="material-symbols-outlined">delete</span>
+                                            <span class="material-symbols-outlined" style="font-size:18px">delete</span>
                                         </button>
                                     }
                                 </form>
@@ -351,8 +199,8 @@
     }
     else
     {
-        <div class="mv-empty">
-            <span class="material-symbols-outlined">movie_filter</span>
+        <div class="text-center py-16 px-8 text-gray-400 text-sm">
+            <span class="material-symbols-outlined block mb-3" style="font-size:48px">movie_filter</span>
             Không tìm thấy phim nào.
         </div>
     }
@@ -375,27 +223,33 @@
 
     string PageUrl(int p) => Url.Action("Index", "MovieManagement",
         new { search = Model.Search, status = Model.StatusFilter, genre = Model.GenreFilter, page = p })!;
+
+    const string pgBtn = "min-w-9 h-9 px-2 flex items-center justify-center border border-gray-200 rounded-md text-sm text-gray-700 bg-white hover:bg-[#fff7f0] hover:border-primary hover:text-primary transition-colors";
 }
-<div class="mv-pag-row">
-    <span class="mv-pag-info">
-        Hiển thị <strong>@fromItem–@toItem</strong> trên <strong>@Model.TotalCount</strong> phim
+<div class="flex items-center justify-between flex-wrap gap-3">
+    <span class="text-sm text-gray-500">
+        Hiển thị <strong class="text-[#191c1d]">@fromItem–@toItem</strong> trên <strong class="text-[#191c1d]">@Model.TotalCount</strong> phim
     </span>
     @if (tp > 1)
     {
-        <div class="mv-pages">
-            <a class="mv-page-btn @(cp == 1 ? "disabled" : "")" href="@PageUrl(cp - 1)">&lsaquo;</a>
+        <div class="flex gap-1.5 flex-wrap">
+            <a class="@pgBtn @(cp == 1 ? "opacity-40 pointer-events-none" : "")" href="@PageUrl(cp - 1)">&lsaquo;</a>
             @foreach (var pg in pages)
             {
                 if (pg == null)
                 {
-                    <span class="mv-page-btn ellipsis">…</span>
+                    <span class="min-w-9 h-9 px-2 flex items-center justify-center text-gray-400">…</span>
+                }
+                else if (pg == cp)
+                {
+                    <a class="min-w-9 h-9 px-2 flex items-center justify-center border border-primary rounded-md text-sm bg-primary text-white font-bold" href="@PageUrl(pg.Value)">@pg</a>
                 }
                 else
                 {
-                    <a class="mv-page-btn @(pg == cp ? "active" : "")" href="@PageUrl(pg.Value)">@pg</a>
+                    <a class="@pgBtn" href="@PageUrl(pg.Value)">@pg</a>
                 }
             }
-            <a class="mv-page-btn @(cp == tp ? "disabled" : "")" href="@PageUrl(cp + 1)">&rsaquo;</a>
+            <a class="@pgBtn @(cp == tp ? "opacity-40 pointer-events-none" : "")" href="@PageUrl(cp + 1)">&rsaquo;</a>
         </div>
     }
 </div>

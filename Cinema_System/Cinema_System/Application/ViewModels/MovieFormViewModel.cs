@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Cinema_System.Application.DTOs;
+using Microsoft.AspNetCore.Http;
 
 namespace Cinema_System.Application.ViewModels;
 
@@ -19,17 +20,25 @@ public class MovieFormViewModel : IValidatableObject
     [Display(Name = "Mô tả")]
     public string? Description { get; set; }
 
-    [Display(Name = "Trailer URL")]
+    // Đường dẫn file đã lưu (dùng để hiển thị ảnh/video hiện tại khi sửa, và giữ lại nếu không upload mới)
     [StringLength(500)]
     public string? TrailerUrl { get; set; }
 
-    [Display(Name = "Poster URL")]
     [StringLength(500)]
     public string? PosterUrl { get; set; }
 
-    [Display(Name = "Banner URL")]
     [StringLength(500)]
     public string? BannerUrl { get; set; }
+
+    // File upload từ form (controller xử lý lưu file rồi gán vào *Url ở trên)
+    [Display(Name = "Poster (ảnh)")]
+    public IFormFile? PosterFile { get; set; }
+
+    [Display(Name = "Banner (ảnh)")]
+    public IFormFile? BannerFile { get; set; }
+
+    [Display(Name = "Trailer (video)")]
+    public IFormFile? TrailerFile { get; set; }
 
     [Display(Name = "Đạo diễn")]
     [StringLength(255)]

@@ -3,6 +3,10 @@ bin/
 obj/
 out/
 
+# User-uploaded media (poster/banner/trailer)
+wwwroot/uploads/
+**/wwwroot/uploads/
+
 # Visual Studio
 .vs/
 *.user
