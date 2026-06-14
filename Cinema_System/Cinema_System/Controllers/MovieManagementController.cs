@@ -23,7 +23,7 @@ public class MovieManagementController : Controller
     [HttpGet("")]
     public async Task<IActionResult> Index(string? search, string? status, string? genre, int page = 1)
     {
-        var vm = await _movieService.GetMoviesForAdminAsync(search, status, genre, page, pageSize: 5);
+        var vm = await _movieService.GetMoviesForManagerAsync(search, status, genre, page, pageSize: 5);
         return View(vm);
     }
 
