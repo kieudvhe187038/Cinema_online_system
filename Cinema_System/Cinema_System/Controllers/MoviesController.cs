@@ -22,7 +22,7 @@ namespace Cinema_System.Controllers
             return View(vm);
         }
 
-        public async Task<IActionResult> Search(string q, int page = 1)
+        public async Task<IActionResult> Search(string q, int page = 1) 
         {
             if (string.IsNullOrWhiteSpace(q))
             {
