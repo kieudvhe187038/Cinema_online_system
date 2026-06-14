@@ -12,7 +12,7 @@ public class MovieMappingProfile : Profile
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
             .ForMember(dest => dest.Title, opt => opt.MapFrom(src => src.Title))
             .ForMember(dest => dest.Slug, opt => opt.MapFrom(src => src.Slug))
-            .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
+            .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description)) 
             .ForMember(dest => dest.TrailerUrl, opt => opt.MapFrom(src => src.TrailerUrl))
             .ForMember(dest => dest.PosterUrl, opt => opt.MapFrom(src => src.PosterUrl))
             .ForMember(dest => dest.BannerUrl, opt => opt.MapFrom(src => src.BannerUrl))

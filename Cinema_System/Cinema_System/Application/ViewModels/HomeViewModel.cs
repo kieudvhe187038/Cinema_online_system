@@ -12,7 +12,7 @@ public class HomeViewModel
     public IEnumerable<string> AvailableAgeRatings { get; set; } = new List<string>();
     public IEnumerable<string> AvailableStatuses { get; set; } = new List<string>();
 
-    public IEnumerable<MovieDTO> FilteredMovies { get; set; } = new List<MovieDTO>();
+    public IEnumerable<MovieDTO> FilteredMovies { get; set; } = new List<MovieDTO>(); 
     public IEnumerable<MovieDTO> NowShowingMovies { get; set; } = new List<MovieDTO>();
     public IEnumerable<MovieDTO> ComingSoonMovies { get; set; } = new List<MovieDTO>();
     public IEnumerable<MovieDTO> SpecialShowtimeMovies { get; set; } = new List<MovieDTO>();
