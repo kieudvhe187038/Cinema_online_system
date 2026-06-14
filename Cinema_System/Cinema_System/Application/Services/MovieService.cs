@@ -143,8 +143,8 @@ public class MovieService : IMovieService
             ReleaseDate = model.ReleaseDate,
             AgeRating = model.AgeRating,
             Status = model.Status,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.Now,
+            UpdatedAt = DateTime.Now
         };
 
         foreach (var genreId in model.SelectedGenreIds)
@@ -180,7 +180,7 @@ public class MovieService : IMovieService
         movie.ReleaseDate = model.ReleaseDate;
         movie.AgeRating = model.AgeRating;
         movie.Status = model.Status;
-        movie.UpdatedAt = DateTime.UtcNow;
+        movie.UpdatedAt = DateTime.Now;
 
         movie.Genres.Clear();
         foreach (var genreId in model.SelectedGenreIds)
@@ -200,7 +200,7 @@ public class MovieService : IMovieService
             return Result.Failure("Không tìm thấy phim.");
 
         movie.Status = movie.Status == "Stopped" ? "Now Showing" : "Stopped";
-        movie.UpdatedAt = DateTime.UtcNow;
+        movie.UpdatedAt = DateTime.Now;
         _unitOfWork.Movies.Update(movie);
         await _unitOfWork.SaveChangesAsync();
         return Result.Success();
