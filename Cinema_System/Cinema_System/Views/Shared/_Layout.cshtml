@@ -31,7 +31,7 @@
                 </div>
                 <div class="header-right">
                     <form asp-controller="Movies" asp-action="Search" method="get" class="search-box">
-                        <input type="text" name="q" value="@(ViewData["SearchKeyword"] ?? string.Empty)" placeholder="Tìm phim, rạp..." />
+                        <input type="text" name="q" value="@(ViewData["SearchKeyword"] ?? string.Empty)" placeholder="Tìm kiếm phim" />
                         <button type="submit" class="search-button" aria-label="Tìm kiếm">
                             <span class="material-symbols-outlined search-icon">search</span>
                         </button>
