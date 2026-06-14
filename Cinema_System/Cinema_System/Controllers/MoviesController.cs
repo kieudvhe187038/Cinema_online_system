@@ -7,7 +7,7 @@ namespace Cinema_System.Controllers
     public class MoviesController : Controller
     {
         private readonly IMovieService _movieService;
-        private readonly ILogger<MoviesController> _logger; 
+        private readonly ILogger<MoviesController> _logger;     
 
         public MoviesController(ILogger<MoviesController> logger, IMovieService movieService) 
         {

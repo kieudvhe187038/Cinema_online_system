@@ -38,7 +38,7 @@ namespace Cinema_System.Controllers
                 SelectedStatus = status,
                 AvailableGenres = genres,
                 AvailableAgeRatings = ageRatings,
-                AvailableStatuses = statuses,
+                AvailableStatuses = statuses,  
                 FilteredMovies = filteredMovies,
                 NowShowingMovies = nowShowingMovies,
                 ComingSoonMovies = comingSoonMovies,
