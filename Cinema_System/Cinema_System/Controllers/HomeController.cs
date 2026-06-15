@@ -41,7 +41,7 @@ namespace Cinema_System.Controllers
                 AvailableGenres = availableGenres,
                 AvailableAgeRatings = availableAgeRatings,
                 AvailableStatuses = availableStatuses,  
-                FilteredMovies = filteredMovies,
+                FilteredMovies = filteredMovies, 
                 NowShowingMovies = nowShowingMovies,
                 ComingSoonMovies = comingSoonMovies, 
                 SpecialShowtimeMovies = specialShowtimeMovies
