@@ -19,10 +19,12 @@
 
 <div class="space-y-16 bg-slate-50 text-slate-900 font-body">
     <section class="relative overflow-hidden bg-slate-950 text-white group">
+        <!-- Dùng phần tử full-width cho banner để viền và ảnh phủ toàn bộ chiều ngang -->
         <div class="relative left-1/2 right-1/2 w-screen -translate-x-1/2 overflow-hidden">
             <div class="relative overflow-hidden rounded-[2rem] border border-white/15 bg-slate-950 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.2)]">
                 <!-- Carousel Items (full width) -->
                 <div class="carousel-container relative overflow-hidden">
+                    <!-- Đây là khung chứa slider, chiều cao responsive theo viewport -->
                     <div class="relative w-full h-[48vh] sm:h-[52vh] md:h-[56vh] lg:h-[60vh] xl:h-[64vh] min-h-[320px]">
                         <!-- Slide 1 -->
                         <div class="carousel-slide absolute inset-0 opacity-100 transition-opacity duration-700 ease-in-out">
@@ -444,41 +446,52 @@
 
 @section Scripts {
     <script>
+        // Chờ trang load xong rồi mới chạy script carousel
         document.addEventListener('DOMContentLoaded', function() {
+            // Biến lưu chỉ số slide hiện tại
             let currentSlide = 0;
             const slides = document.querySelectorAll('.carousel-slide');
             const dots = document.querySelectorAll('.carousel-dot');
             const nextBtn = document.querySelector('.carousel-next');
             const prevBtn = document.querySelector('.carousel-prev');
 
+            // Hàm hiển thị slide theo chỉ số n
             function showSlide(n) {
+                // Ẩn tất cả slide trước
                 slides.forEach(slide => {
                     slide.classList.remove('opacity-100');
                     slide.classList.add('opacity-0');
                 });
+                // Đổi màu dot tương ứng với slide đang hiển thị
                 dots.forEach(dot => dot.style.background = dot.getAttribute('data-slide') == n ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.3)');
+                // Nếu vượt quá slide cuối thì quay về đầu
                 if (n >= slides.length) currentSlide = 0;
+                // Nếu lùi trước slide đầu thì chuyển về slide cuối
                 if (n < 0) currentSlide = slides.length - 1;
+                // Hiển thị slide hiện tại
                 slides[currentSlide].classList.remove('opacity-0');
                 slides[currentSlide].classList.add('opacity-100');
             }
 
             function nextSlide() {
+                // Chuyển sang slide kế tiếp
                 currentSlide++;
-                if (currentSlide >= slides.length) currentSlide = 0;
+                if (currentSlide >= slides.length) currentSlide = 0; // nếu đến cuối thì quay lại slide đầu
                 showSlide(currentSlide);
             }
 
             function prevSlide() {
+                // Chuyển sang slide trước
                 currentSlide--;
-                if (currentSlide < 0) currentSlide = slides.length - 1;
+                if (currentSlide < 0) currentSlide = slides.length - 1; // nếu lùi trước slide đầu thì về slide cuối
                 showSlide(currentSlide);
             }
 
-            // Event listeners
+            // Đăng ký sự kiện cho nút next/prev
             nextBtn?.addEventListener('click', nextSlide);
             prevBtn?.addEventListener('click', prevSlide);
 
+            // Đăng ký sự kiện cho các dot ở dưới
             dots.forEach((dot, index) => {
                 dot.addEventListener('click', function() {
                     currentSlide = index;
@@ -486,10 +499,10 @@
                 });
             });
 
-            // Ensure initial dot state matches current slide
+            // Khởi tạo trạng thái ban đầu cho dot và slide
             showSlide(currentSlide);
 
-            // Auto rotate every 5 seconds
+            // Tự động chuyển slide sau mỗi 5 giây
             setInterval(nextSlide, 5000);
         });
     </script>

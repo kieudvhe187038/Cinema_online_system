@@ -43,7 +43,7 @@ namespace Cinema_System.Controllers
                 AvailableStatuses = availableStatuses,  
                 FilteredMovies = filteredMovies,
                 NowShowingMovies = nowShowingMovies,
-                ComingSoonMovies = comingSoonMovies,
+                ComingSoonMovies = comingSoonMovies, 
                 SpecialShowtimeMovies = specialShowtimeMovies
             };
 
