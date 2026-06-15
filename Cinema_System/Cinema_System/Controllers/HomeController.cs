@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Cinema_System.Controllers
 {
+    // Controller chính cho trang chủ và các bộ lọc phim.
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
@@ -17,6 +18,7 @@ namespace Cinema_System.Controllers
             _movieService = movieService;
         }
 
+        // Hiển thị trang chủ, load dữ liệu bộ chọn và kết quả lọc nếu người dùng chọn bộ lọc.
         public async Task<IActionResult> Index(string? genre, string? ageRating, string? status)
         {
             var availableGenres = await _movieService.GetAllGenresAsync();
@@ -39,9 +41,9 @@ namespace Cinema_System.Controllers
                 AvailableGenres = availableGenres,
                 AvailableAgeRatings = availableAgeRatings,
                 AvailableStatuses = availableStatuses,  
-                FilteredMovies = filteredMovies,
+                FilteredMovies = filteredMovies, 
                 NowShowingMovies = nowShowingMovies,
-                ComingSoonMovies = comingSoonMovies,
+                ComingSoonMovies = comingSoonMovies, 
                 SpecialShowtimeMovies = specialShowtimeMovies
             };
 
@@ -54,7 +56,8 @@ namespace Cinema_System.Controllers
             return View();
         }
 
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)] 
+        // Trang lỗi dùng để hiển thị thông tin request khi có ngoại lệ.
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]  
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier }); 
