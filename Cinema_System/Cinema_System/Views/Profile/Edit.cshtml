@@ -35,7 +35,8 @@
             <!-- Số điện thoại -->
             <div class="mb-4">
                 <label asp-for="Phone" class="mb-1 block text-sm font-medium text-gray-700"></label>
-                <input asp-for="Phone"
+                <input asp-for="Phone" type="tel" inputmode="numeric" maxlength="10"
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                        class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none" />
                 <span asp-validation-for="Phone" class="text-sm text-red-600"></span>
             </div>
