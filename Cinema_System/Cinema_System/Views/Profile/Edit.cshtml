@@ -31,6 +31,7 @@
                 <input asp-for="AvatarFile" type="file" accept="image/*" onchange="previewAvatar(this)"
                        class="block w-full rounded-lg border border-gray-300 text-sm
                 file:mr-4 file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-indigo-700" />
+                <p class="mt-1 text-xs text-gray-400">Chấp nhận jpg, jpeg, png, gif — tối đa 2MB, 1024×1024px</p>
                 <span asp-validation-for="AvatarFile" class="text-sm text-red-600"></span>
             </div>
 
