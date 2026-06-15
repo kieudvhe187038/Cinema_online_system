@@ -29,21 +29,21 @@
                         <!-- Slide 1 -->
                         <div class="carousel-slide absolute inset-0 opacity-100 transition-opacity duration-700 ease-in-out">
                             <a href="#" class="block h-full w-full">
-                                <img src="/images/banner1.jpg" alt="Phim Hot 1" class="h-full w-full object-cover brightness-[0.95]" />
+                                <img src="/images/banner1.png" class="w-full h-full object-cover" />
                             </a>
                         </div>
 
                         <!-- Slide 2 -->
                         <div class="carousel-slide absolute inset-0 opacity-0 transition-opacity duration-700 ease-in-out">
                             <a href="#" class="block h-full w-full">
-                                <img src="/images/banner2.jpg" alt="Phim Hot 2" class="h-full w-full object-cover brightness-[0.95]" />
+                                <img src="/images/banner2.png" class="w-full h-full object-cover" />
                             </a>
                         </div>
 
                         <!-- Slide 3 -->
                         <div class="carousel-slide absolute inset-0 opacity-0 transition-opacity duration-700 ease-in-out">
                             <a href="#" class="block h-full w-full">
-                                <img src="/images/banner3.jpg" alt="Phim Hot 3" class="h-full w-full object-cover brightness-[0.95]" />
+                                <img src="/images/banner3.png" class="w-full h-full object-cover" />
                             </a>
                         </div>
                     </div>
@@ -58,7 +58,7 @@
 
                     <!-- Indicators -->
                     <div class="absolute inset-x-0 bottom-6 flex justify-center gap-2 z-10">
-                        <span class="carousel-dot h-2 w-2 rounded-full bg-white/80 cursor-pointer transition hover:bg-white" data-slide="0"></span>
+                        <span class="carousel-dot h-2 w-2 rounded-full bg-white/80 cursor-pointer transition hover:bg-white active" data-slide="0"></span>
                         <span class="carousel-dot h-2 w-2 rounded-full bg-white/50 cursor-pointer transition hover:bg-white" data-slide="1"></span>
                         <span class="carousel-dot h-2 w-2 rounded-full bg-white/50 cursor-pointer transition hover:bg-white" data-slide="2"></span>
                     </div>
@@ -462,8 +462,18 @@
                     slide.classList.remove('opacity-100');
                     slide.classList.add('opacity-0');
                 });
-                // Đổi màu dot tương ứng với slide đang hiển thị
-                dots.forEach(dot => dot.style.background = dot.getAttribute('data-slide') == n ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.3)');
+                // Cập nhật dot tương ứng với slide đang hiển thị
+                dots.forEach(dot => {
+                    if (dot.getAttribute('data-slide') == n) {
+                        dot.classList.remove('bg-white/50');
+                        dot.classList.add('bg-white/80');
+                        dot.classList.add('active');
+                    } else {
+                        dot.classList.remove('bg-white/80');
+                        dot.classList.add('bg-white/50');
+                        dot.classList.remove('active');
+                    }
+                });
                 // Nếu vượt quá slide cuối thì quay về đầu
                 if (n >= slides.length) currentSlide = 0;
                 // Nếu lùi trước slide đầu thì chuyển về slide cuối
