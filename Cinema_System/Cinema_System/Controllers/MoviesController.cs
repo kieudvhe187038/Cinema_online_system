@@ -20,16 +20,31 @@ namespace Cinema_System.Controllers
             return View(moviesPageViewModel);
         }
 
-        public async Task<IActionResult> Search([FromQuery(Name = "q")] string searchQuery, int page = 1) 
+        private bool IsValidSearchQuery(string searchQuery)
         {
             if (string.IsNullOrWhiteSpace(searchQuery))
+            {
+                return false;
+            }
+
+            if (searchQuery.Trim().Length > 30)
+            {
+                return false;
+            }
+
+            return System.Text.RegularExpressions.Regex.IsMatch(searchQuery.Trim(), @"^[\p{L}\p{N}\s]+$");
+        }
+
+        public async Task<IActionResult> Search([FromQuery(Name = "find")] string searchQuery, int page = 1) 
+        {
+            if (!IsValidSearchQuery(searchQuery))
             {
                 return RedirectToAction("Index");
             }
 
             var pageSize = 4;
-            var moviesPageViewModel = await _movieService.SearchMoviesAsync(searchQuery, page, pageSize);
-            ViewData["SearchKeyword"] = searchQuery;
+            var moviesPageViewModel = await _movieService.SearchMoviesAsync(searchQuery.Trim(), page, pageSize);
+            ViewData["SearchKeyword"] = searchQuery.Trim();
             return View("Index", moviesPageViewModel);
         }
     }
