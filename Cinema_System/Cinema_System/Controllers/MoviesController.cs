@@ -34,7 +34,7 @@ namespace Cinema_System.Controllers
                 return false;
             }
 
-            return System.Text.RegularExpressions.Regex.IsMatch(searchQuery.Trim(), @"^[\p{L}\p{N}\s]+$");
+            return System.Text.RegularExpressions.Regex.IsMatch(searchQuery.Trim(), @"^[\p{L}\p{N}\s]+$"); 
         }
 
         // Xử lý tìm kiếm phim theo tham số query string
