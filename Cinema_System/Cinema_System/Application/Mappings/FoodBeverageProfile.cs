@@ -7,6 +7,7 @@ namespace Cinema_System.Application.Mappings;
 
 public class FoodBeverageProfile : Profile
 {
+    // Cấu hình AutoMapper giữa entity FoodBeverage và các DTO/ViewModel.
     public FoodBeverageProfile()
     {
         CreateMap<FoodBeverage, FoodBeverageDTO>()
