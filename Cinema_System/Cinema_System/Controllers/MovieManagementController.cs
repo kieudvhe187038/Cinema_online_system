@@ -21,6 +21,7 @@ public class MovieManagementController : Controller
     }
 
     [HttpGet("")]
+    // Trang danh sách phim: lọc theo tên/trạng thái/thể loại + phân trang.
     public async Task<IActionResult> Index(string? search, string? status, string? genre, int page = 1)
     {
         var vm = await _movieService.GetMoviesForManagerAsync(search, status, genre, page, pageSize: 5);
@@ -28,6 +29,7 @@ public class MovieManagementController : Controller
     }
 
     [HttpGet("Create")]
+    // Hiển thị form thêm phim mới.
     public async Task<IActionResult> Create()
     {
         var vm = new MovieFormViewModel
@@ -41,6 +43,7 @@ public class MovieManagementController : Controller
     [ValidateAntiForgeryToken]
     [RequestSizeLimit(MaxUploadBytes)]
     [RequestFormLimits(MultipartBodyLengthLimit = MaxUploadBytes)]
+    // Xử lý submit form thêm phim (upload ảnh + lưu DB).
     public async Task<IActionResult> Create(MovieFormViewModel model)
     {
         await HandleUploadsAsync(model);
@@ -64,6 +67,7 @@ public class MovieManagementController : Controller
     }
 
     [HttpGet("Edit/{id}")]
+    // Hiển thị form sửa phim theo Id.
     public async Task<IActionResult> Edit(Guid id)
     {
         var vm = await _movieService.GetForEditAsync(id);
@@ -75,6 +79,7 @@ public class MovieManagementController : Controller
     [ValidateAntiForgeryToken]
     [RequestSizeLimit(MaxUploadBytes)]
     [RequestFormLimits(MultipartBodyLengthLimit = MaxUploadBytes)]
+    // Xử lý submit form sửa phim (upload ảnh mới nếu có + cập nhật DB).
     public async Task<IActionResult> Edit(MovieFormViewModel model)
     {
         await HandleUploadsAsync(model);
@@ -99,6 +104,7 @@ public class MovieManagementController : Controller
 
     [HttpPost("ToggleStatus/{id}")]
     [ValidateAntiForgeryToken]
+    // Đổi trạng thái chiếu/ngừng chiếu của phim.
     public async Task<IActionResult> ToggleStatus(Guid id)
     {
         var result = await _movieService.ToggleStatusAsync(id);
