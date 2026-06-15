@@ -1,136 +1,226 @@
 @model Cinema_System.Application.ViewModels.ProfileViewModel
 @{
     ViewData["Title"] = "Hồ sơ của tôi";
-}
+    Layout = null; // Trang này tự dựng khung riêng (CineStar) — KHÔNG dùng _Layout chung của nhóm
 
-<!-- Nhúng Tailwind + brand color ngay trong view (vì _Layout chung dùng Bootstrap) -->
-<script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600&display=swap" rel="stylesheet">
-<script>
-    tailwind.config = {
-        important: true, // ép thắng Bootstrap (Bootstrap có .bg-primary !important màu xanh)
-        theme: {
-            extend: {
-                colors: {
-                    primary: '#F37021',
-                    'primary-dark': '#d85f15',
-                    secondary: '#00488D',
-                    tertiary: '#002F59',
-                    light: '#F8F9FA',
-                },
-                fontFamily: {
-                    heading: ['"Plus Jakarta Sans"', 'sans-serif'],
-                    body: ['"Be Vietnam Pro"', 'sans-serif'],
+    // Lấy 2 chữ cái cuối của tên cho avatar sidebar (vd "Nguyễn Anh Linh" -> "AL")
+    var nameParts = (Model.FullName ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
+    string initials;
+    if (nameParts.Length >= 2)
+        initials = (nameParts[nameParts.Length - 2].Substring(0, 1) + nameParts[nameParts.Length - 1].Substring(0, 1)).ToUpper();
+    else if (nameParts.Length == 1)
+        initials = nameParts[0].Substring(0, 1).ToUpper();
+    else
+        initials = "U";
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#F37021',
+                        'primary-dark': '#d85f15',
+                        secondary: '#00488D',
+                        tertiary: '#002F59',
+                        light: '#F8F9FA',
+                    },
+                    fontFamily: {
+                        heading: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        body: ['"Be Vietnam Pro"', 'sans-serif'],
+                    }
                 }
             }
         }
-    }
-</script>
+    </script>
+</head>
+<body class="bg-light font-body text-tertiary">
+<div class="flex min-h-screen">
 
-<div class="min-h-screen bg-light font-body py-10 px-4">
-    <div class="max-w-2xl mx-auto">
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="hidden w-64 shrink-0 border-r border-gray-200 bg-white p-5 md:block">
+        <div class="mb-8 text-xl font-extrabold font-heading text-secondary">
+            Cine<span class="text-primary">Star</span>
+        </div>
 
-        @if (TempData["Success"] != null)
-        {
-            <div class="mb-4 rounded-xl bg-green-100 border border-green-300 text-green-800 px-4 py-3">
-                @TempData["Success"]
+        <!-- Thẻ người dùng -->
+        <div class="mb-8 flex items-center gap-3">
+            <div class="flex h-11 w-11 items-center justify-center rounded-full bg-primary font-bold text-white">
+                @initials
             </div>
-        }
+            <div>
+                <p class="font-semibold leading-tight">@Model.FullName</p>
+                <p class="text-xs text-gray-400">@Model.RoleName</p>
+            </div>
+        </div>
 
-        <!-- Header: avatar + tên + vai trò -->
-        <div class="rounded-2xl bg-gradient-to-r from-secondary to-tertiary p-6 text-center text-white shadow-lg font-heading">
-            <img src="@(string.IsNullOrEmpty(Model.AvatarUrl) ? "https://placehold.co/96x96?text=Avatar" : Model.AvatarUrl)"
-                 alt="Ảnh đại diện"
-                 class="mx-auto h-24 w-24 rounded-full border-4 border-white object-cover bg-white shadow-md" />
-            <h1 class="mt-4 text-2xl font-bold">@Model.FullName</h1>
-            <span class="mt-1 inline-block rounded-full bg-white/20 px-3 py-1 text-sm">@Model.RoleName</span>
+        <!-- Menu (các trang khác là việc của bạn cùng nhóm -> tạm để #) -->
+        <nav class="space-y-1 text-sm font-medium">
+            <a href="#" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-gray-600 hover:bg-light">
+                🎟️ Lịch sử đặt vé
+            </a>
+            <a href="#" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-gray-600 hover:bg-light">
+                🧾 Chi tiết đơn hàng
+            </a>
+            <a href="#" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-gray-600 hover:bg-light">
+                📱 Vé điện tử
+            </a>
+            <a asp-action="Index" class="flex items-center gap-3 rounded-lg bg-primary px-3 py-2.5 font-semibold text-white">
+                👤 Hồ sơ cá nhân
+            </a>
+        </nav>
+    </aside>
 
-            <!-- Chỉ Customer mới có điểm tích lũy -->
-            @if (Model.RoleName == "CUSTOMER")
+    <!-- ===== KHU NỘI DUNG ===== -->
+    <div class="flex-1">
+
+        <!-- Thanh trên -->
+        <header class="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4">
+            <h1 class="text-xl font-bold font-heading text-tertiary">Cài đặt tài khoản</h1>
+            <div class="flex items-center gap-4">
+                <span class="text-gray-400">🔔</span>
+                <div class="flex h-9 w-9 items-center justify-center rounded-full bg-tertiary text-sm font-bold text-white">
+                    @initials
+                </div>
+            </div>
+        </header>
+
+        <main class="p-6">
+            @if (TempData["Success"] != null)
             {
-                <div class="mt-3">
-                    <span class="inline-block rounded-full bg-primary px-4 py-1 font-semibold text-white shadow-sm">
-                        ⭐ @Model.RewardPoints điểm
-                    </span>
+                <div class="mb-4 rounded-xl bg-green-100 border border-green-300 text-green-800 px-4 py-3">
+                    @TempData["Success"]
                 </div>
             }
-        </div>
 
-        <!-- Thông tin chi tiết -->
-        <div class="mt-6 rounded-2xl bg-white p-6 shadow-md">
-            <h2 class="mb-4 text-lg font-bold font-heading text-tertiary">Thông tin cá nhân</h2>
+            <!-- ===== Hero banner ===== -->
+            <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-tertiary via-secondary to-tertiary p-6 shadow-lg">
+                <div class="absolute inset-0 bg-[radial-gradient(circle_at_70%_-20%,rgba(243,112,33,0.35),transparent_55%)]"></div>
 
-            <dl class="divide-y divide-gray-100">
-                <div class="flex justify-between py-3">
-                    <dt class="font-medium text-gray-500">Họ và tên</dt>
-                    <dd class="font-semibold text-gray-800">@Model.FullName</dd>
+                <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex items-center gap-4">
+                        <!-- Avatar khung cam -->
+                        <div class="rounded-xl border-2 border-primary p-1 shadow-md">
+                            <img src="@(string.IsNullOrEmpty(Model.AvatarUrl) ? "https://placehold.co/96x96?text=Avatar" : Model.AvatarUrl)"
+                                 alt="Ảnh đại diện"
+                                 class="h-20 w-20 rounded-lg object-cover bg-white" />
+                        </div>
+
+                        <div class="font-heading text-white">
+                            <h2 class="text-2xl font-bold">@Model.FullName</h2>
+                            <div class="mt-2 flex flex-wrap items-center gap-2">
+                                <span class="rounded-full border border-primary/70 px-3 py-0.5 text-xs font-semibold uppercase tracking-wide text-primary">
+                                    @Model.RoleName
+                                </span>
+                                @if (Model.RoleName == "CUSTOMER")
+                                {
+                                    <span class="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-0.5 text-xs font-semibold text-white">
+                                        ⭐ @Model.RewardPoints điểm
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <a asp-action="Edit"
+                           class="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 font-semibold text-white shadow hover:bg-primary-dark transition">
+                            ✏️ Chỉnh sửa hồ sơ
+                        </a>
+                    </div>
                 </div>
-                <div class="flex justify-between py-3">
-                    <dt class="font-medium text-gray-500">Email</dt>
-                    <dd class="font-semibold text-gray-800">@Model.Email</dd>
-                </div>
-                <div class="flex justify-between py-3">
-                    <dt class="font-medium text-gray-500">Số điện thoại</dt>
-                    <dd class="font-semibold text-gray-800">
-                        @(string.IsNullOrEmpty(Model.Phone) ? "Chưa cập nhật" : Model.Phone)
-                    </dd>
+            </div>
+
+            <!-- ===== 2 cột ===== -->
+            <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+
+                <!-- Thông tin cá nhân -->
+                <div class="lg:col-span-2 rounded-2xl bg-white p-6 shadow-md">
+                    <h3 class="mb-5 flex items-center gap-2 text-lg font-bold font-heading text-tertiary">
+                        📋 Thông tin cá nhân
+                    </h3>
+
+                    <dl class="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
+                        <div>
+                            <dt class="text-xs font-semibold uppercase tracking-wide text-gray-400">Họ và tên</dt>
+                            <dd class="mt-1 font-semibold text-tertiary">@Model.FullName</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs font-semibold uppercase tracking-wide text-gray-400">Email</dt>
+                            <dd class="mt-1 font-semibold text-tertiary">@Model.Email</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs font-semibold uppercase tracking-wide text-gray-400">Số điện thoại</dt>
+                            <dd class="mt-1 font-semibold text-tertiary">
+                                @(string.IsNullOrEmpty(Model.Phone) ? "Chưa cập nhật" : Model.Phone)
+                            </dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs font-semibold uppercase tracking-wide text-gray-400">Ngày sinh</dt>
+                            <dd class="mt-1 font-semibold text-tertiary">
+                                @if (Model.DateOfBirth == null)
+                                {
+                                    <span>Chưa cập nhật</span>
+                                }
+                                else
+                                {
+                                    @Model.DateOfBirth.Value.ToString("dd/MM/yyyy")
+                                    <span class="text-gray-500">(@Model.Age tuổi)</span>
+                                }
+                            </dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs font-semibold uppercase tracking-wide text-gray-400">Vai trò</dt>
+                            <dd class="mt-1 font-semibold text-tertiary">@Model.RoleName</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs font-semibold uppercase tracking-wide text-gray-400">Trạng thái</dt>
+                            <dd class="mt-1">
+                                <span class="inline-block rounded-full px-3 py-1 text-sm font-semibold text-white
+                                    @(Model.Status == "Active" ? "bg-green-500" : "bg-red-500")">
+                                    @Model.Status
+                                </span>
+                            </dd>
+                        </div>
+                    </dl>
                 </div>
 
-                <div class="flex justify-between py-3">
-                    <dt class="font-medium text-gray-500">Ngày sinh</dt>
-                    <dd class="font-semibold text-gray-800">
-                        @if (Model.DateOfBirth == null)
-                        {
-                            <span>Chưa cập nhật</span>
-                        }
-                        else
-                        {
-                            @Model.DateOfBirth.Value.ToString("dd/MM/yyyy")
-                            <span class="ml-2 rounded-full bg-secondary/10 px-2 py-0.5 text-sm text-secondary">
-                                @Model.Age tuổi
-                            </span>
-                        }
-                    </dd>
-                </div>
+                <!-- Tài khoản -->
+                <div class="rounded-2xl bg-white p-6 shadow-md">
+                    <h3 class="mb-5 flex items-center gap-2 text-lg font-bold font-heading text-tertiary">
+                        📅 Tài khoản
+                    </h3>
 
-                <div class="flex justify-between py-3">
-                    <dt class="font-medium text-gray-500">Vai trò</dt>
-                    <dd class="font-semibold text-gray-800">@Model.RoleName</dd>
-                </div>
-                <div class="flex justify-between py-3">
-                    <dt class="font-medium text-gray-500">Trạng thái</dt>
-                    <dd>
-                        <span class="rounded-full px-3 py-1 text-sm font-semibold text-white
-                            @(Model.Status == "Active" ? "bg-green-500" : "bg-red-500")">
-                            @Model.Status
-                        </span>
-                    </dd>
-                </div>
-                <div class="flex justify-between py-3">
-                    <dt class="font-medium text-gray-500">Ngày tạo tài khoản</dt>
-                    <dd class="font-semibold text-gray-800">@Model.CreatedAt.ToString("dd/MM/yyyy")</dd>
-                </div>
-            </dl>
-        </div>
+                    <div class="mb-5">
+                        <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">Ngày tạo tài khoản</p>
+                        <div class="rounded-lg bg-light px-3 py-2 font-semibold text-tertiary">
+                            @Model.CreatedAt.ToString("dd/MM/yyyy")
+                        </div>
+                    </div>
 
-        <!-- Nút hành động -->
-        <div class="mt-6 flex gap-3">
-            <a asp-action="Edit"
-               class="flex-1 rounded-xl bg-primary px-4 py-3 text-center font-semibold text-white hover:bg-primary-dark transition">
-                ✏️ Chỉnh sửa hồ sơ
-            </a>
-            <a asp-action="ChangePassword"
-               class="flex-1 rounded-xl border-2 border-secondary bg-white px-4 py-3 text-center font-semibold text-secondary hover:bg-secondary hover:text-white transition">
-                🔒 Đổi mật khẩu
-            </a>
+                    <a asp-action="ChangePassword"
+                       class="mb-3 block w-full rounded-xl border-2 border-primary px-4 py-2.5 text-center font-semibold text-primary hover:bg-primary hover:text-white transition">
+                        🔒 Đổi mật khẩu
+                    </a>
 
-            @if (Model.RoleName == "CUSTOMER")
-            {
-                <a asp-action="PointHistory"
-                   class="flex-1 rounded-xl border-2 border-primary px-4 py-3 text-center font-semibold text-primary hover:bg-primary hover:text-white transition">
-                    ⭐ Lịch sử điểm
-                </a>
-            }
-        </div>
+                    @if (Model.RoleName == "CUSTOMER")
+                    {
+                        <a asp-action="PointHistory"
+                           class="block w-full px-4 py-2 text-center font-semibold text-secondary hover:underline">
+                            ⭐ Lịch sử điểm
+                        </a>
+                    }
+                </div>
+            </div>
+        </main>
     </div>
 </div>
+</body>
+</html>
