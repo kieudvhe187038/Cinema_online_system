@@ -120,7 +120,7 @@
                     {
                         @if (Model.SelectedTab == "search")
                         {
-                            <a asp-controller="Movies" asp-action="Search" asp-route-q="@searchKeyword" asp-route-page="@(Model.CurrentPage - 1)">&laquo; Trước</a>
+                            <a asp-controller="Movies" asp-action="Search" asp-route-find="@searchKeyword" asp-route-page="@(Model.CurrentPage - 1)">&laquo; Trước</a>
                         }
                         else
                         {
@@ -141,7 +141,7 @@
                         }
                         else if (Model.SelectedTab == "search")
                         {
-                            <a asp-controller="Movies" asp-action="Search" asp-route-q="@searchKeyword" asp-route-page="@i">@i</a>
+                            <a asp-controller="Movies" asp-action="Search" asp-route-find="@searchKeyword" asp-route-page="@i">@i</a>
                         }
                         else
                         {
@@ -154,7 +154,7 @@
                     {
                         @if (Model.SelectedTab == "search")
                         {
-                            <a asp-controller="Movies" asp-action="Search" asp-route-q="@searchKeyword" asp-route-page="@(Model.CurrentPage + 1)">Tiếp &raquo;</a>
+                            <a asp-controller="Movies" asp-action="Search" asp-route-find="@searchKeyword" asp-route-page="@(Model.CurrentPage + 1)">Tiếp &raquo;</a>
                         }
                         else
                         {
