@@ -75,6 +75,7 @@ public class MovieFormViewModel : IValidatableObject
 
     public List<GenreDTO> AvailableGenres { get; set; } = new();
 
+    // Kiểm tra hợp lệ thêm: ngày khởi chiếu không được ở quá khứ.
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (ReleaseDate.HasValue && ReleaseDate.Value < DateOnly.FromDateTime(DateTime.Today))

@@ -18,6 +18,7 @@ public class FoodBeverageService : IFoodBeverageService
         _mapper = mapper;
     }
 
+    // Lấy danh sách món cho trang quản lý: lọc theo tên/tình trạng + phân trang, kèm cờ đã có đơn.
     public async Task<FoodBeverageListViewModel> GetAllAsync(
         string? search, string? status, int page, int pageSize)
     {
@@ -54,12 +55,14 @@ public class FoodBeverageService : IFoodBeverageService
         };
     }
 
+    // Lấy dữ liệu 1 món để đổ vào form sửa.
     public async Task<FoodBeverageFormViewModel?> GetForEditAsync(Guid id)
     {
         var item = await _unitOfWork.FoodBeverages.GetByIdAsync(id);
         return item is null ? null : _mapper.Map<FoodBeverageFormViewModel>(item);
     }
 
+    // Tạo món mới (kiểm tra trùng tên trước khi thêm).
     public async Task<Result> CreateAsync(FoodBeverageFormViewModel model)
     {
         var nameTaken = await _unitOfWork.FoodBeverages.ExistsAsync(
@@ -82,6 +85,7 @@ public class FoodBeverageService : IFoodBeverageService
         return Result.Success();
     }
 
+    // Cập nhật thông tin món (kiểm tra trùng tên với món khác).
     public async Task<Result> UpdateAsync(FoodBeverageFormViewModel model)
     {
         var item = await _unitOfWork.FoodBeverages.GetByIdAsync(model.Id);
@@ -104,6 +108,7 @@ public class FoodBeverageService : IFoodBeverageService
         return Result.Success();
     }
 
+    // Ẩn/hiện món: đổi qua lại giữa "In Stock" và "Discontinued".
     public async Task<Result> ToggleVisibilityAsync(Guid id)
     {
         var item = await _unitOfWork.FoodBeverages.GetByIdAsync(id);
@@ -117,6 +122,7 @@ public class FoodBeverageService : IFoodBeverageService
         return Result.Success();
     }
 
+    // Xóa món khỏi menu (chặn xóa nếu đã có trong lịch sử đặt hàng).
     public async Task<Result> DeleteAsync(Guid id)
     {
         var item = await _unitOfWork.FoodBeverages.GetByIdAsync(id);

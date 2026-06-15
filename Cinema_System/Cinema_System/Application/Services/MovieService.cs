@@ -22,6 +22,7 @@ public class MovieService : IMovieService
         _mapper = mapper;
     }
 
+    // Lấy toàn bộ phim kèm thể loại.
     public async Task<IEnumerable<MovieDTO>> GetAllMoviesAsync()
     {
         var movies = await _unitOfWork.Movies.GetAllAsync(
@@ -29,6 +30,7 @@ public class MovieService : IMovieService
         return _mapper.Map<IEnumerable<MovieDTO>>(movies);
     }
 
+    // Lấy danh sách phim đang chiếu.
     public async Task<IEnumerable<MovieDTO>> GetNowShowingMoviesAsync()
     {
         var movies = await _unitOfWork.Movies.GetAllAsync(
@@ -37,6 +39,7 @@ public class MovieService : IMovieService
         return _mapper.Map<IEnumerable<MovieDTO>>(movies);
     }
 
+    // Lấy danh sách phim sắp chiếu.
     public async Task<IEnumerable<MovieDTO>> GetComingSoonMoviesAsync()
     {
         var movies = await _unitOfWork.Movies.GetAllAsync(
@@ -45,6 +48,7 @@ public class MovieService : IMovieService
         return _mapper.Map<IEnumerable<MovieDTO>>(movies);
     }
 
+    // Lấy phim có suất chiếu đặc biệt.
     public async Task<IEnumerable<MovieDTO>> GetSpecialShowtimeMoviesAsync()
     {
         var movies = await _unitOfWork.Movies.GetAllAsync(
@@ -56,6 +60,7 @@ public class MovieService : IMovieService
         return _mapper.Map<IEnumerable<MovieDTO>>(movies);
     }
 
+    // Lấy chi tiết 1 phim theo Id.
     public async Task<MovieDTO?> GetMovieByIdAsync(Guid id)
     {
         var movie = await _unitOfWork.Movies.FirstOrDefaultAsync(
@@ -64,6 +69,7 @@ public class MovieService : IMovieService
         return movie is null ? null : _mapper.Map<MovieDTO>(movie);
     }
 
+    // Lấy tất cả thể loại, sắp xếp theo tên.
     public async Task<IEnumerable<GenreDTO>> GetAllGenresAsync()
     {
         var genres = await _unitOfWork.Genres.GetAllAsync(
@@ -71,6 +77,7 @@ public class MovieService : IMovieService
         return _mapper.Map<IEnumerable<GenreDTO>>(genres);
     }
 
+    // Lấy danh sách phim cho trang quản lý: lọc theo tên/trạng thái/thể loại + phân trang.
     public async Task<MovieListViewModel> GetMoviesForManagerAsync(
         string? search, string? status, string? genre, int page, int pageSize)
     {
@@ -104,6 +111,7 @@ public class MovieService : IMovieService
         };
     }
 
+    // Lấy dữ liệu 1 phim để đổ vào form sửa.
     public async Task<MovieFormViewModel?> GetForEditAsync(Guid id)
     {
         var movie = await _unitOfWork.Movies.FirstOrDefaultAsync(
@@ -117,6 +125,7 @@ public class MovieService : IMovieService
         return vm;
     }
 
+    // Tạo phim mới (tự sinh slug nếu trống, gán thể loại đã chọn).
     public async Task<Result> CreateAsync(MovieFormViewModel model)
     {
         var slug = string.IsNullOrWhiteSpace(model.Slug)
@@ -158,6 +167,7 @@ public class MovieService : IMovieService
         return Result.Success();
     }
 
+    // Cập nhật thông tin phim và danh sách thể loại.
     public async Task<Result> UpdateAsync(MovieFormViewModel model)
     {
         var movie = await _unitOfWork.Movies.FirstOrDefaultAsync(
@@ -193,6 +203,7 @@ public class MovieService : IMovieService
         return Result.Success();
     }
 
+    // Đổi trạng thái chiếu: chuyển qua lại giữa "Now Showing" và "Stopped".
     public async Task<Result> ToggleStatusAsync(Guid id)
     {
         var movie = await _unitOfWork.Movies.GetByIdAsync(id);
@@ -206,6 +217,7 @@ public class MovieService : IMovieService
         return Result.Success();
     }
 
+    // Sinh slug từ tên phim: bỏ dấu tiếng Việt, thay khoảng trắng bằng "-".
     private static string GenerateSlug(string title)
     {
         var normalized = title.Normalize(NormalizationForm.FormD);
