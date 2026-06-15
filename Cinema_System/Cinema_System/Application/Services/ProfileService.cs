@@ -23,44 +23,44 @@ namespace Cinema_System.Application.Services
             return _mapper.Map<ProfileDto>(user);
         }
 
-        public async Task<bool> UpdateProfileAsync(Guid userId, UpdateProfileDto dto)
+        public async Task<bool> UpdateProfileAsync(Guid userId, UpdateProfileDto data)
         {
-            var repo = _uow.Repository<User>();
-            var user = await repo.GetByIdAsync(userId);
+            var userRepo = _uow.Repository<User>();
+            var user = await userRepo.GetByIdAsync(userId);
             if (user == null) return false;
 
-            user.FullName = dto.FullName;
-            user.Phone = dto.Phone;
-            if (!string.IsNullOrEmpty(dto.AvatarUrl))
-                user.AvatarUrl = dto.AvatarUrl;
+            user.FullName = data.FullName;
+            user.Phone = data.Phone;
+            if (!string.IsNullOrEmpty(data.AvatarUrl))
+                user.AvatarUrl = data.AvatarUrl;
             user.UpdatedAt = DateTime.Now;
 
-            repo.Update(user);
+            userRepo.Update(user);
             await _uow.SaveChangesAsync();
             return true;
         }
 
-        public async Task<(bool Ok, string? Error)> ChangePasswordAsync(Guid userId, string oldPass, string newPass)
+        public async Task<(bool Ok, string? Error)> ChangePasswordAsync(Guid userId, string oldPassword, string newPassword)
         {
-            var repo = _uow.Repository<User>();
-            var user = await repo.GetByIdAsync(userId);
+            var userRepo = _uow.Repository<User>();
+            var user = await userRepo.GetByIdAsync(userId);
             if (user == null) return (false, "Không tìm thấy người dùng");
 
-            bool matched;
+            bool isOldPasswordCorrect;
             try
             {
-                matched = BCrypt.Net.BCrypt.Verify(oldPass, user.PasswordHash);
+                isOldPasswordCorrect = BCrypt.Net.BCrypt.Verify(oldPassword, user.PasswordHash);
             }
             catch
             {
-                matched = false;
+                isOldPasswordCorrect = false;
             }
-            if (!matched)
+            if (!isOldPasswordCorrect)
                 return (false, "Mật khẩu hiện tại không đúng");
 
-            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPass);
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
             user.UpdatedAt = DateTime.Now;
-            repo.Update(user);
+            userRepo.Update(user);
             await _uow.SaveChangesAsync();
             return (true, null);
         }
@@ -68,11 +68,11 @@ namespace Cinema_System.Application.Services
         public async Task<List<PointHistoryDto>> GetPointHistoryAsync(Guid userId)
         {
             // Lấy tất cả giao dịch điểm của user
-            var list = await _uow.Repository<RewardPointHistory>()
+            var histories = await _uow.Repository<RewardPointHistory>()
                 .GetAllAsync(h => h.UserId == userId);
 
             // Mới nhất lên đầu, rồi map sang DTO
-            return list
+            return histories
                 .OrderByDescending(h => h.CreatedAt)
                 .Select(h => _mapper.Map<PointHistoryDto>(h))
                 .ToList();
