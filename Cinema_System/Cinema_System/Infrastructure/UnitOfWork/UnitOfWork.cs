@@ -9,6 +9,7 @@ public class UnitOfWork : IUnitOfWork
 {
     private readonly CinemaWebDbContext _context;
 
+    // Unit of Work gom các repository lại để quản lý cùng 1 DbContext
     private IGenericRepository<User>? _users;
     private IGenericRepository<Role>? _roles;
     private IGenericRepository<SystemConfig>? _systemConfigs;
@@ -58,6 +59,8 @@ public class UnitOfWork : IUnitOfWork
 
     public IGenericRepository<Genre> Genres =>
         _genres ??= new GenericRepository<Genre>(_context);
+
+    // Lưu tất cả thay đổi của DbContext trong 1 transaction logic
 
     public async Task<int> SaveChangesAsync()
     {

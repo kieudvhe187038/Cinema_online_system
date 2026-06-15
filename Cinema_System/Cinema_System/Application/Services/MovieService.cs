@@ -5,10 +5,11 @@ using Cinema_System.Domain.Entities;
 
 namespace Cinema_System.Application.Services;
 
+// Dịch vụ phim xử lý truy vấn dữ liệu phim và đóng gói thành ViewModel cho giao diện.
 public class MovieService : IMovieService
 {
-    private const string ShowtimesIncludeProperty = "Showtimes";
-    private const string StoppedMovieStatusLower = "stopped";
+    private const string ShowtimesIncludeProperty = "Showtimes"; // Dùng để include lịch chiếu khi truy vấn
+    private const string StoppedMovieStatusLower = "stopped"; // Trạng thái phim đã ngừng chiếu
 
     private readonly IUnitOfWork _unitOfWork;
     private readonly AutoMapper.IMapper _mapper;
@@ -19,6 +20,7 @@ public class MovieService : IMovieService
         _mapper = mapper;
     }
 
+    // Lấy danh sách phim cho trang theo tab hiện tại và phân trang kết quả.
     public async Task<Cinema_System.Application.ViewModels.MoviesPageViewModel> GetMoviesPageAsync(string tab, int page, int pageSize)
     {
         IEnumerable<MovieDTO> moviesForTab = tab?.ToLower() switch
@@ -47,6 +49,7 @@ public class MovieService : IMovieService
         return moviesPageViewModel;
     }
 
+    // Lấy danh sách tất cả phim, dùng khi cần dữ liệu không phân trang.
     public async Task<IEnumerable<MovieDTO>> GetAllMoviesAsync()
     {
         var allMovies = await _unitOfWork.Movies.GetAllAsync(
@@ -56,6 +59,7 @@ public class MovieService : IMovieService
         return _mapper.Map<IEnumerable<MovieDTO>>(allMovies);
     }
 
+    // Lấy phim đang chiếu hiện tại.
     public async Task<IEnumerable<MovieDTO>> GetNowShowingMoviesAsync()
     {
         var nowShowingMovies = await _unitOfWork.Movies.GetAllAsync(
@@ -66,6 +70,7 @@ public class MovieService : IMovieService
         return _mapper.Map<IEnumerable<MovieDTO>>(nowShowingMovies);
     }
 
+    // Lấy phim sắp chiếu
     public async Task<IEnumerable<MovieDTO>> GetComingSoonMoviesAsync()
     {
         var comingSoonMovies = await _unitOfWork.Movies.GetAllAsync(
@@ -76,6 +81,7 @@ public class MovieService : IMovieService
         return _mapper.Map<IEnumerable<MovieDTO>>(comingSoonMovies);
     }
 
+    // Lọc phim theo thể loại, độ tuổi và trạng thái, loại bỏ phim đã ngừng chiếu.
     public async Task<IEnumerable<MovieDTO>> GetFilteredMoviesAsync(string? genre, string? ageRating, string? status)
     {
         var allMovies = await _unitOfWork.Movies.GetAllAsync(
@@ -92,6 +98,7 @@ public class MovieService : IMovieService
         return _mapper.Map<IEnumerable<MovieDTO>>(filteredMovies);
     }
 
+    // Lấy tất cả thể loại phim đã được cấu hình trong hệ thống.
     public async Task<IEnumerable<string>> GetAllGenresAsync()
     {
         var genres = await _unitOfWork.Genres.GetAllAsync(
@@ -106,12 +113,14 @@ public class MovieService : IMovieService
             .ToList();
     }
 
+    // Lấy phim còn hiển thị (chưa stopped) để dùng cho các danh sách phụ.
     private async Task<IEnumerable<Domain.Entities.Movie>> GetVisibleMoviesAsync()
     {
         return (await _unitOfWork.Movies.GetAllAsync())
             .Where(movie => movie.Status != null && movie.Status.ToLower() != StoppedMovieStatusLower);
     }
 
+    // Lấy danh sách các độ tuổi (P, C13, C16, C18) tồn tại trong phim đang hiển thị.
     public async Task<IEnumerable<string>> GetAllAgeRatingsAsync()
     {
         var visibleMovies = await GetVisibleMoviesAsync();
@@ -133,6 +142,7 @@ public class MovieService : IMovieService
             .ToList();
     }
 
+    // Lấy các trạng thái phim khác nhau từ phim đang hiển thị.
     public async Task<IEnumerable<string>> GetAllMovieStatusesAsync()
     {
         var visibleMovies = await GetVisibleMoviesAsync();
@@ -144,6 +154,7 @@ public class MovieService : IMovieService
             .ToList()!;
     }
 
+    // Lấy chi tiết phim theo Id.
     public async Task<MovieDTO?> GetMovieByIdAsync(Guid id)
     {
         var movie = await _unitOfWork.Movies.FirstOrDefaultAsync(
@@ -154,6 +165,7 @@ public class MovieService : IMovieService
         return movie == null ? null : _mapper.Map<MovieDTO>(movie);
     }
 
+    // Lấy phim có suất chiếu đặc biệt hoặc đặc sắc.
     public async Task<IEnumerable<MovieDTO>> GetSpecialShowtimeMoviesAsync()
     {
         var specialShowtimeMovies = await _unitOfWork.Movies.GetAllAsync(
@@ -169,6 +181,7 @@ public class MovieService : IMovieService
         return _mapper.Map<IEnumerable<MovieDTO>>(specialShowtimeMovies);
     }
 
+    // Tìm phim theo từ khóa và trả về kết quả phân trang.
     public async Task<Cinema_System.Application.ViewModels.MoviesPageViewModel> SearchMoviesAsync(string keyword, int page, int pageSize)
     {
         var searchTerm = keyword?.Trim().ToLowerInvariant() ?? string.Empty;
