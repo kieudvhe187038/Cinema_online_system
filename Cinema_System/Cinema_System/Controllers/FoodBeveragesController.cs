@@ -20,6 +20,7 @@ public class FoodBeveragesController : Controller
     }
 
     [HttpGet("")]
+    // Trang danh sách món: lọc theo tên/tình trạng + phân trang.
     public async Task<IActionResult> Index(string? search, string? status, int page = 1)
     {
         var vm = await _fbService.GetAllAsync(search, status, page, pageSize: 10);
@@ -27,6 +28,7 @@ public class FoodBeveragesController : Controller
     }
 
     [HttpGet("Create")]
+    // Hiển thị form thêm món mới.
     public IActionResult Create()
     {
         return View(new FoodBeverageFormViewModel());
@@ -36,6 +38,7 @@ public class FoodBeveragesController : Controller
     [ValidateAntiForgeryToken]
     [RequestSizeLimit(MaxImageBytes)]
     [RequestFormLimits(MultipartBodyLengthLimit = MaxImageBytes)]
+    // Xử lý submit form thêm món (upload ảnh + lưu DB).
     public async Task<IActionResult> Create(FoodBeverageFormViewModel model)
     {
         await HandleUploadAsync(model);
@@ -55,6 +58,7 @@ public class FoodBeveragesController : Controller
     }
 
     [HttpGet("Edit/{id}")]
+    // Hiển thị form sửa món theo Id.
     public async Task<IActionResult> Edit(Guid id)
     {
         var vm = await _fbService.GetForEditAsync(id);
@@ -66,6 +70,7 @@ public class FoodBeveragesController : Controller
     [ValidateAntiForgeryToken]
     [RequestSizeLimit(MaxImageBytes)]
     [RequestFormLimits(MultipartBodyLengthLimit = MaxImageBytes)]
+    // Xử lý submit form sửa món (upload ảnh mới nếu có + cập nhật DB).
     public async Task<IActionResult> Edit(FoodBeverageFormViewModel model)
     {
         await HandleUploadAsync(model);
@@ -86,6 +91,7 @@ public class FoodBeveragesController : Controller
 
     [HttpPost("ToggleVisibility/{id}")]
     [ValidateAntiForgeryToken]
+    // Ẩn/hiện món khỏi menu.
     public async Task<IActionResult> ToggleVisibility(Guid id)
     {
         var result = await _fbService.ToggleVisibilityAsync(id);
@@ -96,6 +102,7 @@ public class FoodBeveragesController : Controller
 
     [HttpPost("Delete/{id}")]
     [ValidateAntiForgeryToken]
+    // Xóa món khỏi menu và dọn luôn file ảnh kèm theo.
     public async Task<IActionResult> Delete(Guid id)
     {
         // Lấy đường dẫn ảnh trước khi xóa record để dọn file sau khi xóa thành công.

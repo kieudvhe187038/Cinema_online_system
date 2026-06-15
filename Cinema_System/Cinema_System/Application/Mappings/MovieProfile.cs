@@ -7,6 +7,7 @@ namespace Cinema_System.Application.Mappings;
 
 public class MovieProfile : Profile
 {
+    // Cấu hình AutoMapper giữa entity Movie/Genre và các DTO/ViewModel.
     public MovieProfile()
     {
         CreateMap<Movie, MovieDTO>()
