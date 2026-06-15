@@ -111,14 +111,36 @@ public class MovieManagementController : Controller
 
     // Lưu các file được upload vào wwwroot/uploads và gán đường dẫn vào model.
     // Nếu không upload file mới thì giữ nguyên đường dẫn cũ (đã có trong hidden field).
+    // Khi thay ảnh mới thì xóa luôn file ảnh cũ để tránh file rác.
     private async Task HandleUploadsAsync(MovieFormViewModel model)
     {
         var poster = await SaveFileAsync(model.PosterFile, "posters", ImageExts, nameof(model.PosterFile));
-        if (poster != null) model.PosterUrl = poster;
+        if (poster != null)
+        {
+            DeleteFile(model.PosterUrl);
+            model.PosterUrl = poster;
+        }
 
         var banner = await SaveFileAsync(model.BannerFile, "banners", ImageExts, nameof(model.BannerFile));
-        if (banner != null) model.BannerUrl = banner;
+        if (banner != null)
+        {
+            DeleteFile(model.BannerUrl);
+            model.BannerUrl = banner;
+        }
         // Trailer giờ nhập bằng URL (model.TrailerUrl), không upload file.
+    }
+
+    // Xóa file cũ trong wwwroot/uploads. Chỉ xóa file nội bộ (đường dẫn "/uploads/..."),
+    // bỏ qua URL ngoài (http...) của dữ liệu cũ.
+    private void DeleteFile(string? relativePath)
+    {
+        if (string.IsNullOrEmpty(relativePath) || !relativePath.StartsWith("/uploads/"))
+            return;
+
+        var fullPath = Path.Combine(_env.WebRootPath,
+            relativePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+        if (System.IO.File.Exists(fullPath))
+            System.IO.File.Delete(fullPath);
     }
 
     // Trả về đường dẫn tương đối (vd "/uploads/posters/xxx.jpg") nếu lưu thành công, null nếu không có file.

@@ -108,6 +108,7 @@ public class FoodBeveragesController : Controller
 
     // Lưu ảnh upload vào wwwroot/uploads/foods, gán đường dẫn vào model.
     // Không upload ảnh mới thì giữ nguyên ImageUrl cũ (đã có trong hidden field).
+    // Khi thay ảnh mới thì xóa luôn ảnh cũ để tránh file rác.
     private async Task HandleUploadAsync(FoodBeverageFormViewModel model)
     {
         var file = model.ImageFile;
@@ -133,6 +134,20 @@ public class FoodBeveragesController : Controller
             await file.CopyToAsync(stream);
         }
 
+        DeleteFile(model.ImageUrl);
         model.ImageUrl = $"/uploads/foods/{fileName}";
+    }
+
+    // Xóa file cũ trong wwwroot/uploads. Chỉ xóa file nội bộ (đường dẫn "/uploads/..."),
+    // bỏ qua URL ngoài (http...) của dữ liệu cũ.
+    private void DeleteFile(string? relativePath)
+    {
+        if (string.IsNullOrEmpty(relativePath) || !relativePath.StartsWith("/uploads/"))
+            return;
+
+        var fullPath = Path.Combine(_env.WebRootPath,
+            relativePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+        if (System.IO.File.Exists(fullPath))
+            System.IO.File.Delete(fullPath);
     }
 }
