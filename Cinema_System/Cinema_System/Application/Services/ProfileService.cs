@@ -58,6 +58,10 @@ namespace Cinema_System.Application.Services
             if (!matched)
                 return (false, "Mật khẩu hiện tại không đúng");
 
+            // Chặn đặt mật khẩu mới trùng mật khẩu hiện tại
+            if (oldPass == newPass)
+                return (false, "Mật khẩu mới phải khác mật khẩu hiện tại");
+
             // Lưu mật khẩu mới dưới dạng hash (KHÔNG lưu mật khẩu thô)
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPass);
             user.UpdatedAt = DateTime.Now;
