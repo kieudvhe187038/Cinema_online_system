@@ -26,7 +26,7 @@ namespace Cinema_System.Controllers
         {
             if (string.IsNullOrWhiteSpace(searchQuery))
             {
-                return false;
+                return false; 
             }
 
             if (searchQuery.Trim().Length > 30)
