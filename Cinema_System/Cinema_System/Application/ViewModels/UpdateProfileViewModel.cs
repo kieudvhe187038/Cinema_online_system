@@ -8,7 +8,7 @@ namespace Cinema_System.Application.ViewModels
 
         [Required(ErrorMessage = "Vui lòng nhập họ tên")]
         [Display(Name = "Họ và tên")]
-        [StringLength(100, ErrorMessage = "Họ tên tối đa 100 ký tự")]
+        [StringLength(100, MinimumLength = 2, ErrorMessage = "Họ tên từ 2 đến 100 ký tự")]
         public string FullName { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Vui lòng nhập số điện thoại")]
