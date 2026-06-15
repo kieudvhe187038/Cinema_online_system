@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,35 +7,19 @@ namespace Cinema_System.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
-        private readonly IMovieService _movieService;
 
-        public HomeController(ILogger<HomeController> logger, IMovieService movieService)
+        public HomeController(ILogger<HomeController> logger)
         {
             _logger = logger;
-            _movieService = movieService;
         }
 
-        public async Task<IActionResult> Index()
+        // Trang chủ: chuyển thẳng tới trang quản lý đồ ăn & thức uống.
+        public IActionResult Index()
         {
-            var nowShowingMovies = await _movieService.GetNowShowingMoviesAsync();
-            var comingSoonMovies = await _movieService.GetComingSoonMoviesAsync();
-            var specialShowtimeMovies = await _movieService.GetSpecialShowtimeMoviesAsync();
-
-            var viewModel = new HomeViewModel
-            {
-                NowShowingMovies = nowShowingMovies,
-                ComingSoonMovies = comingSoonMovies
-                , SpecialShowtimeMovies = specialShowtimeMovies
-            };
-
-            return View(viewModel);
+            return RedirectToAction("Index", "FoodBeverages");
         }
 
-        public IActionResult Privacy()
-        {
-            return View();
-        }
-
+        // Trang lỗi mặc định.
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {

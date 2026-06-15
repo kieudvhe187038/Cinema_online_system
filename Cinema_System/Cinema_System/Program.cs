@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
-builder.Services.AddAutoMapper(typeof(MovieProfile).Assembly);
+builder.Services.AddAutoMapper(typeof(FoodBeverageProfile).Assembly);
 
 var connectionStr = builder.Configuration.GetConnectionString("MyCnn");
 builder.Services.AddDbContext<CinemaWebDbContext>(options =>
@@ -16,7 +16,6 @@ builder.Services.AddDbContext<CinemaWebDbContext>(options =>
 
 // Register Unit of Work + application services
 builder.Services.AddScoped<IUnitOfWork, Cinema_System.Infrastructure.UnitOfWork.UnitOfWork>();
-builder.Services.AddScoped<IMovieService, MovieService>();
 builder.Services.AddScoped<IFoodBeverageService, FoodBeverageService>();
 
 var app = builder.Build();
