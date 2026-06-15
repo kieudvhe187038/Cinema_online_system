@@ -36,8 +36,6 @@
 <body class="bg-[#f4f6f8] overflow-x-hidden text-[#191c1d]">
 @{
     var ctrl = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
-    var newUrl  = ViewData["SidebarNewUrl"]?.ToString();
-    var newLabel = ViewData["SidebarNewLabel"]?.ToString() ?? "Thêm mới";
     var topTitle = ViewData["Title"]?.ToString() ?? "Quản Lý";
 
     const string navBase = "flex items-center gap-3 px-4 py-2.5 mx-3 my-0.5 rounded-lg text-sm font-medium transition-colors";
@@ -49,26 +47,26 @@
 <aside class="fixed inset-y-0 left-0 w-60 bg-white border-r border-[#e8eaed] flex flex-col z-[100]">
     <div class="px-6 pt-5 pb-4 border-b border-[#f0f0f0] shrink-0">
         <div class="font-head text-2xl font-extrabold text-primary tracking-tight leading-none">CineStar</div>
-        <div class="text-[.7rem] text-[#8a94a6] mt-0.5 font-medium uppercase tracking-wide">Theater Manager</div>
+        <div class="text-[.7rem] text-[#8a94a6] mt-0.5 font-medium uppercase tracking-wide">Quản Lý Rạp</div>
     </div>
 
     <nav class="flex-1 py-3 overflow-y-auto">
         <a class="@navBase @navIdle" href="#">
             <span class="material-symbols-outlined">grid_view</span>
-            <span>Dashboard</span>
+            <span>Tổng Quan</span>
         </a>
         <a class="@navBase @(ctrl == "MovieManagement" ? navActive : navIdle)"
            asp-controller="MovieManagement" asp-action="Index">
             <span class="material-symbols-outlined">movie</span>
-            <span>Movie Catalog</span>
+            <span>Quản Lý Phim</span>
         </a>
         <a class="@navBase @navIdle" href="#">
             <span class="material-symbols-outlined">schedule</span>
-            <span>Showtimes</span>
+            <span>Suất Chiếu</span>
         </a>
         <a class="@navBase @navIdle" href="#">
             <span class="material-symbols-outlined">confirmation_number</span>
-            <span>Bookings</span>
+            <span>Đặt Vé</span>
         </a>
         <hr class="my-2 mx-6 border-t border-[#f0f0f0]" />
         <a class="@navBase @(ctrl == "FoodBeverages" ? navActive : navIdle)"
@@ -78,20 +76,9 @@
         </a>
         <a class="@navBase @navIdle" href="#">
             <span class="material-symbols-outlined">settings</span>
-            <span>Settings</span>
+            <span>Cài Đặt</span>
         </a>
     </nav>
-
-    @if (!string.IsNullOrEmpty(newUrl))
-    {
-        <div class="px-5 py-4 border-t border-[#f0f0f0] shrink-0">
-            <a class="flex items-center justify-center gap-1.5 w-full py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-semibold transition-colors"
-               href="@newUrl">
-                <span class="material-symbols-outlined" style="font-size:18px">add</span>
-                @newLabel
-            </a>
-        </div>
-    }
 </aside>
 
 <!-- Topbar -->

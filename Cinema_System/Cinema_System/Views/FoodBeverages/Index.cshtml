@@ -1,8 +1,6 @@
 @model FoodBeverageListViewModel
 @{
     ViewData["Title"] = "Quản Lý Menu";
-    ViewData["SidebarNewUrl"] = Url.Action("Create", "FoodBeverages");
-    ViewData["SidebarNewLabel"] = "Thêm Món Mới";
     Layout = "~/Views/Shared/_ManagerLayout.cshtml";
 }
 
@@ -108,11 +106,11 @@
                             {
                                 <img class="w-13 h-13 object-cover rounded-lg block" style="width:52px;height:52px" src="@item.ImageUrl" alt="@item.Name"
                                      onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
-                                <div class="bg-gray-100 rounded-lg items-center justify-center text-[.6rem] text-gray-400" style="width:52px;height:52px;display:none">No img</div>
+                                <div class="bg-gray-100 rounded-lg items-center justify-center text-[.6rem] text-gray-400" style="width:52px;height:52px;display:none">Chưa có ảnh</div>
                             }
                             else
                             {
-                                <div class="bg-gray-100 rounded-lg flex items-center justify-center text-[.6rem] text-gray-400" style="width:52px;height:52px">No img</div>
+                                <div class="bg-gray-100 rounded-lg flex items-center justify-center text-[.6rem] text-gray-400" style="width:52px;height:52px">Chưa có ảnh</div>
                             }
                         </td>
                         <td class="px-4 py-3.5 border-b border-gray-100 text-sm align-middle">

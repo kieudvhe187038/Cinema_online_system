@@ -1,8 +1,6 @@
 @model MovieListViewModel
 @{
     ViewData["Title"] = "Quản lý phim";
-    ViewData["SidebarNewUrl"] = Url.Action("Create", "MovieManagement");
-    ViewData["SidebarNewLabel"] = "Add New Movie";
     Layout = "~/Views/Shared/_ManagerLayout.cshtml";
 }
 
@@ -137,11 +135,11 @@
                             {
                                 <img class="w-[42px] h-[60px] object-cover rounded block" src="@movie.PosterUrl" alt="@movie.Title"
                                      onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
-                                <div class="w-[42px] h-[60px] bg-gray-100 rounded items-center justify-center text-[.6rem] text-gray-400 text-center" style="display:none">No img</div>
+                                <div class="w-[42px] h-[60px] bg-gray-100 rounded items-center justify-center text-[.6rem] text-gray-400 text-center" style="display:none">Chưa có ảnh</div>
                             }
                             else
                             {
-                                <div class="w-[42px] h-[60px] bg-gray-100 rounded flex items-center justify-center text-[.6rem] text-gray-400 text-center">No img</div>
+                                <div class="w-[42px] h-[60px] bg-gray-100 rounded flex items-center justify-center text-[.6rem] text-gray-400 text-center">Chưa có ảnh</div>
                             }
                         </td>
                         <td class="px-4 py-3.5 border-b border-gray-100 text-sm align-middle">
