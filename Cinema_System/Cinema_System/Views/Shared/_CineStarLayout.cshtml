@@ -1,0 +1,97 @@
+@{
+    // Layout riêng cho khu vực tài khoản (CineStar). Trang nào muốn dùng thì đặt: Layout = "_CineStarLayout".
+    // Thông tin người dùng cho sidebar/topbar được trang con truyền vào qua ViewData.
+    var userName = ViewData["UserName"] as string ?? "";
+    var userRole = ViewData["UserRole"] as string ?? "";
+    var heading = ViewData["Heading"] as string ?? "Cài đặt tài khoản";
+
+    // Lấy 2 chữ cái cuối của tên cho avatar (vd "Nguyễn Anh Linh" -> "AL")
+    var nameParts = userName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+    string initials;
+    if (nameParts.Length >= 2)
+        initials = (nameParts[nameParts.Length - 2].Substring(0, 1) + nameParts[nameParts.Length - 1].Substring(0, 1)).ToUpper();
+    else if (nameParts.Length == 1)
+        initials = nameParts[0].Substring(0, 1).ToUpper();
+    else
+        initials = "U";
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@@600;700;800&family=Be+Vietnam+Pro:wght@@400;500;600&display=swap" rel="stylesheet">
+    <!-- Khai báo màu brand + font. KHÔNG cần important:true vì layout này không nạp Bootstrap. -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#F37021',
+                        'primary-dark': '#d85f15',
+                        secondary: '#00488D',
+                        tertiary: '#002F59',
+                        light: '#F8F9FA',
+                    },
+                    fontFamily: {
+                        heading: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        body: ['"Be Vietnam Pro"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-light font-body text-tertiary">
+<!-- Bố cục = 2 phần đặt cạnh nhau (flex): SIDEBAR trái + KHU NỘI DUNG phải -->
+<div class="flex min-h-screen">
+
+    <!-- ===== SIDEBAR ===== (hidden md:block = ẩn trên màn nhỏ, hiện từ tablet trở lên) -->
+    <aside class="hidden w-64 shrink-0 border-r border-gray-200 bg-white p-5 md:block">
+        <div class="mb-8 text-xl font-extrabold font-heading text-secondary">
+            Cine<span class="text-primary">Star</span>
+        </div>
+
+        <!-- Thẻ người dùng -->
+        <div class="mb-8 flex items-center gap-3">
+            <div class="flex h-11 w-11 items-center justify-center rounded-full bg-primary font-bold text-white">
+                @initials
+            </div>
+            <div>
+                <p class="font-semibold leading-tight">@userName</p>
+                <p class="text-xs text-gray-400">@userRole</p>
+            </div>
+        </div>
+
+        <!-- Menu (các trang khác là việc của bạn cùng nhóm -> tạm để #) -->
+        <nav class="space-y-1 text-sm font-medium">
+            <a href="#" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-gray-600 hover:bg-light">🎟️ Lịch sử đặt vé</a>
+            <a href="#" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-gray-600 hover:bg-light">🧾 Chi tiết đơn hàng</a>
+            <a href="#" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-gray-600 hover:bg-light">📱 Vé điện tử</a>
+            <a asp-controller="Profile" asp-action="Index" class="flex items-center gap-3 rounded-lg bg-primary px-3 py-2.5 font-semibold text-white">👤 Hồ sơ cá nhân</a>
+        </nav>
+    </aside>
+
+    <!-- ===== KHU NỘI DUNG ===== -->
+    <div class="flex-1">
+
+        <!-- Thanh trên -->
+        <header class="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4">
+            <h1 class="text-xl font-bold font-heading text-tertiary">@heading</h1>
+            <div class="flex items-center gap-4">
+                <span class="text-gray-400">🔔</span>
+                <div class="flex h-9 w-9 items-center justify-center rounded-full bg-tertiary text-sm font-bold text-white">@initials</div>
+            </div>
+        </header>
+
+        <!-- Nội dung của trang con sẽ đổ vào đây -->
+        <main class="p-6">
+            @RenderBody()
+        </main>
+    </div>
+</div>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
