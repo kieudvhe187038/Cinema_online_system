@@ -64,6 +64,7 @@ namespace Cinema_System.Controllers
             }
 
             string? savedAvatarUrl = null;
+            string? oldAvatarUrl = null;
             if (editForm.AvatarFile != null && editForm.AvatarFile.Length > 0)
             {
                 var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
@@ -82,9 +83,11 @@ namespace Cinema_System.Controllers
                 }
 
                 // Giới hạn kích thước pixel: đọc Width/Height từ ảnh (using để tự giải phóng)
-                using (var imageStream = editForm.AvatarFile.OpenReadStream())
-                using (var image = System.Drawing.Image.FromStream(imageStream))
+                // Bọc try/catch vì file giả ảnh (đổi đuôi) sẽ làm FromStream ném lỗi -> tránh web 500
+                try
                 {
+                    using var imageStream = editForm.AvatarFile.OpenReadStream();
+                    using var image = System.Drawing.Image.FromStream(imageStream);
                     const int maxWidth = 1024, maxHeight = 1024;
                     if (image.Width > maxWidth || image.Height > maxHeight)
                     {
@@ -93,9 +96,19 @@ namespace Cinema_System.Controllers
                         return View(editForm);
                     }
                 }
+                catch
+                {
+                    ModelState.AddModelError("AvatarFile", "File ảnh không hợp lệ hoặc bị hỏng");
+                    return View(editForm);
+                }
 
                 // Lưu file tên ngẫu nhiên (tránh trùng) vào wwwroot/uploads/avatars
                 var uploadFolder = Path.Combine(_env.WebRootPath, "uploads", "avatars");
+
+                // Nhớ ảnh cũ để xoá sau khi cập nhật thành công
+                var currentProfile = await _profileService.GetProfileAsync(GetCurrentUserId());
+                oldAvatarUrl = currentProfile?.AvatarUrl;
+
                 Directory.CreateDirectory(uploadFolder);
                 var newFileName = Guid.NewGuid().ToString() + extension;
                 using (var fileStream = new FileStream(Path.Combine(uploadFolder, newFileName), FileMode.Create))
@@ -108,6 +121,16 @@ namespace Cinema_System.Controllers
             var updateData = new UpdateProfileDto { FullName = editForm.FullName, Phone = editForm.Phone, AvatarUrl = savedAvatarUrl };
             var isUpdated = await _profileService.UpdateProfileAsync(GetCurrentUserId(), updateData);
             if (!isUpdated) return NotFound();
+
+            // Xoá ảnh cũ để không tồn file thừa (chỉ xoá ảnh upload nội bộ)
+            if (!string.IsNullOrEmpty(savedAvatarUrl)
+                && !string.IsNullOrEmpty(oldAvatarUrl)
+                && oldAvatarUrl.StartsWith("/uploads/avatars/"))
+            {
+                var oldPath = Path.Combine(_env.WebRootPath, oldAvatarUrl.TrimStart('/'));
+                if (System.IO.File.Exists(oldPath))
+                    System.IO.File.Delete(oldPath);
+            }
 
             TempData["Success"] = "Cập nhật hồ sơ thành công!";
             return RedirectToAction("Index"); // PRG: tránh submit lại khi F5
