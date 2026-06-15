@@ -1,7 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace Cinema_System.Application.ViewModels
 {
+    // ViewModel form Đổi mật khẩu (validate qua Data Annotations).
     public class ChangePasswordViewModel
     {
         [Required(ErrorMessage = "Vui lòng nhập mật khẩu hiện tại")]
@@ -18,7 +19,7 @@ namespace Cinema_System.Application.ViewModels
         [Required(ErrorMessage = "Vui lòng nhập lại mật khẩu mới")]
         [DataType(DataType.Password)]
         [Display(Name = "Nhập lại mật khẩu mới")]
-        [Compare("NewPassword", ErrorMessage = "Mật khẩu nhập lại không khớp")]
+        [Compare("NewPassword", ErrorMessage = "Mật khẩu nhập lại không khớp")] // phải trùng NewPassword
         public string ConfirmPassword { get; set; } = string.Empty;
     }
 }

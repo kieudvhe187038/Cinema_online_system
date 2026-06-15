@@ -6,10 +6,11 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Cinema_System.Controllers
 {
+    // Tầng Presentation module Hồ sơ: nhận request -> gọi Service -> trả View. Không chứa nghiệp vụ, không đụng DbContext.
     public class ProfileController : Controller
     {
         private readonly IProfileService _profileService;
-        private readonly IWebHostEnvironment _env;
+        private readonly IWebHostEnvironment _env; // lấy đường dẫn wwwroot để lưu ảnh
         private readonly IMapper _mapper;
 
         public ProfileController(IProfileService profileService, IWebHostEnvironment env, IMapper mapper)
@@ -19,9 +20,11 @@ namespace Cinema_System.Controllers
             _mapper = mapper;
         }
 
+        // Tạm hardcode user đăng nhập vì Login (bạn khác làm) chưa xong; sau đổi sang Session/Claims.
         private Guid GetCurrentUserId()
             => Guid.Parse("00000000-0000-0000-0002-0000000003e9"); // user001 - Nguyễn Anh Linh (Customer)
 
+        // Xem hồ sơ
         public async Task<IActionResult> Index()
         {
             var profile = await _profileService.GetProfileAsync(GetCurrentUserId());
@@ -31,6 +34,7 @@ namespace Cinema_System.Controllers
             return View(profileView);
         }
 
+        // Mở form chỉnh sửa, nạp sẵn dữ liệu hiện tại
         public async Task<IActionResult> Edit()
         {
             var profile = await _profileService.GetProfileAsync(GetCurrentUserId());
@@ -47,6 +51,7 @@ namespace Cinema_System.Controllers
             return View(editForm);
         }
 
+        // Lưu chỉnh sửa: validate -> xử lý ảnh -> cập nhật
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(UpdateProfileViewModel editForm)
@@ -69,15 +74,14 @@ namespace Cinema_System.Controllers
                     return View(editForm);
                 }
 
-                // Giới hạn DUNG LƯỢNG ảnh: tối đa 2MB
-                const long maxBytes = 2 * 1024 * 1024; // 2MB = 2 * 1024 * 1024 byte
+                const long maxBytes = 2 * 1024 * 1024; // 2MB
                 if (editForm.AvatarFile.Length > maxBytes)
                 {
                     ModelState.AddModelError("AvatarFile", "Ảnh quá lớn — tối đa 2MB");
                     return View(editForm);
                 }
 
-                // Giới hạn KÍCH THƯỚC ảnh (pixel): tối đa 1024 x 1024
+                // Giới hạn kích thước pixel: đọc Width/Height từ ảnh (using để tự giải phóng)
                 using (var imageStream = editForm.AvatarFile.OpenReadStream())
                 using (var image = System.Drawing.Image.FromStream(imageStream))
                 {
@@ -90,6 +94,7 @@ namespace Cinema_System.Controllers
                     }
                 }
 
+                // Lưu file tên ngẫu nhiên (tránh trùng) vào wwwroot/uploads/avatars
                 var uploadFolder = Path.Combine(_env.WebRootPath, "uploads", "avatars");
                 Directory.CreateDirectory(uploadFolder);
                 var newFileName = Guid.NewGuid().ToString() + extension;
@@ -105,11 +110,13 @@ namespace Cinema_System.Controllers
             if (!isUpdated) return NotFound();
 
             TempData["Success"] = "Cập nhật hồ sơ thành công!";
-            return RedirectToAction("Index");
+            return RedirectToAction("Index"); // PRG: tránh submit lại khi F5
         }
 
+        // Mở form đổi mật khẩu
         public IActionResult ChangePassword() => View(new ChangePasswordViewModel());
 
+        // Xử lý đổi mật khẩu
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ChangePassword(ChangePasswordViewModel passwordForm)
@@ -129,23 +136,20 @@ namespace Cinema_System.Controllers
             return RedirectToAction("Index");
         }
 
-        // ===== 5. XEM LỊCH SỬ ĐIỂM (có phân trang) =====
+        // Xem lịch sử điểm (phân trang 5 dòng/trang)
         public async Task<IActionResult> PointHistory(int page = 1)
         {
             const int pageSize = 5;
 
-            // Lấy toàn bộ rồi map sang ViewModel
             var pointHistory = await _profileService.GetPointHistoryAsync(GetCurrentUserId());
             var allRecords = pointHistory.Select(record => _mapper.Map<PointHistoryViewModel>(record)).ToList();
 
             var totalRecords = allRecords.Count;
-            var totalPages = (int)Math.Ceiling(totalRecords / (double)pageSize);
+            var totalPages = (int)Math.Ceiling(totalRecords / (double)pageSize); // làm tròn lên
 
-            // Chặn page vượt biên
             if (page < 1) page = 1;
-            if (totalPages > 0 && page > totalPages) page = totalPages;
+            if (totalPages > 0 && page > totalPages) page = totalPages; // chặn page vượt biên
 
-            // Cắt đúng phần của trang hiện tại
             var pageRecords = allRecords
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)

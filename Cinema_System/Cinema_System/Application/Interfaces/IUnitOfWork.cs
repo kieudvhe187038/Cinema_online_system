@@ -1,6 +1,6 @@
-﻿namespace Cinema_System.Application.Interfaces
+namespace Cinema_System.Application.Interfaces
 {
-    // Gom các Repository + 1 lần lưu (SaveChanges) trong cùng 1 transaction.
+    // Gom các Repository dùng chung 1 DbContext và lưu (SaveChanges) 1 lần trong cùng 1 transaction.
     public interface IUnitOfWork : IDisposable
     {
         IGenericRepository<T> Repository<T>() where T : class;
