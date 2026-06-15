@@ -13,6 +13,7 @@ namespace Cinema_System.Controllers
             _movieService = movieService;
         }
 
+        // Trang danh sách phim theo tab (now, coming, special)
         public async Task<IActionResult> Index(string tab = "now", int page = 1)
         {
             var pageSize = 4;
@@ -20,6 +21,7 @@ namespace Cinema_System.Controllers
             return View(moviesPageViewModel);
         }
 
+        // Kiểm tra query tìm kiếm hợp lệ: không rỗng, tối đa 30 ký tự, chỉ chữ/số/khoảng trắng
         private bool IsValidSearchQuery(string searchQuery)
         {
             if (string.IsNullOrWhiteSpace(searchQuery))
@@ -35,6 +37,7 @@ namespace Cinema_System.Controllers
             return System.Text.RegularExpressions.Regex.IsMatch(searchQuery.Trim(), @"^[\p{L}\p{N}\s]+$");
         }
 
+        // Xử lý tìm kiếm phim theo tham số query string
         public async Task<IActionResult> Search([FromQuery(Name = "find")] string searchQuery, int page = 1) 
         {
             if (!IsValidSearchQuery(searchQuery))

@@ -1,5 +1,6 @@
 namespace Cinema_System.Application.DTOs;
 
+// DTO phim truyền dữ liệu phim từ service lên view.
 public class MovieDTO
 {
     public Guid Id { get; set; }

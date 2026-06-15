@@ -10,6 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddAutoMapper(typeof(MovieMappingProfile).Assembly);
 
+// Kết nối đến cơ sở dữ liệu SQL Server của ứng dụng.
 var connectionStr = builder.Configuration.GetConnectionString("MyCnn");
 builder.Services.AddDbContext<CinemaWebDbContext>(options =>
     options.UseSqlServer(connectionStr));

@@ -10,6 +10,7 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
     protected readonly CinemaWebDbContext _context;
     protected readonly DbSet<T> _dbSet;
 
+    // Repository chung cho mọi entity, dùng EF Core để truy vấn cơ sở dữ liệu
     public GenericRepository(CinemaWebDbContext context)
     {
         _context = context;
@@ -45,6 +46,7 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
         return await query.ToListAsync();
     }
 
+    // Lấy 1 bản ghi theo điều kiện, dùng để kiểm tra tồn tại hoặc lấy chi tiết đơn lẻ
     public async Task<T?> FirstOrDefaultAsync(
         Expression<Func<T, bool>> predicate,
         string[]? includeProperties = null)
