@@ -16,7 +16,7 @@ namespace Cinema_System.Controllers
         // Trang danh sách phim theo tab (now, coming, special)
         public async Task<IActionResult> Index(string tab = "now", int page = 1)
         {
-            var pageSize = 4;
+            var pageSize = 3;
             var moviesPageViewModel = await _movieService.GetMoviesPageAsync(tab, page, pageSize);
             return View(moviesPageViewModel);
         }
@@ -45,7 +45,7 @@ namespace Cinema_System.Controllers
                 return RedirectToAction("Index");
             }
 
-            var pageSize = 4;
+            var pageSize = 3;
             var moviesPageViewModel = await _movieService.SearchMoviesAsync(searchQuery.Trim(), page, pageSize);
             ViewData["SearchKeyword"] = searchQuery.Trim();
             return View("Index", moviesPageViewModel);

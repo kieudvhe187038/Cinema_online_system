@@ -1,36 +1,24 @@
-@model Cinema_System.Application.ViewModels.MoviesPageViewModel
+﻿@model Cinema_System.Application.ViewModels.MoviesPageViewModel
 
 @{
     ViewData["Title"] = "Phim";
 }
 
-<section class="movies-page-header">
-    <div class="section-container">
+<div class="space-y-8 bg-slate-50 px-4 py-10 text-slate-900 font-body sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-7xl rounded-[2rem] bg-white p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.2)]">
+        <h1 class="text-3xl font-bold text-slate-900">Danh sách phim</h1>
+        <div class="mt-6 flex flex-wrap items-center gap-3 rounded-full border border-slate-200 bg-slate-50 p-2">
+            <a class="rounded-full px-4 py-2 text-sm font-semibold transition hover:bg-primary hover:text-white @(Model.SelectedTab == "coming" ? "bg-primary text-white" : "text-slate-700")" asp-controller="Movies" asp-action="Index" asp-route-tab="coming" asp-route-page="1">PHIM SẮP CHIẾU</a>
+            <a class="rounded-full px-4 py-2 text-sm font-semibold transition hover:bg-primary hover:text-white @(Model.SelectedTab == "now" ? "bg-primary text-white" : "text-slate-700")" asp-controller="Movies" asp-action="Index" asp-route-tab="now" asp-route-page="1">PHIM ĐANG CHIẾU</a>
+            <a class="rounded-full px-4 py-2 text-sm font-semibold transition hover:bg-primary hover:text-white @(Model.SelectedTab == "special" ? "bg-primary text-white" : "text-slate-700")" asp-controller="Movies" asp-action="Index" asp-route-tab="special" asp-route-page="1">SUẤT CHIẾU ĐẶC BIỆT</a>
+        </div>
     </div>
-</section>
 
-<section class="movies-tabs-section">
-    <div class="section-container">
-        <ul class="movies-tabs">
-            <li class="tab @(Model.SelectedTab == "coming" ? "active" : "")"> 
-                <a asp-controller="Movies" asp-action="Index" asp-route-tab="coming" asp-route-page="1">PHIM SẮP CHIẾU</a> 
-            </li>
-            <li class="tab @(Model.SelectedTab == "now" ? "active" : "")">
-                <a asp-controller="Movies" asp-action="Index" asp-route-tab="now" asp-route-page="1">PHIM ĐANG CHIẾU</a>
-            </li>
-            <li class="tab @(Model.SelectedTab == "special" ? "active" : "")"> 
-                <a asp-controller="Movies" asp-action="Index" asp-route-tab="special" asp-route-page="1">SUẤT CHIẾU ĐẶC BIỆT</a>
-            </li>
-        </ul>
-    </div>
-</section> 
-
-<section class="movies-section movies-page">
-    @{ string searchKeyword = Model.SearchKeyword ?? string.Empty; }
-    <div class="section-header">
-        <div>
-            <h2 class="section-title">
-                <span class="title-bar"></span>
+    <section class="mx-auto max-w-7xl rounded-[2rem] bg-white p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.2)]">
+        @{ string searchKeyword = Model.SearchKeyword ?? string.Empty; }
+        <div class="mb-6">
+            <p class="text-xs uppercase tracking-[0.28em] text-primary">@((Model.SelectedTab == "search") ? "Kết quả tìm kiếm" : (Model.SelectedTab == "coming") ? "Phim sắp chiếu" : (Model.SelectedTab == "special") ? "Suất chiếu đặc biệt" : "Phim đang chiếu")</p>
+            <h2 class="mt-3 text-3xl font-bold text-slate-900">
                 @if (Model.SelectedTab == "search")
                 {
                     <span>Kết quả tìm kiếm</span>
@@ -50,123 +38,118 @@
             </h2>
             @if (Model.SelectedTab == "search")
             {
-                <p class="search-summary">Tìm kiếm cho: <strong>@searchKeyword</strong></p>
+                <p class="mt-3 text-sm text-slate-600">Tìm kiếm cho: <strong class="text-slate-900">@searchKeyword</strong></p>
             }
         </div>
-    </div>
 
-    <div class="movies-grid">
-        @if (Model?.Movies != null && Model.Movies.Any())
-        {
-            @foreach (var movie in Model.Movies)
+        <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            @if (Model?.Movies != null && Model.Movies.Any())
             {
-                <div class="movie-card">
-                    <div class="movie-poster">
-                        @if (!string.IsNullOrEmpty(movie.PosterUrl))
-                        {
-                            <img src="@movie.PosterUrl" alt="@movie.Title" onerror="this.src='https://placehold.co/250x350?text=@Uri.EscapeDataString(movie.Title)&font=raleway'" />
-                        }
-                        else
-                        {
-                            <img src="https://placehold.co/250x350?text=@Uri.EscapeDataString(movie.Title)&font=raleway" alt="@movie.Title" />
-                        }
-                        <div class="movie-badges">
-                            @if (!string.IsNullOrEmpty(movie.Language))
+                @foreach (var movie in Model.Movies)
+                {
+                    <article class="group relative overflow-hidden rounded-2xl border border-slate-300/50 bg-white shadow-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-2">
+                        <div class="relative overflow-hidden bg-slate-950">
+                            @if (!string.IsNullOrEmpty(movie.PosterUrl))
                             {
-                                <span class="badge-format">@movie.Language</span>
+                                <img src="@movie.PosterUrl" alt="@movie.Title" onerror="this.src='https://placehold.co/300x420?text=@Uri.EscapeDataString(movie.Title)&font=raleway'" class="h-72 w-full object-cover transition-transform duration-500 group-hover:scale-110" />
                             }
-                            @if (!string.IsNullOrEmpty(movie.AgeRating))
+                            else
                             {
-                                <span class="badge-age">@movie.AgeRating</span>
+                                <img src="https://placehold.co/300x420?text=@Uri.EscapeDataString(movie.Title)&font=raleway" alt="@movie.Title" class="h-72 w-full object-cover transition-transform duration-500 group-hover:scale-110" />
                             }
+                            <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-900/40"></div>
                         </div>
-                        <div class="movie-overlay">
-                            <button class="btn-primary btn-buy">MUA VÉ NGAY</button>
-                            <button class="btn-detail">XEM CHI TIẾT</button>
-                        </div>
-                    </div>
-                    <div class="movie-info">
-                        <h3 class="movie-title">@movie.Title</h3>
-                        <div class="movie-meta">
-                            @if (!string.IsNullOrEmpty(movie.Director))
+                        <div class="space-y-4 p-6">
+                            <div class="flex flex-wrap items-center gap-2">
+                                @if (!string.IsNullOrEmpty(movie.Language))
+                                {
+                                    <span class="inline-flex items-center gap-1 rounded-full bg-primary/15 px-3 py-1.5 text-xs font-semibold text-primary transition group-hover:bg-primary/25"><span class="material-symbols-outlined text-sm">language</span>@movie.Language</span>
+                                }
+                                @if (!string.IsNullOrEmpty(movie.AgeRating))
+                                {
+                                    <span class="rounded-full bg-slate-300/40 px-3 py-1.5 text-xs font-semibold text-slate-800 transition group-hover:bg-slate-300/60">@movie.AgeRating</span>
+                                }
+                            </div>
+                            <h3 class="text-lg font-bold leading-snug text-slate-900 line-clamp-2 group-hover:text-primary transition">@movie.Title</h3>
+                            <div class="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-200/50 text-xs text-slate-600">
+                                @if (!string.IsNullOrEmpty(movie.Director))
+                                {
+                                    <span class="inline-flex items-center gap-1"><span class="material-symbols-outlined text-sm">person</span>@movie.Director</span>
+                                }
+                                @if (movie.DurationMinutes.HasValue)
+                                {
+                                    <span class="inline-flex items-center gap-1"><span class="material-symbols-outlined text-sm">schedule</span>@movie.DurationMinutes phút</span>
+                                }
+                            </div>
+                            @if (!string.IsNullOrEmpty(movie.Description))
                             {
-                                <span>Đạo diễn: @movie.Director</span>
+                                <p class="text-sm leading-relaxed text-slate-600 line-clamp-3" title="@movie.Description">@movie.Description?.Substring(0, Math.Min(100, movie.Description?.Length ?? 0))...</p>
                             }
-                            @if (movie.DurationMinutes.HasValue)
-                            {
-                                <span class="movie-duration"><span class="material-symbols-outlined">schedule</span> @movie.DurationMinutes phút</span>
-                            }
+                            <div class="flex flex-wrap gap-2 pt-4">
+                                <button class="flex-1 rounded-full bg-gradient-to-r from-primary to-orange-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/30 transition hover:shadow-xl hover:scale-105 active:scale-95">MUA VÉ</button>
+                                <button class="flex-1 rounded-full border-2 border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:border-primary hover:bg-primary hover:text-white">CHI TIẾT</button>
+                            </div>
                         </div>
-                        @if (!string.IsNullOrEmpty(movie.Description))
-                        {
-                            <p class="movie-description" title="@movie.Description">@movie.Description?.Substring(0, Math.Min(50, movie.Description?.Length ?? 0))...</p>
-                        }
-                    </div>
-                </div>
+                    </article>
+                }
             }
-        }
-        else
-        {
-            <div class="no-movies"><p>Không tìm thấy phim cho lựa chọn này.</p></div>
-        }
-    </div>
+            else
+            {
+                <div class="col-span-full rounded-[1.75rem] border border-slate-200 bg-slate-50 p-10 text-center text-slate-600">Không tìm thấy phim cho lựa chọn này.</div>
+            }
+        </div>
 
-    @if (Model != null && Model.TotalPages > 1)
-    {
-        <nav class="pagination" aria-label="Pages">
-            <ul>
-                <li>
-                    @if (Model.CurrentPage > 1)
+        @if (Model != null && Model.TotalPages > 1)
+        {
+            <div class="mt-8 flex flex-wrap items-center justify-center gap-2 text-sm text-slate-700">
+                @if (Model.CurrentPage > 1)
+                {
+                    if (Model.SelectedTab == "search")
                     {
-                        @if (Model.SelectedTab == "search")
-                        {
-                            <a asp-controller="Movies" asp-action="Search" asp-route-find="@searchKeyword" asp-route-page="@(Model.CurrentPage - 1)">&laquo; Trước</a>
-                        }
-                        else
-                        {
-                            <a asp-controller="Movies" asp-action="Index" asp-route-tab="@Model.SelectedTab" asp-route-page="@(Model.CurrentPage - 1)">&laquo; Trước</a>
-                        }
+                        <a class="rounded-full border border-slate-200 bg-white px-4 py-2 transition hover:bg-slate-100" asp-controller="Movies" asp-action="Search" asp-route-find="@searchKeyword" asp-route-page="@(Model.CurrentPage - 1)">&laquo; Trước</a>
                     }
                     else
                     {
-                        <span class="disabled">&laquo; Trước</span>
+                        <a class="rounded-full border border-slate-200 bg-white px-4 py-2 transition hover:bg-slate-100" asp-controller="Movies" asp-action="Index" asp-route-tab="@Model.SelectedTab" asp-route-page="@(Model.CurrentPage - 1)">&laquo; Trước</a>
                     }
-                </li>
+                }
+                else
+                {
+                    <span class="rounded-full border border-slate-200 bg-slate-100 px-4 py-2 text-slate-400">&laquo; Trước</span>
+                }
+
                 @for (int i = 1; i <= Model.TotalPages; i++)
                 {
-                    <li>
-                        @if (i == Model.CurrentPage)
-                        {
-                            <span class="current">@i</span>
-                        }
-                        else if (Model.SelectedTab == "search")
-                        {
-                            <a asp-controller="Movies" asp-action="Search" asp-route-find="@searchKeyword" asp-route-page="@i">@i</a>
-                        }
-                        else
-                        {
-                            <a asp-controller="Movies" asp-action="Index" asp-route-tab="@Model.SelectedTab" asp-route-page="@i">@i</a>
-                        }
-                    </li>
-                }
-                <li>
-                    @if (Model.CurrentPage < Model.TotalPages)
+                    if (i == Model.CurrentPage)
                     {
-                        @if (Model.SelectedTab == "search")
-                        {
-                            <a asp-controller="Movies" asp-action="Search" asp-route-find="@searchKeyword" asp-route-page="@(Model.CurrentPage + 1)">Tiếp &raquo;</a>
-                        }
-                        else
-                        {
-                            <a asp-controller="Movies" asp-action="Index" asp-route-tab="@Model.SelectedTab" asp-route-page="@(Model.CurrentPage + 1)">Tiếp &raquo;</a>
-                        }
+                        <span class="rounded-full bg-primary px-4 py-2 text-white">@i</span>
+                    }
+                    else if (Model.SelectedTab == "search")
+                    {
+                        <a class="rounded-full border border-slate-200 bg-white px-4 py-2 transition hover:bg-primary hover:text-white" asp-controller="Movies" asp-action="Search" asp-route-find="@searchKeyword" asp-route-page="@i">@i</a>
                     }
                     else
                     {
-                        <span class="disabled">Tiếp &raquo;</span>
+                        <a class="rounded-full border border-slate-200 bg-white px-4 py-2 transition hover:bg-primary hover:text-white" asp-controller="Movies" asp-action="Index" asp-route-tab="@Model.SelectedTab" asp-route-page="@i">@i</a>
                     }
-                </li>
-            </ul>
-        </nav>
-    }
-</section>
+                }
+
+                @if (Model.CurrentPage < Model.TotalPages)
+                {
+                    if (Model.SelectedTab == "search")
+                    {
+                        <a class="rounded-full border border-slate-200 bg-white px-4 py-2 transition hover:bg-slate-100" asp-controller="Movies" asp-action="Search" asp-route-find="@searchKeyword" asp-route-page="@(Model.CurrentPage + 1)">Tiếp &raquo;</a>
+                    }
+                    else
+                    {
+                        <a class="rounded-full border border-slate-200 bg-white px-4 py-2 transition hover:bg-slate-100" asp-controller="Movies" asp-action="Index" asp-route-tab="@Model.SelectedTab" asp-route-page="@(Model.CurrentPage + 1)">Tiếp &raquo;</a>
+                    }
+                }
+                else
+                {
+                    <span class="rounded-full border border-slate-200 bg-slate-100 px-4 py-2 text-slate-400">Tiếp &raquo;</span>
+                }
+            </div>
+        }
+    </section>
+</div>
