@@ -98,7 +98,13 @@ public class FoodBeveragesController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(Guid id)
     {
+        // Lấy đường dẫn ảnh trước khi xóa record để dọn file sau khi xóa thành công.
+        var item = await _fbService.GetForEditAsync(id);
+
         var result = await _fbService.DeleteAsync(id);
+        if (result.Succeeded)
+            DeleteFile(item?.ImageUrl);
+
         TempData[result.Succeeded ? "Success" : "Error"] =
             result.Succeeded ? "Đã xóa món khỏi menu." : result.Error;
         return RedirectToAction(nameof(Index));
