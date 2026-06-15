@@ -12,7 +12,7 @@
             <a class="rounded-full px-4 py-2 text-sm font-semibold transition hover:bg-primary hover:text-white @(Model.SelectedTab == "now" ? "bg-primary text-white" : "text-slate-700")" asp-controller="Movies" asp-action="Index" asp-route-tab="now" asp-route-page="1">PHIM ĐANG CHIẾU</a>
             <a class="rounded-full px-4 py-2 text-sm font-semibold transition hover:bg-primary hover:text-white @(Model.SelectedTab == "special" ? "bg-primary text-white" : "text-slate-700")" asp-controller="Movies" asp-action="Index" asp-route-tab="special" asp-route-page="1">SUẤT CHIẾU ĐẶC BIỆT</a>
         </div>
-    </div>
+    </div> 
 
     <section class="mx-auto max-w-7xl rounded-[2rem] bg-white p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.2)]">
         @{ string searchKeyword = Model.SearchKeyword ?? string.Empty; }
