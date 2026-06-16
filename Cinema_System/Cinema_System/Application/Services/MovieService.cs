@@ -95,28 +95,6 @@ public class MovieService : IMovieService
         return _mapper.Map<IEnumerable<MovieDTO>>(comingSoonMovies);
     }
 
-    // Lọc phim theo thể loại, độ tuổi và trạng thái (đẩy điều kiện xuống SQL), loại bỏ phim đã ngừng chiếu.
-    public async Task<IEnumerable<MovieDTO>> GetFilteredMoviesAsync(string? genre, string? ageRating, string? status)
-    {
-        var genreLower = genre?.Trim().ToLower();
-        var ageRatingLower = ageRating?.Trim().ToLower();
-        var statusLower = status?.Trim().ToLower();
-
-        var filteredMovies = await _unitOfWork.Movies.GetAllAsync(
-            predicate: movie =>
-                movie.Status != null && movie.Status.ToLower() != MovieStatus.StoppedLower &&
-                (string.IsNullOrWhiteSpace(genreLower) ||
-                    movie.Genres.Any(genreEntity => genreEntity.Name != null && genreEntity.Name.ToLower() == genreLower)) &&
-                (string.IsNullOrWhiteSpace(ageRatingLower) ||
-                    (movie.AgeRating != null && movie.AgeRating.ToLower() == ageRatingLower)) &&
-                (string.IsNullOrWhiteSpace(statusLower) ||
-                    movie.Status.ToLower() == statusLower),
-            includeProperties: new[] { ShowtimesIncludeProperty, GenresIncludeProperty }
-        );
-
-        return _mapper.Map<IEnumerable<MovieDTO>>(filteredMovies);
-    }
-
     // Lấy tất cả thể loại phim đã được cấu hình trong hệ thống.
     public async Task<IEnumerable<string>> GetAllGenresAsync()
     {
@@ -158,18 +136,6 @@ public class MovieService : IMovieService
             })
             .ThenBy(rating => rating, StringComparer.OrdinalIgnoreCase)
             .ToList();
-    }
-
-    // Lấy các trạng thái phim khác nhau từ phim đang hiển thị.
-    public async Task<IEnumerable<string>> GetAllMovieStatusesAsync()
-    {
-        var visibleMovies = await GetVisibleMoviesAsync();
-        return visibleMovies
-            .Select(movie => movie.Status)
-            .Where(statusValue => !string.IsNullOrWhiteSpace(statusValue))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(status => status)
-            .ToList()!;
     }
 
     // Lấy chi tiết phim theo Id.
