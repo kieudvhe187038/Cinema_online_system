@@ -1,11 +1,13 @@
 using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.Mappings;
 using Cinema_System.Application.Services;
+using Cinema_System.Helpers;
 using Cinema_System.Infrastructure.Data;
 using Cinema_System.Infrastructure.Email;
 using Cinema_System.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.EntityFrameworkCore;
 
 // Nạp biến môi trường từ file .env (nếu có) trước khi build cấu hình.
@@ -16,6 +18,13 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+// Cho phép tìm view trong thư mục con /Views/Admin/{controller} và /Views/Manager/{controller}
+// (module quản trị của taido đặt view theo cấu trúc thư mục con).
+builder.Services.Configure<RazorViewEngineOptions>(options =>
+{
+    options.ViewLocationExpanders.Add(new SubfolderViewLocationExpander());
+});
 // AutoMapper 16.x: quét toàn bộ assembly Application để nạp mọi Profile
 // (UserProfile, AuthMappingProfile, MovieProfile, FoodBeverageProfile, ProfileMappingProfile).
 builder.Services.AddAutoMapper(cfg => cfg.AddMaps(typeof(MovieProfile).Assembly));
@@ -38,6 +47,11 @@ builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 builder.Services.AddScoped<IMovieService, MovieService>();
 builder.Services.AddScoped<IFoodBeverageService, FoodBeverageService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
+// Module quản trị của taido (quản lý người dùng, tỉ lệ điểm, loại phòng/ghế).
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IPointConfigService, PointConfigService>();
+builder.Services.AddScoped<ISeatTypeService, SeatTypeService>();
+builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
 
 // Session lưu thông tin đăng ký tạm thời (chờ xác nhận OTP).
 builder.Services.AddDistributedMemoryCache();
