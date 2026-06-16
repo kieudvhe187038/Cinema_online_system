@@ -18,8 +18,8 @@ public class StaffContextService : IStaffContextService
 
     public async Task<User?> GetCurrentStaffAsync()
     {
-        // Ưu tiên nhân viên (Staff) đang hoạt động; nếu chưa có thì lấy bất kỳ
-        // tài khoản nội bộ (Manager/Admin) active để vẫn thao tác được khi seed thiếu.
+        // Tạm thời (chưa có đăng nhập): lấy nhân viên (role Staff) đang hoạt động đầu tiên.
+        // Khi tích hợp đăng nhập, chỉ cần thay phần lấy user ở đây bằng user hiện tại.
         var staff = await _unitOfWork.Users.FirstOrDefaultAsync(
             u => u.Status == StatusActive && u.Role.Name == RoleStaff,
             include: q => q.Include(u => u.Role));
