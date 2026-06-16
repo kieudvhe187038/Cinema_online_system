@@ -29,5 +29,7 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<Genre> Genres { get; }
 
+    IGenericRepository<RewardPointHistory> RewardPointHistories { get; }
+
     Task<int> SaveChangesAsync();
 }

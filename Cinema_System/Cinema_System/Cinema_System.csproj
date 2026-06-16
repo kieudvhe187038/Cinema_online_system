@@ -34,6 +34,8 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <!-- Đọc kích thước pixel ảnh đại diện để chặn ảnh quá lớn (module Hồ sơ). -->
+    <PackageReference Include="System.Drawing.Common" Version="8.0.26" />
   </ItemGroup>
 
 </Project>

@@ -47,3 +47,37 @@ Nhật ký thay đổi mã nguồn / CSDL / quyết định kỹ thuật của d
 - **What changed:** (1) **Chuyển bộ lọc phim từ Home sang Movies**, lọc **trong tab đang xem** (now/coming/special). Chỉ giữ lọc **Thể loại + Độ tuổi** (bỏ lọc Trạng thái vì 3 tab đã là bộ chọn trạng thái). `GetMoviesPageAsync(tab, page, pageSize, genre?, ageRating?)` lấy entity theo tab (kèm `Genres`+`Showtimes` qua `GetTabMoviesAsync`) rồi lọc thể loại/độ tuổi **trong bộ nhớ** (tập tab nhỏ; thể loại cần navigation `Genres` nên không đẩy qua DTO được). `HomeController`/`HomeViewModel` bỏ sạch logic lọc. (2) **Tách partial `Views/Shared/_MovieCard.cshtml`** (nhận `MovieDTO` + badge tùy chọn qua `ViewData["Badge"]`/`["BadgeClass"]`) — thay 4 khối card lặp ở Home + grid ở Movies. (3) **Home**: 3 danh sách thành **slider cuộn ngang 4 phim/hàng** (flex `overflow-x-auto` + nút trước/sau, JS `[data-slider]`); local function Razor `MovieSliderAsync` dựng chung. (4) **Movies**: lưới **4 cột** (`xl:grid-cols-4`), **8 phim/trang** (`MoviePaging.DefaultPageSize` 3→8), **bỏ header "Danh sách phim"**, chỉ còn 3 tab **căn giữa**; phân trang tab giữ `genre`/`ageRating` trên link. (5) **Footer** (`_Layout`): bỏ cột "Chấp Nhận Thanh Toán" + "Tải Ứng Dụng", grid 4→3 cột.
 - **Why:** Yêu cầu chỉnh UX: gom lọc về đúng màn danh sách phim, Home dạng slider gọn, Movies phân trang rõ ràng, footer bớt rườm rà.
 - **Impact/Notes for Team:** Thêm `@using Microsoft.AspNetCore.Mvc.ViewFeatures` vào `_ViewImports` (để dùng `ViewDataDictionary` truyền badge cho partial). Badge card truyền qua `ViewData`, KHÔNG sửa trực tiếp ViewData gốc — tạo `new ViewDataDictionary(ViewData)` mỗi card. `MoviePaging.DefaultPageSize` giờ = **8** (chỉ Movies dùng; Home là slider không phân trang). Hai method service `GetFilteredMoviesAsync`/`GetAllMovieStatusesAsync` giờ **không còn nơi gọi** (lọc đã đổi sang trong-tab) — tạm giữ, có thể dọn sau. Cần smoke-test trang lọc trong tab với DB thật.
+
+---
+
+## Nhật ký module Hồ sơ (gộp từ `dung-main` — giữ lại để tham khảo lịch sử)
+
+### [2026-06-07] Profile - Xem hồ sơ (View User Profile) (By: dung)
+- **What changed:** Thêm chức năng xem hồ sơ người dùng (`ProfileViewModel`, `ProfileController.Index`, `Views/Profile/Index.cshtml`). Tính tuổi bằng computed property `Age` từ `DateOfBirth`.
+- **Why:** Màn hồ sơ — nền để gắn Cập nhật/Đổi mật khẩu.
+- **Impact/Notes for Team:** `User.DateOfBirth` là `DateOnly` → map sang ViewModel phải `.ToDateTime(TimeOnly.MinValue)`. Lúc này chưa có Login nên user tạm hardcode (xem mục merge bên dưới — đã đổi sang Claims).
+
+### [2026-06-08] Profile - Áp dụng kiến trúc N-Tier (By: dung)
+- **What changed:** Refactor hồ sơ theo N-Tier: `IGenericRepository`/`GenericRepository`, `IUnitOfWork`/`UnitOfWork`, `IProfileService`/`ProfileService` + DTO, `ProfileMappingProfile`. Controller không còn đụng `DbContext`.
+- **Why:** Tuân thủ RULE.md — Controller → Service → UnitOfWork → Repository → DB.
+- **Impact/Notes for Team:** Map AutoMapper cho phần ĐỌC; phần CẬP NHẬT map tay để tránh ghi đè null. (Lưu ý: bản infra này đã được thay bằng infra của master khi merge — xem mục merge.)
+
+### [2026-06-08] Profile - Cập nhật hồ sơ + Tải ảnh đại diện (By: dung)
+- **What changed:** `UpdateProfileViewModel`, `ProfileController.Edit` (GET/POST), `Edit.cshtml`. Sửa họ tên, SĐT; upload avatar vào `wwwroot/uploads/avatars/`, lưu đường dẫn vào `User.AvatarUrl`.
+- **Why:** Màn Update Profile (gồm đổi ảnh đại diện).
+- **Impact/Notes for Team:** Form upload cần `enctype="multipart/form-data"`. Controller chỉ LƯU FILE rồi đưa đường dẫn string cho Service; Service không biết `IFormFile`.
+
+### [2026-06-09] Profile - Đổi mật khẩu + BCrypt + Brand UI (By: dung)
+- **What changed:** Đổi mật khẩu (`ChangePasswordViewModel`, `ProfileController.ChangePassword`, `ChangePassword.cshtml`) dùng `BCrypt.Verify`/`HashPassword`. 3 view hồ sơ theo bảng màu brand (primary #F37021, secondary #00488D, tertiary #002F59).
+- **Why:** Không lưu mật khẩu thô; đồng bộ giao diện brand.
+- **Impact/Notes for Team:** `BCrypt.Verify` bọc try/catch vì hash seed mẫu sai định dạng. Trùng hướng với module Tài khoản (vkieu cũng dùng BCrypt).
+
+### [2026-06-10] Profile - Xem lịch sử điểm + Validate SĐT (By: dung)
+- **What changed:** **Point History**: `PointHistoryViewModel`/`PointHistoryDto`, `GetPointHistoryAsync`, map `RewardPointHistory`→DTO, `ProfileController.PointHistory`, `PointHistory.cshtml`. Validate SĐT `[Required]` + `^(0\d{9})$`.
+- **Why:** Hoàn thiện Inter 1; chặn SĐT sai.
+- **Impact/Notes for Team:** Entity điểm thưởng: `RewardPointHistory` (`PointsChanged`/`ActionType`/`Description`/`CreatedAt`).
+
+### [2026-06-16] Merge module Hồ sơ (dung) vào master — đồng bộ infra & xác thực (By: vkieu)
+- **What changed:** Gộp `dung-main` (xem/sửa hồ sơ, upload avatar, đổi mật khẩu, lịch sử điểm) vào `master`. **Bỏ bản infra riêng của dung** (`IGenericRepository`/`GenericRepository`/`IUnitOfWork`/`UnitOfWork` kiểu `Repository<T>()` + `params Expression includes`) — **giữ infra của master** (named repos + `IUserRepository Users`, `IGenericRepository` dùng `string[] includeProperties`/`orderBy`). Thêm `IGenericRepository<RewardPointHistory> RewardPointHistories` vào `IUnitOfWork`/`UnitOfWork`. **Viết lại `ProfileService`** dùng `_unitOfWork.Users` + `RewardPointHistories` (đẩy `OrderByDescending(CreatedAt)` xuống SQL qua `orderBy`). **`ProfileController`**: bỏ user hardcode → đọc `ClaimTypes.NameIdentifier` từ Claims + gắn `[Authorize]`; phân trang lịch sử điểm dùng chung `PagedResult<T>`. Tất cả file C# module hồ sơ đổi sang **file-scoped namespace** cho đồng bộ. `Program.cs` thêm DI `IProfileService`. Header `_Layout` đấu link "Xin chào, {tên}" → trang Hồ sơ; sidebar `_CineStarLayout` đấu nối Hồ sơ/Lịch sử điểm/Đổi mật khẩu + nút Đăng xuất thật.
+- **Why:** Hai nhánh cùng tạo mới các file hạ tầng (add/add conflict) với API khác nhau; cần một bản infra thống nhất (chọn của master) và đưa module hồ sơ chạy trên đó. dung viết khi chưa có Login nên phải đấu nối xác thực thật.
+- **Impact/Notes for Team:** **Giữ AutoMapper 16.1.1** (bỏ gói `AutoMapper.Extensions.Microsoft.DependencyInjection 12.0.1` của dung — không tương thích v16). Thêm package **`System.Drawing.Common 8.0.26`** (đọc kích thước pixel avatar); kiểm tra pixel bọc trong `OperatingSystem.IsWindowsVersionAtLeast(6, 1)` để tránh cảnh báo CA1416, vẫn chặn dung lượng 2MB ở mọi nền tảng. `ProfileMappingProfile` tự nạp nhờ `AddAutoMapper(cfg => cfg.AddMaps(...assembly))`. Build pass 0 warning/0 error. **Cần smoke-test với DB thật**: đăng nhập rồi vào `/Profile` (xem/sửa hồ sơ, upload avatar, đổi mật khẩu, lịch sử điểm).
