@@ -7,6 +7,8 @@ namespace Cinema_System.Controllers.Staff;
 [Route("Staff/Counter")]
 public class StaffCounterController : Controller
 {
+    private const string BookingSuccessMessage = "Đặt vé tại quầy thành công.";
+
     private readonly ICounterBookingService _counterBookingService;
     private readonly IBookingService _bookingService;
     private readonly IMemberService _memberService;
@@ -77,7 +79,7 @@ public class StaffCounterController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        TempData["Success"] = "Đặt vé tại quầy thành công.";
+        TempData["Success"] = BookingSuccessMessage;
         return RedirectToAction(nameof(Ticket), new { id = result.Data });
     }
 
