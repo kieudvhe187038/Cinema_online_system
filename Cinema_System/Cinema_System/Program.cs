@@ -14,7 +14,6 @@ builder.Services.AddDbContext<CinemaWebDbContext>(options =>
 
 // Register Unit of Work + application services
 builder.Services.AddScoped<IUnitOfWork, Cinema_System.Infrastructure.UnitOfWork.UnitOfWork>();
-builder.Services.AddScoped<IMovieService, MovieService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IPointConfigService, PointConfigService>();
 builder.Services.AddScoped<ISeatTypeService, SeatTypeService>();
@@ -33,11 +32,6 @@ app.UseRequestLocalization(new Microsoft.AspNetCore.Builder.RequestLocalizationO
     SupportedUICultures = invariantCulture
 });
 
-// Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Home/Error");
-}
 app.UseStaticFiles();
 
 app.UseRouting();
@@ -46,6 +40,9 @@ app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller}/{action=Index}/{id?}");
+
+// Trang Home/Movies (public) đã bị xóa — điều hướng gốc về trang quản trị.
+app.MapGet("/", () => Results.Redirect("/Admin/User"));
 
 app.Run();
