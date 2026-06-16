@@ -6,6 +6,8 @@ namespace Cinema_System.Controllers.Staff;
 [Route("Staff/Booking")]
 public class StaffBookingController : Controller
 {
+    private const int PageSize = 10;
+
     private readonly IBookingService _bookingService;
 
     public StaffBookingController(IBookingService bookingService)
@@ -18,7 +20,7 @@ public class StaffBookingController : Controller
         string? search, string? bookingType, string? paymentStatus, int page = 1)
     {
         var vm = await _bookingService.GetBookingsAsync(
-            search, bookingType, paymentStatus, page, pageSize: 10);
+            search, bookingType, paymentStatus, page, PageSize);
         return View(vm);
     }
 
