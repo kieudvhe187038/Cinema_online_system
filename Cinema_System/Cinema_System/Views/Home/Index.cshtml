@@ -1,8 +1,520 @@
-﻿@{
+﻿@using Cinema_System.Application.DTOs;
+@using Cinema_System.Application.ViewModels;
+@model HomeViewModel
+
+@functions {
+    private static string AgeRatingLabel(string rating) => rating switch
+    {
+        "P" => "P - Phù hợp mọi lứa tuổi",
+        "C13" => "C13 - Trên 13 tuổi",
+        "C16" => "C16 - Trên 16 tuổi",
+        "C18" => "C18 - Trên 18 tuổi",
+        _ => rating
+    };
+}
+
+@{
     ViewData["Title"] = "Home Page";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="space-y-16 bg-slate-50 text-slate-900 font-body">
+    <section class="relative overflow-hidden bg-slate-950 text-white group">  
+        <!-- Dùng phần tử full-width cho banner để viền và ảnh phủ toàn bộ chiều ngang -->
+        <div class="relative left-1/2 right-1/2 w-screen -translate-x-1/2 overflow-hidden">
+            <div class="relative overflow-hidden rounded-[2rem] border border-white/15 bg-slate-950 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.2)]">
+                <!-- Carousel Items (full width) -->
+                <div class="carousel-container relative overflow-hidden">
+                    <!-- Đây là khung chứa slider, chiều cao responsive theo viewport -->
+                    <div class="relative w-full h-[48vh] sm:h-[52vh] md:h-[56vh] lg:h-[60vh] xl:h-[64vh] min-h-[320px]">
+                        <!-- Slide 1 -->
+                        <div class="carousel-slide absolute inset-0 opacity-100 transition-opacity duration-700 ease-in-out">
+                            <a href="#" class="block h-full w-full">
+                                <img src="/images/banner1.png" class="w-full h-full object-cover" />
+                            </a>
+                        </div>
+
+                        <!-- Slide 2 -->
+                        <div class="carousel-slide absolute inset-0 opacity-0 transition-opacity duration-700 ease-in-out">
+                            <a href="#" class="block h-full w-full">
+                                <img src="/images/banner2.png" class="w-full h-full object-cover" />
+                            </a>
+                        </div>
+
+                        <!-- Slide 3 -->
+                        <div class="carousel-slide absolute inset-0 opacity-0 transition-opacity duration-700 ease-in-out">
+                            <a href="#" class="block h-full w-full">
+                                <img src="/images/banner3.png" class="w-full h-full object-cover" />
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Buttons -->
+                    <button class="carousel-prev absolute left-4 top-1/2 -translate-y-1/2 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-white opacity-80 transition hover:bg-white/40 hover:opacity-100">
+                        <span class="material-symbols-outlined">chevron_left</span>
+                    </button>
+                    <button class="carousel-next absolute right-4 top-1/2 -translate-y-1/2 z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-white opacity-80 transition hover:bg-white/40 hover:opacity-100">
+                        <span class="material-symbols-outlined">chevron_right</span>
+                    </button>
+
+                    <!-- Indicators -->
+                    <div class="absolute inset-x-0 bottom-6 flex justify-center gap-2 z-10">
+                        <span class="carousel-dot h-2 w-2 rounded-full bg-white/80 cursor-pointer transition hover:bg-white active" data-slide="0"></span>
+                        <span class="carousel-dot h-2 w-2 rounded-full bg-white/50 cursor-pointer transition hover:bg-white" data-slide="1"></span>
+                        <span class="carousel-dot h-2 w-2 rounded-full bg-white/50 cursor-pointer transition hover:bg-white" data-slide="2"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="px-4 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-7xl rounded-[2rem] bg-white p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.2)]">
+            <form asp-controller="Home" asp-action="Index" method="get" class="grid gap-4 md:grid-cols-[1.1fr_1.1fr_1.1fr_auto]">
+                <div class="space-y-3 rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-5">
+                    <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700"><span class="material-symbols-outlined text-lg">category</span> THỂ LOẠI</label>
+                    <select name="genre" class="w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20">
+                        <option value="">Tất cả thể loại</option>
+                        @foreach (var genre in Model.AvailableGenres)
+                        {
+                            <option value="@genre" selected="@(Model.SelectedGenre == genre)">@genre</option>
+                        }
+                    </select>
+                </div>
+                <div class="space-y-3 rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-5">
+                    <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700"><span class="material-symbols-outlined text-lg">cake</span> ĐỘ TUỔI</label>
+                    <select name="ageRating" class="w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20">
+                        <option value="">Tất cả độ tuổi</option>
+                        @foreach (var rating in Model.AvailableAgeRatings)
+                        {
+                            <option value="@rating" selected="@(Model.SelectedAgeRating == rating)">@AgeRatingLabel(rating)</option>
+                        }
+                    </select>
+                </div>
+                <div class="space-y-3 rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-5">
+                    <label class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700"><span class="material-symbols-outlined text-lg">movie_filter</span> TRẠNG THÁI</label>
+                    <select name="status" class="w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20">
+                        <option value="">Tất cả trạng thái</option>
+                        @foreach (var item in Model.AvailableStatuses)
+                        {
+                            <option value="@item" selected="@(Model.SelectedStatus == item)">@item</option>
+                        }
+                    </select>
+                </div>
+                <div class="flex flex-col justify-end gap-3">
+                    <button type="submit" class="rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/10 transition hover:bg-primary-dark"> <span class="material-symbols-outlined align-middle">filter_alt</span> Lọc phim</button>
+                    <a asp-controller="Home" asp-action="Index" class="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">Xóa lọc</a>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    @if (!string.IsNullOrWhiteSpace(Model.SelectedGenre) || !string.IsNullOrWhiteSpace(Model.SelectedAgeRating) || !string.IsNullOrWhiteSpace(Model.SelectedStatus))
+    {
+        <section class="px-4 sm:px-6 lg:px-8">
+            <div class="mx-auto max-w-7xl rounded-[2rem] bg-white p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.2)]">
+                <div class="mb-6 space-y-3">
+                    <p class="text-xs uppercase tracking-[0.28em] text-primary">Kết quả lọc</p>
+                    <h2 class="text-3xl font-bold text-slate-900">KẾT QUẢ LỌC PHIM</h2>
+                    <p class="text-sm text-slate-600">
+                        @if (!string.IsNullOrWhiteSpace(Model.SelectedGenre)) { <span>Thể loại: <strong class="text-slate-900">@Model.SelectedGenre</strong></span>; }
+                        @if (!string.IsNullOrWhiteSpace(Model.SelectedAgeRating)) { <span>Độ tuổi: <strong class="text-slate-900">@AgeRatingLabel(Model.SelectedAgeRating)</strong></span>; }
+                        @if (!string.IsNullOrWhiteSpace(Model.SelectedStatus)) { <span>Trạng thái: <strong class="text-slate-900">@Model.SelectedStatus</strong></span>; }
+                    </p>
+                </div>
+                <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                    @if (Model.FilteredMovies != null && Model.FilteredMovies.Any())
+                    {
+                        @foreach (var movie in Model.FilteredMovies)
+                        {
+                            <article class="group relative overflow-hidden rounded-2xl border border-slate-300/50 bg-white shadow-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-2">
+                                <div class="relative overflow-hidden bg-slate-950">
+                                    @if (!string.IsNullOrEmpty(movie.PosterUrl))
+                                    {
+                                        <img src="@movie.PosterUrl" alt="@movie.Title" onerror="this.src='https://placehold.co/300x420?text=@Uri.EscapeDataString(movie.Title)&font=raleway'" class="h-72 w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                    }
+                                    else
+                                    {
+                                        <img src="https://placehold.co/300x420?text=@Uri.EscapeDataString(movie.Title)&font=raleway" alt="@movie.Title" class="h-72 w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                    }
+                                    <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-900/40"></div>
+                                </div>
+                                <div class="space-y-4 p-6">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        @if (!string.IsNullOrEmpty(movie.Language))
+                                        {
+                                            <span class="inline-flex items-center gap-1 rounded-full bg-primary/15 px-3 py-1.5 text-xs font-semibold text-primary transition group-hover:bg-primary/25"><span class="material-symbols-outlined text-sm">language</span>@movie.Language</span>
+                                        }
+                                        @if (!string.IsNullOrEmpty(movie.AgeRating))
+                                        {
+                                            <span class="rounded-full bg-slate-300/40 px-3 py-1.5 text-xs font-semibold text-slate-800 transition group-hover:bg-slate-300/60">@movie.AgeRating</span>
+                                        }
+                                    </div>
+                                    <h3 class="text-lg font-bold leading-snug text-slate-900 line-clamp-2 group-hover:text-primary transition">@movie.Title</h3>
+                                    <div class="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-200/50 text-xs text-slate-600">
+                                        @if (!string.IsNullOrEmpty(movie.Director))
+                                        {
+                                            <span class="inline-flex items-center gap-1"><span class="material-symbols-outlined text-sm">person</span>@movie.Director</span>
+                                        }
+                                        @if (movie.DurationMinutes.HasValue)
+                                        {
+                                            <span class="inline-flex items-center gap-1"><span class="material-symbols-outlined text-sm">schedule</span>@movie.DurationMinutes phút</span>
+                                        }
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(movie.Description))
+                                    {
+                                        <p class="text-sm leading-relaxed text-slate-600 line-clamp-3" title="@movie.Description">@movie.Description.Substring(0, Math.Min(100, movie.Description.Length))...</p>
+                                    }
+                                    <div class="flex flex-wrap gap-2 pt-4">
+                                        <button class="flex-1 rounded-full bg-gradient-to-r from-primary to-orange-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/30 transition hover:shadow-xl hover:scale-105 active:scale-95">MUA VÉ</button>
+                                        <button class="flex-1 rounded-full border-2 border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:border-primary hover:bg-primary hover:text-white">CHI TIẾT</button>
+                                    </div>
+                                </div>
+                            </article>
+                        }
+                    }
+                    else
+                    {
+                        <div class="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-10 text-center text-slate-600">Không tìm thấy phim phù hợp với bộ lọc.</div>
+                    }
+                </div>
+            </div>
+        </section>
+    }
+
+    <section id="tab-now" class="px-4 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-7xl rounded-[2rem] bg-white p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.2)]">
+            <div class="mb-8">
+                <p class="text-xs uppercase tracking-[0.28em] text-primary">Phim đang chiếu</p>
+                <h2 class="mt-3 text-3xl font-bold text-slate-900">PHIM ĐANG CHIẾU</h2>
+                <p class="mt-3 text-sm text-slate-600">Trải nghiệm điện ảnh đỉnh cao cùng CineStar.</p>
+            </div>
+            <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                @if (Model?.NowShowingMovies != null && Model.NowShowingMovies.Any())
+                {
+                    @foreach (var movie in Model.NowShowingMovies)
+                    {
+                        <article class="group relative overflow-hidden rounded-2xl border border-slate-300/50 bg-white shadow-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-2">
+                            <div class="relative overflow-hidden bg-slate-950">
+                                @if (!string.IsNullOrEmpty(movie.PosterUrl))
+                                {
+                                    <img src="@movie.PosterUrl" alt="@movie.Title" onerror="this.src='https://placehold.co/300x420?text=@Uri.EscapeDataString(movie.Title)&font=raleway'" class="h-72 w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                }
+                                else
+                                {
+                                    <img src="https://placehold.co/300x420?text=@Uri.EscapeDataString(movie.Title)&font=raleway" alt="@movie.Title" class="h-72 w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                }
+                                <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-900/40"></div>
+                            </div>
+                            <div class="space-y-4 p-6">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    @if (!string.IsNullOrEmpty(movie.Language))
+                                    {
+                                        <span class="inline-flex items-center gap-1 rounded-full bg-primary/15 px-3 py-1.5 text-xs font-semibold text-primary transition group-hover:bg-primary/25"><span class="material-symbols-outlined text-sm">language</span>@movie.Language</span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(movie.AgeRating))
+                                    {
+                                        <span class="rounded-full bg-slate-300/40 px-3 py-1.5 text-xs font-semibold text-slate-800 transition group-hover:bg-slate-300/60">@movie.AgeRating</span>
+                                    }
+                                </div>
+                                <h3 class="text-lg font-bold leading-snug text-slate-900 line-clamp-2 group-hover:text-primary transition">@movie.Title</h3>
+                                <div class="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-200/50 text-xs text-slate-600">
+                                    @if (!string.IsNullOrEmpty(movie.Director))
+                                    {
+                                        <span class="inline-flex items-center gap-1"><span class="material-symbols-outlined text-sm">person</span>@movie.Director</span>
+                                    }
+                                    @if (movie.DurationMinutes.HasValue)
+                                    {
+                                        <span class="inline-flex items-center gap-1"><span class="material-symbols-outlined text-sm">schedule</span>@movie.DurationMinutes phút</span>
+                                    }
+                                </div>
+                                @if (!string.IsNullOrEmpty(movie.Description))
+                                {
+                                    <p class="text-sm leading-relaxed text-slate-600 line-clamp-3" title="@movie.Description">@movie.Description.Substring(0, Math.Min(100, movie.Description.Length))...</p>
+                                }
+                                <div class="flex flex-wrap gap-2 pt-4">
+                                    <button class="flex-1 rounded-full bg-gradient-to-r from-primary to-orange-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/30 transition hover:shadow-xl hover:scale-105 active:scale-95">MUA VÉ</button>
+                                    <button class="flex-1 rounded-full border-2 border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:border-primary hover:bg-primary hover:text-white">CHI TIẾT</button>
+                                </div>
+                            </div>
+                        </article>
+                    }
+                }
+                else
+                {
+                    <div class="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-10 text-center text-slate-600">Hiện chưa có phim nào đang chiếu.</div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <section id="tab-coming" class="px-4 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-7xl rounded-[2rem] bg-white p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.2)]">
+            <div class="mb-8">
+                <p class="text-xs uppercase tracking-[0.28em] text-primary">Phim sắp chiếu</p>
+                <h2 class="mt-3 text-3xl font-bold text-slate-900">PHIM SẮP CHIẾU</h2>
+                <p class="mt-3 text-sm text-slate-600">Những bộ phim chờ đợi bạn sắp tới.</p>
+            </div>
+            <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                @if (Model?.ComingSoonMovies != null && Model.ComingSoonMovies.Any())
+                {
+                    @foreach (var movie in Model.ComingSoonMovies)
+                    {
+                        <article class="group relative overflow-hidden rounded-2xl border border-slate-300/50 bg-white shadow-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 relative">
+                            <div class="absolute top-3 right-3 z-10 rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-4 py-1.5 text-xs font-bold text-white shadow-lg">SẮP CHIẾU</div>
+                            <div class="relative overflow-hidden bg-slate-950">
+                                @if (!string.IsNullOrEmpty(movie.PosterUrl))
+                                {
+                                    <img src="@movie.PosterUrl" alt="@movie.Title" onerror="this.src='https://placehold.co/300x420?text=@Uri.EscapeDataString(movie.Title)&font=raleway'" class="h-72 w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                }
+                                else
+                                {
+                                    <img src="https://placehold.co/300x420?text=@Uri.EscapeDataString(movie.Title)&font=raleway" alt="@movie.Title" class="h-72 w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                }
+                                <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-900/40"></div>
+                            </div>
+                            <div class="space-y-4 p-6">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    @if (!string.IsNullOrEmpty(movie.AgeRating))
+                                    {
+                                        <span class="rounded-full bg-slate-300/40 px-3 py-1.5 text-xs font-semibold text-slate-800 transition group-hover:bg-slate-300/60">@movie.AgeRating</span>
+                                    }
+                                </div>
+                                <h3 class="text-lg font-bold leading-snug text-slate-900 line-clamp-2 group-hover:text-primary transition">@movie.Title</h3>
+                                <div class="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-200/50 text-xs text-slate-600">
+                                    @if (movie.ReleaseDate.HasValue)
+                                    {
+                                        <span class="inline-flex items-center gap-1"><span class="material-symbols-outlined text-sm">calendar_today</span>@movie.ReleaseDate.Value.ToString("dd/MM/yyyy")</span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(movie.Director))
+                                    {
+                                        <span class="inline-flex items-center gap-1"><span class="material-symbols-outlined text-sm">person</span>@movie.Director</span>
+                                    }
+                                </div>
+                                @if (!string.IsNullOrEmpty(movie.Description))
+                                {
+                                    <p class="text-sm leading-relaxed text-slate-600 line-clamp-3" title="@movie.Description">@movie.Description.Substring(0, Math.Min(100, movie.Description.Length))...</p>
+                                }
+                                <div class="flex flex-wrap gap-2 pt-4">
+                                    <button class="flex-1 rounded-full bg-gradient-to-r from-primary to-orange-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/30 transition hover:shadow-xl hover:scale-105 active:scale-95">THÔNG BÁO</button>
+                                    <button class="flex-1 rounded-full border-2 border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:border-primary hover:bg-primary hover:text-white">CHI TIẾT</button>
+                                </div>
+                            </div>
+                        </article>
+                    }
+                }
+                else
+                {
+                    <div class="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-10 text-center text-slate-600">Hiện chưa có phim sắp chiếu.</div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <section id="tab-special" class="px-4 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-7xl rounded-[2rem] bg-white p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.2)]">
+            <div class="mb-8">
+                <p class="text-xs uppercase tracking-[0.28em] text-primary">Suất chiếu đặc biệt</p>
+                <h2 class="mt-3 text-3xl font-bold text-slate-900">SUẤT CHIẾU ĐẶC BIỆT</h2>
+                <p class="mt-3 text-sm text-slate-600">Những suất chiếu đặc biệt dành cho bạn.</p>
+            </div>
+            <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                @if (Model?.SpecialShowtimeMovies != null && Model.SpecialShowtimeMovies.Any())
+                {
+                    @foreach (var movie in Model.SpecialShowtimeMovies)
+                    {
+                        <article class="group relative overflow-hidden rounded-2xl border border-slate-300/50 bg-white shadow-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 relative">
+                            <div class="absolute top-3 right-3 z-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-1.5 text-xs font-bold text-white shadow-lg">ĐẶC BIỆT</div>
+                            <div class="relative overflow-hidden bg-slate-950">
+                                @if (!string.IsNullOrEmpty(movie.PosterUrl))
+                                {
+                                    <img src="@movie.PosterUrl" alt="@movie.Title" onerror="this.src='https://placehold.co/300x420?text=@Uri.EscapeDataString(movie.Title)&font=raleway'" class="h-72 w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                }
+                                else
+                                {
+                                    <img src="https://placehold.co/300x420?text=@Uri.EscapeDataString(movie.Title)&font=raleway" alt="@movie.Title" class="h-72 w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                }
+                                <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-900/40"></div>
+                            </div>
+                            <div class="space-y-4 p-6">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    @if (!string.IsNullOrEmpty(movie.Language))
+                                    {
+                                        <span class="inline-flex items-center gap-1 rounded-full bg-primary/15 px-3 py-1.5 text-xs font-semibold text-primary transition group-hover:bg-primary/25"><span class="material-symbols-outlined text-sm">language</span>@movie.Language</span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(movie.AgeRating))
+                                    {
+                                        <span class="rounded-full bg-slate-300/40 px-3 py-1.5 text-xs font-semibold text-slate-800 transition group-hover:bg-slate-300/60">@movie.AgeRating</span>
+                                    }
+                                </div>
+                                <h3 class="text-lg font-bold leading-snug text-slate-900 line-clamp-2 group-hover:text-primary transition">@movie.Title</h3>
+                                <div class="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-200/50 text-xs text-slate-600">
+                                    @if (!string.IsNullOrEmpty(movie.Director))
+                                    {
+                                        <span class="inline-flex items-center gap-1"><span class="material-symbols-outlined text-sm">person</span>@movie.Director</span>
+                                    }
+                                    @if (movie.DurationMinutes.HasValue)
+                                    {
+                                        <span class="inline-flex items-center gap-1"><span class="material-symbols-outlined text-sm">schedule</span>@movie.DurationMinutes phút</span>
+                                    }
+                                </div>
+                                @if (!string.IsNullOrEmpty(movie.Description))
+                                {
+                                    <p class="text-sm leading-relaxed text-slate-600 line-clamp-3" title="@movie.Description">@movie.Description.Substring(0, Math.Min(100, movie.Description.Length))...</p>
+                                }
+                                <div class="flex flex-wrap gap-2 pt-4">
+                                    <button class="flex-1 rounded-full bg-gradient-to-r from-primary to-orange-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/30 transition hover:shadow-xl hover:scale-105 active:scale-95">MUA VÉ</button>
+                                    <button class="flex-1 rounded-full border-2 border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:border-primary hover:bg-primary hover:text-white">CHI TIẾT</button>
+                                </div>
+                            </div>
+                        </article>
+                    }
+                }
+                else
+                {
+                    <div class="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-10 text-center text-slate-600">Hiện chưa có suất chiếu đặc biệt.</div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <section class="bg-slate-50 px-4 pb-20 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-7xl">
+            <h2 class="mb-8 text-3xl font-bold text-slate-900">ƯU ĐÃI ĐẶC BIỆT</h2>
+            <div class="grid gap-6 md:grid-cols-3">
+                <article class="overflow-hidden rounded-[1.75rem] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+                    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDV5XgZ3wR2AHzDQkZYypVEwT_XGxHOMeAaY4xmZXjMpREGjyVv2IN4xfk-1FToPayOe_kyjb0D_F_XwxPHeeBi9EsJKctPxsXVg-uGQqHlujfTd6GgKo81pNXbxKAgVuCCAZv0FmqTNLr17G5f6UG3kaLDelGkWJcVZ__s5kSpEGUuEQ2mDeCAUXVw1NP8ipuG-eUkHIqWZ7RnMTA8I0VYXM1JOTr5U4uJUa8uPl63tpRJi8gxPXEuHOK_xOHnRIfbTMa-VpXIisYt" alt="C-Student" class="h-72 w-full object-cover" />
+                    <div class="p-6">
+                        <h3 class="mb-2 text-xl font-semibold text-slate-900">C-Student: Đồng Giá 45K</h3>
+                        <p class="text-sm text-slate-600">Ưu đãi độc quyền cho học sinh, sinh viên mỗi ngày.</p>
+                    </div>
+                </article>
+                <article class="overflow-hidden rounded-[1.75rem] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+                    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCtG2WhG2kSOQ9Jk1rs-KitQNn98lvVL6RpyOG__XXxR9IRxYKJXQWcpK3bLNvq-xZ3ZCX2Viw0-Esx34IGQKKZxiTGRPZ6fJu2co-j7DItbU_nMu6geVMljPNUWlCjhe3w0KCjebDuZwnp8YUIsHfLzhfD-YaTfHd8ms1tE0uQIOHdM1FTivrL2NpXno0gAo-d-YM7N34mbN8og6gURx7H4kSz-RzAYoK14Py7quVBKdQrNYUcmQ4Yb1uh2KHSJofZygmd3M6nQsH-" alt="Thứ Hai Hạnh Phúc" class="h-72 w-full object-cover" />
+                    <div class="p-6">
+                        <h3 class="mb-2 text-xl font-semibold text-slate-900">Thứ Hai Hạnh Phúc</h3>
+                        <p class="text-sm text-slate-600">Chỉ từ 50K/vé vào mỗi thứ hai hàng tuần.</p>
+                    </div>
+                </article>
+                <article class="overflow-hidden rounded-[1.75rem] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+                    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAq5iOF5a412Fb_VBh6DsHTF5JkGu64ys6aP0POXdbrgZUSKfORmLoltA0lsZyFFW_XTV3v1RRIE3OTVR46nij5Rd9SeQRZRLxYJlQ03R9U7nsQ8xV4L6E2mrCLYdz3twO9gXQn3TFBY69dVWiVvksKwdWBrVHbN44JOBOp5oHzT5TJYKsx_j-1Q7iuf87XeNv4gYngqz8oDUlJ6p6oAf1gt1QQPQ7l_DgiTBoiTdrryHQ18YFdWKAq0UDj8qvk2xSd7JA92mhwikHm" alt="Combo Ưu Đãi" class="h-72 w-full object-cover" />
+                    <div class="p-6">
+                        <h3 class="mb-2 text-xl font-semibold text-slate-900">Combo Ưu Đãi 15%</h3>
+                        <p class="text-sm text-slate-600">Giảm ngay 15% khi đặt bắp nước online cùng vé.</p>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <section class="bg-slate-50 px-4 pb-20 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-7xl">
+            <div class="mb-8">
+                <p class="text-xs uppercase tracking-[0.28em] text-primary">Tin Điện Ảnh</p>
+                <h2 class="mt-3 text-3xl font-bold text-slate-900">TIN ĐIỆN ẢNH</h2>
+            </div>
+            <div class="grid gap-6 xl:grid-cols-[1.6fr_1fr]">
+                <article class="overflow-hidden rounded-[1.75rem] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+                    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDo3DMPnDcuPdJN0gMRyH-7a9sen6sIz-Wh9Shc7IemtSNcTsYI-2qerh8ignKLj8HALFEWnxEj6iucZ1mKFt4BTtKdQVcbVJqfTjrOhWlZOR9Ia7pAemCDb_mJ8HnQWxKySLy3luC0LKnYCylX54jrsOjRbz_sPtfYKsZGQloij-5C4O89JQPICeOEKzYTTE4XknOeCuGeESFTCk6e4c6C_TrfXTm8hLgzNydYTgDPsi7PcScQc6dq-dxU_VyEEdiUCEJCNeXccjVO" alt="Khai trương cụm rạp" class="h-96 w-full object-cover" />
+                    <div class="space-y-4 p-6">
+                        <span class="inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-primary">SỰ KIỆN</span>
+                        <h3 class="text-2xl font-semibold text-slate-900">Khai Trương Cụm Rạp Mới Tại Đà Lạt - Nhiều Ưu Đãi Khủng</h3>
+                        <p class="text-sm leading-7 text-slate-600">CineStar chính thức cập bến thành phố ngàn hoa với không gian thiết kế cực nghệ...</p>
+                    </div>
+                </article>
+                <div class="grid gap-6">
+                    <article class="overflow-hidden rounded-[1.75rem] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+                        <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLsVxHXA73XEG2t_VO-JgJdZGTXQydLaZw6uKxcDMc0vGtj2wKZivFZ1Q7MkUU-qr875f2aXGqPO-x3iautQLbmK8AxCrrtCH0TR_M9xEvvQm68Geqo1mxUuyNuNbGYc5TpZqBD9ck9MJrBlRC8gt3YkVgenOWAtfBzvVVR-i5CfrXX6ytntxvsDvPJ2C9iqRwpjIpsvOONE5tFNSzk_VjdYdg-8ms3x-t21eKxWUaFWIg3S4X5Vka_cVkuBWLEQA7EMCjGazfMofF" alt="Top 5 Phim" class="h-44 w-full object-cover" />
+                        <div class="space-y-3 p-5">
+                            <span class="inline-flex rounded-full bg-orange-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-orange-700">TIN TỨC</span>
+                            <h4 class="text-lg font-semibold text-slate-900">Top 5 Phim Đứng Đầu Phòng Vé Tháng 5</h4>
+                            <p class="text-sm text-slate-600">Điểm qua những cái tên làm mưa làm gió tại CineStar tuần qua...</p>
+                        </div>
+                    </article>
+                    <article class="overflow-hidden rounded-[1.75rem] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+                        <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAm5mh3wYaxRIC9PzTCcsLmFzpfH9hv-mRhF_hr0D_uW_OdTipH5_ZHMV4x6h1ub2NThC8JAE9mHvxryt9wmpIbErDafRTRQizm6jC_gUuW10DknKNe-G7D8lOGc4D5mj6C9HmF_uDnIM2q7F03hEi-QvxbEKyRtZ6gf7t5RMK-r83BTN-MekbG9GPGb9w7NkB3MkD2WZVFDUDrsBPn9pcn-M_nohIG8E9E3jMlqV0F6tuulagjD1BiJtRBZNQPJnPNk7ASy0W5a_-_" alt="Cảm nhận khán giả" class="h-44 w-full object-cover" />
+                        <div class="space-y-3 p-5">
+                            <span class="inline-flex rounded-full bg-orange-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-orange-700">REVIEW</span>
+                            <h4 class="text-lg font-semibold text-slate-900">Cảm Nhận Khán Giả Về 'Chiến Binh Cuối Cùng'</h4>
+                            <p class="text-sm text-slate-600">"Kỹ xảo mãn nhãn, cốt truyện gây bất ngờ đến phút chót"...</p>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </div>
+    </section>
 </div>
+
+@section Scripts {
+    <script>
+        // Chờ trang load xong rồi mới chạy script carousel
+        document.addEventListener('DOMContentLoaded', function() {
+            // Biến lưu chỉ số slide hiện tại
+            let currentSlide = 0;
+            const slides = document.querySelectorAll('.carousel-slide');
+            const dots = document.querySelectorAll('.carousel-dot');
+            const nextBtn = document.querySelector('.carousel-next');
+            const prevBtn = document.querySelector('.carousel-prev');
+
+            // Hàm hiển thị slide theo chỉ số n
+            function showSlide(n) {
+                // Ẩn tất cả slide trước
+                slides.forEach(slide => {
+                    slide.classList.remove('opacity-100');
+                    slide.classList.add('opacity-0');
+                });
+                // Cập nhật dot tương ứng với slide đang hiển thị
+                dots.forEach(dot => {
+                    if (dot.getAttribute('data-slide') == n) {
+                        dot.classList.remove('bg-white/50');
+                        dot.classList.add('bg-white/80');
+                        dot.classList.add('active');
+                    } else {
+                        dot.classList.remove('bg-white/80');
+                        dot.classList.add('bg-white/50');
+                        dot.classList.remove('active');
+                    }
+                });
+                // Nếu vượt quá slide cuối thì quay về đầu
+                if (n >= slides.length) currentSlide = 0;
+                // Nếu lùi trước slide đầu thì chuyển về slide cuối
+                if (n < 0) currentSlide = slides.length - 1;
+                // Hiển thị slide hiện tại
+                slides[currentSlide].classList.remove('opacity-0');
+                slides[currentSlide].classList.add('opacity-100');
+            }
+
+            function nextSlide() {
+                // Chuyển sang slide kế tiếp
+                currentSlide++;
+                if (currentSlide >= slides.length) currentSlide = 0; // nếu đến cuối thì quay lại slide đầu
+                showSlide(currentSlide);
+            }
+
+            function prevSlide() {
+                // Chuyển sang slide trước
+                currentSlide--;
+                if (currentSlide < 0) currentSlide = slides.length - 1; // nếu lùi trước slide đầu thì về slide cuối
+                showSlide(currentSlide);
+            }
+
+            // Đăng ký sự kiện cho nút next/prev
+            nextBtn?.addEventListener('click', nextSlide);
+            prevBtn?.addEventListener('click', prevSlide);
+
+            // Đăng ký sự kiện cho các dot ở dưới
+            dots.forEach((dot, index) => {
+                dot.addEventListener('click', function() {
+                    currentSlide = index;
+                    showSlide(currentSlide);
+                });
+            });
+
+            // Khởi tạo trạng thái ban đầu cho dot và slide
+            showSlide(currentSlide);
+
+            // Tự động chuyển slide sau mỗi 5 giây
+            setInterval(nextSlide, 5000);
+        });
+    </script>
+}
+

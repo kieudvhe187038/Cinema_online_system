@@ -15,14 +15,8 @@
 
   <ItemGroup>
     <Folder Include="Application\Common\" />
-    <Folder Include="Application\DTOs\" />
-    <Folder Include="Application\Interfaces\" />
-    <Folder Include="Application\Mappings\" />
-    <Folder Include="Application\Services\" />
     <Folder Include="Domain\Entities\" />
     <Folder Include="Infrastructure\Data\" />
-    <Folder Include="Infrastructure\UnitOfWork\" />
-    <Folder Include="Infrastructure\Repositories\" />
   </ItemGroup>
 
   <ItemGroup>
