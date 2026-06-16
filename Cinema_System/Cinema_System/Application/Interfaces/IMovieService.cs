@@ -1,3 +1,4 @@
+using Cinema_System.Application.Common;
 using Cinema_System.Application.DTOs;
 
 namespace Cinema_System.Application.Interfaces;
@@ -14,8 +15,8 @@ public interface IMovieService
     Task<IEnumerable<string>> GetAllAgeRatingsAsync();
     Task<IEnumerable<string>> GetAllMovieStatusesAsync();
     Task<MovieDTO?> GetMovieByIdAsync(Guid id);
-    // Lấy dữ liệu trang phim theo tab (now/coming) và phân trang.
-    Task<Cinema_System.Application.ViewModels.MoviesPageViewModel> GetMoviesPageAsync(string tab, int page, int pageSize);
+    // Lấy dữ liệu trang phim theo tab (now/coming/special), lọc thể loại/độ tuổi và phân trang.
+    Task<PagedResult<MovieDTO>> GetMoviesPageAsync(string tab, int page, int pageSize, string? genre = null, string? ageRating = null);
     // Tìm phim theo từ khóa và trả về kết quả phân trang.
-    Task<Cinema_System.Application.ViewModels.MoviesPageViewModel> SearchMoviesAsync(string keyword, int page, int pageSize);
+    Task<PagedResult<MovieDTO>> SearchMoviesAsync(string keyword, int page, int pageSize);
 }

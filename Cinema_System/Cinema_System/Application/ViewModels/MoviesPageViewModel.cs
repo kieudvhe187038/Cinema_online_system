@@ -10,6 +10,11 @@ public class MoviesPageViewModel
     public IEnumerable<MovieDTO> Movies { get; set; } = new List<MovieDTO>();
     public int CurrentPage { get; set; } = 1;
     public int TotalPages { get; set; } = 1;
-    public int PageSize { get; set; } = 4;
+    public int PageSize { get; set; } = 8;
+
+    // Bộ lọc trong tab đang hiển thị.
+    public string? SelectedGenre { get; set; }
+    public string? SelectedAgeRating { get; set; }
+    public IEnumerable<string> AvailableGenres { get; set; } = new List<string>();
+    public IEnumerable<string> AvailableAgeRatings { get; set; } = new List<string>();
 }
- 
