@@ -18,6 +18,20 @@ public class UnitOfWork : IUnitOfWork
     private IGenericRepository<RoomType>? _roomTypes;
     private IGenericRepository<Room>? _rooms;
     private IGenericRepository<PriceRoomTypeConfig>? _priceRoomTypeConfigs;
+    private IGenericRepository<Booking>? _bookings;
+    private IGenericRepository<Ticket>? _tickets;
+    private IGenericRepository<Payment>? _payments;
+    private IGenericRepository<BookingFood>? _bookingFoods;
+    private IGenericRepository<Showtime>? _showtimes;
+    private IGenericRepository<Movie>? _movies;
+    private IGenericRepository<FoodBeverage>? _foodBeverages;
+    private IGenericRepository<RewardPointHistory>? _rewardPointHistories;
+    private IGenericRepository<Promotion>? _promotions;
+    private IGenericRepository<Vat>? _vats;
+    private IGenericRepository<Cinema>? _cinemas;
+    private IGenericRepository<SeatHold>? _seatHolds;
+    private IGenericRepository<PriceBaseConfig>? _priceBaseConfigs;
+    private IGenericRepository<PriceTimeConfig>? _priceTimeConfigs;
 
     public UnitOfWork(CinemaWebDbContext context)
     {
@@ -50,6 +64,48 @@ public class UnitOfWork : IUnitOfWork
 
     public IGenericRepository<PriceRoomTypeConfig> PriceRoomTypeConfigs =>
         _priceRoomTypeConfigs ??= new GenericRepository<PriceRoomTypeConfig>(_context);
+
+    public IGenericRepository<Booking> Bookings =>
+        _bookings ??= new GenericRepository<Booking>(_context);
+
+    public IGenericRepository<Ticket> Tickets =>
+        _tickets ??= new GenericRepository<Ticket>(_context);
+
+    public IGenericRepository<Payment> Payments =>
+        _payments ??= new GenericRepository<Payment>(_context);
+
+    public IGenericRepository<BookingFood> BookingFoods =>
+        _bookingFoods ??= new GenericRepository<BookingFood>(_context);
+
+    public IGenericRepository<Showtime> Showtimes =>
+        _showtimes ??= new GenericRepository<Showtime>(_context);
+
+    public IGenericRepository<Movie> Movies =>
+        _movies ??= new GenericRepository<Movie>(_context);
+
+    public IGenericRepository<FoodBeverage> FoodBeverages =>
+        _foodBeverages ??= new GenericRepository<FoodBeverage>(_context);
+
+    public IGenericRepository<RewardPointHistory> RewardPointHistories =>
+        _rewardPointHistories ??= new GenericRepository<RewardPointHistory>(_context);
+
+    public IGenericRepository<Promotion> Promotions =>
+        _promotions ??= new GenericRepository<Promotion>(_context);
+
+    public IGenericRepository<Vat> Vats =>
+        _vats ??= new GenericRepository<Vat>(_context);
+
+    public IGenericRepository<Cinema> Cinemas =>
+        _cinemas ??= new GenericRepository<Cinema>(_context);
+
+    public IGenericRepository<SeatHold> SeatHolds =>
+        _seatHolds ??= new GenericRepository<SeatHold>(_context);
+
+    public IGenericRepository<PriceBaseConfig> PriceBaseConfigs =>
+        _priceBaseConfigs ??= new GenericRepository<PriceBaseConfig>(_context);
+
+    public IGenericRepository<PriceTimeConfig> PriceTimeConfigs =>
+        _priceTimeConfigs ??= new GenericRepository<PriceTimeConfig>(_context);
 
     public async Task<int> SaveChangesAsync()
     {

@@ -22,5 +22,34 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<PriceRoomTypeConfig> PriceRoomTypeConfigs { get; }
 
+    // --- Booking / counter-sale flow (Inter2 - Staff) ---
+    IGenericRepository<Booking> Bookings { get; }
+
+    IGenericRepository<Ticket> Tickets { get; }
+
+    IGenericRepository<Payment> Payments { get; }
+
+    IGenericRepository<BookingFood> BookingFoods { get; }
+
+    IGenericRepository<Showtime> Showtimes { get; }
+
+    IGenericRepository<Movie> Movies { get; }
+
+    IGenericRepository<FoodBeverage> FoodBeverages { get; }
+
+    IGenericRepository<RewardPointHistory> RewardPointHistories { get; }
+
+    IGenericRepository<Promotion> Promotions { get; }
+
+    IGenericRepository<Vat> Vats { get; }
+
+    IGenericRepository<Cinema> Cinemas { get; }
+
+    IGenericRepository<SeatHold> SeatHolds { get; }
+
+    IGenericRepository<PriceBaseConfig> PriceBaseConfigs { get; }
+
+    IGenericRepository<PriceTimeConfig> PriceTimeConfigs { get; }
+
     Task<int> SaveChangesAsync();
 }

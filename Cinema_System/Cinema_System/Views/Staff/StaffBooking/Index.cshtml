@@ -1,0 +1,136 @@
+@model BookingListViewModel
+@{
+    ViewData["Title"] = "Quản Lý Đơn Hàng";
+}
+
+@section Styles {
+    <style>
+        .bk-wrap { max-width: 1280px; margin: 6rem auto 3rem; padding: 0 1.5rem; }
+        .bk-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap; }
+        .bk-title { font-family: var(--font-head); font-size: 1.75rem; font-weight: 800; color: var(--on-surface); }
+        .bk-alert { padding: .75rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: .9rem; }
+        .bk-alert.success { background: #e7f5ec; color: #166534; border: 1px solid #16653433; }
+        .bk-alert.error { background: #fde8e8; color: #b91c1c; border: 1px solid #b91c1c33; }
+        .bk-filters { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: 1.25rem; align-items: center; }
+        .bk-filters input, .bk-filters select { padding: .55rem .75rem; border: 1px solid var(--outline-variant); border-radius: var(--radius); background: var(--white); font-family: var(--font-body); }
+        .bk-filters input { min-width: 260px; }
+        .bk-btn { padding: .55rem 1.1rem; border: none; border-radius: var(--radius); font-weight: 600; cursor: pointer; font-family: var(--font-body); text-decoration: none; display: inline-flex; align-items: center; gap: .35rem; }
+        .bk-btn-primary { background: var(--primary); color: var(--white); }
+        .bk-btn-primary:hover { background: var(--primary-dark); }
+        .bk-btn-ghost { background: var(--surface-container); color: var(--on-surface); }
+        .bk-table { width: 100%; border-collapse: collapse; background: var(--white); border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-sm); }
+        .bk-table th, .bk-table td { padding: .8rem 1rem; text-align: left; border-bottom: 1px solid var(--surface-container); font-size: .88rem; }
+        .bk-table th { background: var(--secondary-dark); color: var(--white); font-weight: 600; }
+        .bk-table tr:hover td { background: var(--surface); }
+        .bk-code { font-family: monospace; font-weight: 700; color: var(--on-surface); }
+        .bk-chip { display: inline-block; padding: .2rem .6rem; border-radius: 999px; font-size: .72rem; font-weight: 600; }
+        .bk-chip.online { background: #e0edff; color: #1d4ed8; }
+        .bk-chip.offline { background: #fef3e0; color: #b45309; }
+        .bk-chip.paid { background: #e7f5ec; color: #166534; }
+        .bk-chip.pending { background: #fef9c3; color: #854d0e; }
+        .bk-chip.cancelled { background: #fde8e8; color: #b91c1c; }
+        .bk-link { color: var(--secondary); text-decoration: none; font-weight: 600; font-size: .85rem; }
+        .bk-link:hover { color: var(--primary); }
+        .bk-pager { display: flex; gap: .35rem; margin-top: 1.25rem; justify-content: center; }
+        .bk-pager a { padding: .4rem .75rem; border: 1px solid var(--outline-variant); border-radius: var(--radius); text-decoration: none; color: var(--on-surface); }
+        .bk-pager a.active { background: var(--primary); color: var(--white); border-color: var(--primary); }
+        .bk-empty { text-align: center; padding: 3rem; color: var(--on-surface-variant); }
+        .bk-meta { color: var(--on-surface-variant); font-size: .85rem; margin-bottom: .75rem; }
+        .bk-amount { font-weight: 700; }
+    </style>
+}
+
+<div class="bk-wrap">
+    <div class="bk-top">
+        <h1 class="bk-title">Quản Lý Đơn Hàng</h1>
+        <a class="bk-btn bk-btn-primary" href="@Url.Action("Index", "StaffCounter")">+ Đặt vé tại quầy</a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="bk-alert success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="bk-alert error">@TempData["Error"]</div>
+    }
+
+    <form method="get" class="bk-filters">
+        <input type="text" name="search" value="@Model.Search" placeholder="Tìm theo mã đặt vé, tên hoặc SĐT khách..." />
+        <select name="bookingType">
+            <option value="">-- Tất cả loại đơn --</option>
+            <option value="Online" selected="@(Model.BookingType == "Online")">Online</option>
+            <option value="Offline" selected="@(Model.BookingType == "Offline")">Offline (tại quầy)</option>
+        </select>
+        <select name="paymentStatus">
+            <option value="">-- Tất cả trạng thái --</option>
+            <option value="Pending" selected="@(Model.PaymentStatus == "Pending")">Chờ thanh toán</option>
+            <option value="Paid" selected="@(Model.PaymentStatus == "Paid")">Đã thanh toán</option>
+            <option value="Cancelled" selected="@(Model.PaymentStatus == "Cancelled")">Đã hủy</option>
+        </select>
+        <button type="submit" class="bk-btn bk-btn-primary">Lọc</button>
+        <a href="@Url.Action("Index", "StaffBooking")" class="bk-btn bk-btn-ghost">Xóa lọc</a>
+    </form>
+
+    <p class="bk-meta">Tổng cộng @Model.TotalCount đơn</p>
+
+    @if (Model.Bookings.Any())
+    {
+        <table class="bk-table">
+            <thead>
+                <tr>
+                    <th>Mã đặt vé</th>
+                    <th>Phim / Suất</th>
+                    <th>Khách hàng</th>
+                    <th>Nhân viên</th>
+                    <th>Ghế</th>
+                    <th>Thành tiền</th>
+                    <th>Loại</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var b in Model.Bookings)
+                {
+                    var typeClass = b.BookingType == "Online" ? "online" : "offline";
+                    var statusClass = b.PaymentStatus switch
+                    {
+                        "Paid" => "paid",
+                        "Cancelled" => "cancelled",
+                        _ => "pending"
+                    };
+                    <tr>
+                        <td><span class="bk-code">@(string.IsNullOrEmpty(b.BookingCode) ? "—" : b.BookingCode)</span></td>
+                        <td>
+                            <div>@b.MovieTitle</div>
+                            <div class="bk-meta">@b.RoomName · @b.ShowStartTime.ToString("dd/MM/yyyy HH:mm")</div>
+                        </td>
+                        <td>@b.CustomerName</td>
+                        <td>@(string.IsNullOrEmpty(b.StaffName) ? "—" : b.StaffName)</td>
+                        <td>@b.SeatCount</td>
+                        <td class="bk-amount">@b.FinalAmount.ToString("#,##0") đ</td>
+                        <td><span class="bk-chip @typeClass">@b.BookingType</span></td>
+                        <td><span class="bk-chip @statusClass">@b.PaymentStatus</span></td>
+                        <td><a class="bk-link" href="@Url.Action("Details", "StaffBooking", new { id = b.Id })">Chi tiết</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (Model.TotalPages > 1)
+        {
+            <div class="bk-pager">
+                @for (int p = 1; p <= Model.TotalPages; p++)
+                {
+                    <a class="@(p == Model.CurrentPage ? "active" : "")"
+                       href="@Url.Action("Index", "StaffBooking", new { search = Model.Search, bookingType = Model.BookingType, paymentStatus = Model.PaymentStatus, page = p })">@p</a>
+                }
+            </div>
+        }
+    }
+    else
+    {
+        <div class="bk-empty">Không tìm thấy đơn hàng nào phù hợp.</div>
+    }
+</div>
