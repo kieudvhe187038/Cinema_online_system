@@ -13,8 +13,16 @@ Cinema_System/                  (solution root, chứa Cinema_System.sln)
     ├── Application/   Common, DTOs, Interfaces, Mappings, Services, ViewModels
     ├── Domain/        Entities (POCO thuần)
     ├── Infrastructure/ Data (DbContext), Repositories, UnitOfWork
-    ├── Controllers/
-    ├── Views/         Home, Movies, Shared
+    ├── Helpers/       SubfolderViewLocationExpander (resolve view theo role-folder)
+    ├── Controllers/   tổ chức theo ROLE (mỗi role 1 folder + namespace lồng):
+    │   ├── Public/    Home, Movies
+    │   ├── Auth/      Login, Register, ForgotPassword, AuthControllerBase
+    │   ├── Customer/  Profile
+    │   ├── Manager/   MovieManagement, FoodBeverages, ManagerPoint, ManagerRoomType, ManagerSeatType
+    │   └── Admin/     AdminUser
+    ├── Views/         tổ chức theo Views/{Role}/{Controller}/{Action}.cshtml:
+    │   ├── Public/, Auth/, Customer/, Manager/, Admin/
+    │   └── Shared/    _Layout, _AuthLayout, _CineStarLayout, _ManagerLayout, _MovieCard
     ├── wwwroot/       css, js, images, lib
     ├── Program.cs
     └── appsettings.json
@@ -22,6 +30,8 @@ Cinema_System/                  (solution root, chứa Cinema_System.sln)
 
 **Namespace gốc:** `Cinema_System.<Layer>...` (ví dụ `Cinema_System.Application.Services`).
 Dùng **file-scoped namespace** (`namespace Cinema_System.Application.Services;`) — theo code hiện có.
+Controller đặt trong folder role → namespace lồng theo folder: `Cinema_System.Controllers.<Role>`
+(ví dụ `Cinema_System.Controllers.Manager`). Xem mục 8.
 
 ---
 
@@ -35,7 +45,9 @@ Dùng **file-scoped namespace** (`namespace Cinema_System.Application.Services;`
 ### Application/Services
 - Chứa toàn bộ business logic, async (`...Async`).
 - Trả về **DTO/ViewModel**, không trả `Entity` ra ngoài tầng này.
-- ⚠️ **Lưu ý kỹ thuật nợ hiện tại:** `MovieService` đang inject thẳng `CinemaWebDbContext`. Theo `RULE.md`, hướng đúng là Service → `IUnitOfWork`/`IGenericRepository` → DB. Code **mới** phải đi qua UnitOfWork/Repository, không lặp lại pattern truy cập DbContext trực tiếp.
+- Service đi qua `IUnitOfWork`/`IGenericRepository` → DB (KHÔNG inject thẳng `DbContext`).
+- Map Entity ↔ DTO/ViewModel dùng **AutoMapper** (`IMapper` + `Profile` trong `Application/Mappings`);
+  field cần tính toán thêm thì để `Ignore` rồi service gán sau khi map.
 
 ### Domain/Entities
 - POCO tuyệt đối: KHÔNG dùng EF Core attribute, AutoMapper, MVC.
@@ -75,6 +87,7 @@ Dùng **file-scoped namespace** (`namespace Cinema_System.Application.Services;`
 - Dùng strongly-typed model: `@model Cinema_System.Application.ViewModels.HomeViewModel`.
 - Điều hướng bằng Tag Helpers: `asp-controller`, `asp-action`, `asp-area` (không hardcode URL).
 - Layout chung: `Views/Shared/_Layout.cshtml`. Style theo `color.md` + `wwwroot/css/site.css`.
+- View đặt theo role: `Views/<Role>/<Controller>/<Action>.cshtml` (xem mục 8).
 - Tận dụng `RenderSectionAsync("Styles"/"Scripts", required: false)` cho asset riêng từng trang.
 
 ---
@@ -82,7 +95,7 @@ Dùng **file-scoped namespace** (`namespace Cinema_System.Application.Services;`
 ## 5. EF Core & Truy Vấn
 
 - Truy vấn read-only nên dùng `.AsNoTracking()` khi không cần update.
-- Map Entity → DTO ngay trong `.Select(...)` để chỉ kéo cột cần thiết (như `MovieService.MapToDTO`).
+- Map Entity → DTO/ViewModel bằng AutoMapper (`_mapper.Map<...>(...)`); ưu tiên chỉ kéo cột cần thiết.
 - Không gọi `.ToList()`/`.Result` đồng bộ trên truy vấn DB — luôn `await ...Async()`.
 - Mọi thay đổi schema phải kèm script trong thư mục `SQL/` và ghi log vào `.claude/MEM.md`.
 
@@ -104,3 +117,30 @@ Dùng **file-scoped namespace** (`namespace Cinema_System.Application.Services;`
 - [ ] Commit theo format `<type>(<ten-nguoi>): <description>` (xem `RULE.md`).
 - [ ] Đã cập nhật `.claude/MEM.md` nếu đổi DB/feature/bugfix.
 - [ ] Không commit `bin/`, `obj/`, `.vs/`, file cấu hình cá nhân.
+
+---
+
+## 8. Tổ Chức Controller & View Theo Role
+
+Controller và View được gom theo **role** (vai trò người dùng) để dễ quản lý khi số module tăng.
+
+**Các nhóm role:**
+
+| Role | Folder | Controller |
+| ---- | ------ | ---------- |
+| Public (khách) | `Public/` | Home, Movies |
+| Auth (đăng nhập/đăng ký) | `Auth/` | Login, Register, ForgotPassword, AuthControllerBase |
+| Customer (thành viên) | `Customer/` | Profile |
+| Manager (quản lý) | `Manager/` | MovieManagement, FoodBeverages, ManagerPoint, ManagerRoomType, ManagerSeatType |
+| Admin (quản trị) | `Admin/` | AdminUser |
+
+**Quy ước:**
+- **Controller:** đặt trong `Controllers/<Role>/`, namespace lồng `Cinema_System.Controllers.<Role>`.
+  Tên class controller giữ nguyên (không phụ thuộc folder); routing không đổi.
+- **View:** đặt tại `Views/<Role>/<Controller>/<Action>.cshtml` (tên `<Controller>` bỏ hậu tố `Controller`).
+- **Resolve view:** `Helpers/SubfolderViewLocationExpander` thêm các vị trí `/Views/<Role>/{controller}/{action}.cshtml`
+  (đăng ký trong `Program.cs`). Khi thêm role mới phải bổ sung vị trí tương ứng vào expander.
+- **Routing:** Manager/Admin dùng `[Route("Manager/...")]` / `[Route("Admin/...")]` tường minh;
+  Public/Auth/Customer dùng routing quy ước (`{controller=Home}/{action=Index}/{id?}`) hoặc route-attribute ở action.
+- **Layout:** dùng chung ở `Views/Shared/` (`_Layout` công khai, `_AuthLayout`, `_CineStarLayout`, `_ManagerLayout`).
+- Thêm controller role mới: tạo `Controllers/<Role>/<Name>Controller.cs` + `Views/<Role>/<Name>/` và (nếu role mới) cập nhật expander.

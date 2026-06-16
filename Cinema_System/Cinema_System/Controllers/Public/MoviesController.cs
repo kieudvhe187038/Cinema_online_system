@@ -4,7 +4,7 @@ using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Cinema_System.Controllers
+namespace Cinema_System.Controllers.Public
 {
     public class MoviesController : Controller
     {

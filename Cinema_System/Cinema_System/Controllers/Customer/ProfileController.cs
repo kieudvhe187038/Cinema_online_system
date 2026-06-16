@@ -7,7 +7,7 @@ using Cinema_System.Application.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Cinema_System.Controllers;
+namespace Cinema_System.Controllers.Customer;
 
 /// <summary>
 /// Tầng Presentation module Hồ sơ: nhận request -> gọi Service -> trả View.

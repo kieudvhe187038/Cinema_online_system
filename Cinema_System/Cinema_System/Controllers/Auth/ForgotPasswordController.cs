@@ -5,7 +5,7 @@ using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Cinema_System.Controllers;
+namespace Cinema_System.Controllers.Auth;
 
 /// <summary>
 /// Quên mật khẩu (3 bước): nhập email -> nhập OTP (xác thực) -> đặt mật khẩu mới.

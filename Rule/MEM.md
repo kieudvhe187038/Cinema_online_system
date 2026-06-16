@@ -112,3 +112,17 @@ Nhật ký thay đổi mã nguồn / CSDL / quyết định kỹ thuật của d
   - Tên folder View = tên controller (bỏ hậu tố `Controller`): vd `Views/Manager/ManagerRoomType/`. Khi tham chiếu bằng `Url.Action`/`asp-controller` phải dùng đúng tên mới.
   - URL công khai đã đổi: `/Manager/RoomTypes` → `/Manager/RoomType`, `/Admin/Users` → `/Admin/User` (cập nhật nếu có bookmark/test).
   - Build OK (0 error).
+
+### [2026-06-16] Tổ chức toàn bộ Controller & View theo role (By: vkieu)
+- **What changed:** Gom TẤT CẢ controller/view vào folder theo role (mở rộng quy ước Admin/Manager của taidt cho cả public/auth/customer), dùng `git mv` (giữ lịch sử):
+  - `Public/` ← Home, Movies. `Auth/` ← Login, Register, ForgotPassword, AuthControllerBase. `Customer/` ← Profile.
+  - `Manager/` ← MovieManagement, FoodBeverages (gộp cùng ManagerPoint/RoomType/SeatType). `Admin/` ← AdminUser.
+  - View đồng bộ sang `Views/<Role>/<Controller>/`; namespace controller lồng `Cinema_System.Controllers.<Role>`.
+  - Mở rộng `SubfolderViewLocationExpander` thêm vị trí `/Views/Public|Auth|Customer/{controller}/`.
+  - Sửa tham chiếu `Cinema_System.Controllers.AuthControllerBase` → `...Controllers.Auth.AuthControllerBase` trong `_Layout.cshtml`.
+- **Why:** Một quy ước nhất quán cho mọi module, không còn lẫn controller ở root với controller trong folder role.
+- **Impact/Notes for Team:**
+  - Thêm controller mới: đặt vào `Controllers/<Role>/`, namespace `...Controllers.<Role>`, view ở `Views/<Role>/<Controller>/`. Role mới phải thêm vị trí vào expander.
+  - Routing KHÔNG đổi (controller dùng tên + `[Route]` tường minh / routing quy ước). Tên class giữ nguyên.
+  - Cập nhật `Rule/code.md` mục 1 (Solution Layout) + mục 8 (quy ước role-folder).
+  - Build OK (0/0).

@@ -60,7 +60,7 @@
                     @if (User.Identity?.IsAuthenticated == true)
                     {
                         // Tên + email + avatar đọc từ Claims (đặt khi đăng nhập) -> không truy vấn DB ở header.
-                        var avatarUrl = User.FindFirst(Cinema_System.Controllers.AuthControllerBase.AvatarUrlClaimType)?.Value;
+                        var avatarUrl = User.FindFirst(Cinema_System.Controllers.Auth.AuthControllerBase.AvatarUrlClaimType)?.Value;
                         var displayName = User.Identity!.Name ?? "Tài khoản";
                         var userEmail = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
                         // 2 chữ cái đầu của tên làm avatar dự phòng khi chưa có ảnh (vd "Nguyễn Anh Linh" -> "AL")

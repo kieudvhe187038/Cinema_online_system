@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Cinema_System.Controllers;
+namespace Cinema_System.Controllers.Auth;
 
 /// <summary>
 /// Xử lý đăng nhập, đăng xuất và trang từ chối truy cập.
