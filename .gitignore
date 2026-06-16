@@ -37,6 +37,9 @@ appsettings.Local.json
 **/secrets.json
 .env
 .env.*
+# Cho phép commit file mẫu (không chứa bí mật thật).
+!.env.example
+!**/.env.example
 
 # Logs
 *.log
