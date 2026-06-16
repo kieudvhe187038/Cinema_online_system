@@ -15,6 +15,11 @@ public class PricingService : IPricingService
         _unitOfWork = unitOfWork;
     }
 
+    /// <summary>
+    /// Tính giá cho một suất chiếu tại thời điểm <see cref="Showtime.StartTime"/>:
+    /// phần giá chung (giá cơ bản + phụ thu loại phòng + phụ thu thời gian) và
+    /// bảng phụ thu theo loại ghế. Chỉ xét các cấu hình Active còn hiệu lực.
+    /// </summary>
     public async Task<SeatPricingResult> GetPricingAsync(Showtime showtime)
     {
         var when = showtime.StartTime;
