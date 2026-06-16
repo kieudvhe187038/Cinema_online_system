@@ -9,9 +9,18 @@ public interface IGenericRepository<T> where T : class
 {
     Task<T?> GetByIdAsync(Guid id);
 
-    Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate);
+    Task<IEnumerable<T>> GetAllAsync(
+        Expression<Func<T, bool>>? predicate = null,
+        string[]? includeProperties = null,
+        Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null);
 
-    Task<IEnumerable<T>> GetAllAsync();
+    Task<T?> FirstOrDefaultAsync(
+        Expression<Func<T, bool>> predicate,
+        string[]? includeProperties = null);
+
+    Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate);
+
+    Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null);
 
     Task AddAsync(T entity);
 

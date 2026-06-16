@@ -19,16 +19,77 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
         _dbSet = context.Set<T>();
     }
 
-    public async Task<T?> GetByIdAsync(Guid id) => await _dbSet.FindAsync(id);
+    public async Task<T?> GetByIdAsync(Guid id)
+    {
+        return await _dbSet.FindAsync(id);
+    }
 
-    public async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate)
-        => await _dbSet.FirstOrDefaultAsync(predicate);
+    public async Task<IEnumerable<T>> GetAllAsync(
+        Expression<Func<T, bool>>? predicate = null,
+        string[]? includeProperties = null,
+        Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null)
+    {
+        IQueryable<T> query = _dbSet.AsNoTracking();
 
-    public async Task<IEnumerable<T>> GetAllAsync() => await _dbSet.ToListAsync();
+        if (includeProperties is not null && includeProperties.Length > 0)
+        {
+            foreach (var inc in includeProperties)
+            {
+                query = query.Include(inc);
+            }
+        }
 
-    public async Task AddAsync(T entity) => await _dbSet.AddAsync(entity);
+        if (predicate is not null)
+            query = query.Where(predicate);
 
-    public void Update(T entity) => _dbSet.Update(entity);
+        if (orderBy is not null)
+            query = orderBy(query);
 
-    public void Remove(T entity) => _dbSet.Remove(entity);
+        return await query.ToListAsync();
+    }
+
+    // Lấy 1 bản ghi theo điều kiện, dùng để kiểm tra tồn tại hoặc lấy chi tiết đơn lẻ
+    public async Task<T?> FirstOrDefaultAsync(
+        Expression<Func<T, bool>> predicate,
+        string[]? includeProperties = null)
+    {
+        IQueryable<T> query = _dbSet;
+
+        if (includeProperties is not null && includeProperties.Length > 0)
+        {
+            foreach (var inc in includeProperties)
+            {
+                query = query.Include(inc);
+            }
+        }
+
+        return await query.FirstOrDefaultAsync(predicate);
+    }
+
+    public async Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate)
+    {
+        return await _dbSet.AnyAsync(predicate);
+    }
+
+    public async Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null)
+    {
+        return predicate is null
+            ? await _dbSet.CountAsync()
+            : await _dbSet.CountAsync(predicate);
+    }
+
+    public async Task AddAsync(T entity)
+    {
+        await _dbSet.AddAsync(entity);
+    }
+
+    public void Update(T entity)
+    {
+        _dbSet.Update(entity);
+    }
+
+    public void Remove(T entity)
+    {
+        _dbSet.Remove(entity);
+    }
 }

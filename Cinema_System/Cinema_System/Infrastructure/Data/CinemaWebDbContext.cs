@@ -76,6 +76,7 @@ public partial class CinemaWebDbContext : DbContext
 
     public virtual DbSet<Vat> Vats { get; set; }
 
+    // DbContext chứa tất cả bảng và cấu hình mapping cho EF Core
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<AuditLog>(entity =>

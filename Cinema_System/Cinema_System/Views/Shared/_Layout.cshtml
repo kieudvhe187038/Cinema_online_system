@@ -1,68 +1,156 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="vi" class="light">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Cinema_System</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/Cinema_System.styles.css" asp-append-version="true" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /> 
+    <title>@ViewData["Title"] - CineStar</title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            important: true,
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#f37021',
+                        'primary-dark': '#c95a10',
+                        secondary: '#004b8d',
+                        tertiary: '#001c3a',
+                        light: '#f8f9fa',
+                    },
+                    fontFamily: { 
+                        heading: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        body: ['"Be Vietnam Pro"', 'sans-serif'],
+                    } 
+                }
+            }
+        }
+    </script>
+
+    @await RenderSectionAsync("Styles", required: false)
 </head>
-<body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">Cinema_System</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
-                    <ul class="navbar-nav">
-                        @if (User.Identity?.IsAuthenticated == true)
-                        {
-                            <li class="nav-item">
-                                <span class="nav-link text-dark">Xin chào, @User.Identity!.Name</span>
-                            </li>
-                            <li class="nav-item">
-                                <form asp-controller="Login" asp-action="Logout" method="post" class="d-inline">
-                                    <button type="submit" class="btn btn-link nav-link text-dark">Đăng xuất</button>
-                                </form>
-                            </li>
-                        }
-                        else
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-controller="Login" asp-action="Login">Đăng nhập</a>
-                            </li>
-                        }
-                    </ul>
+<body class="bg-slate-50 text-slate-900 font-body antialiased">
+
+    <!-- TopNavBar -->
+    <header id="main-header" class="fixed top-0 w-full z-50 border-b border-slate-200 bg-white/95 backdrop-blur-xl shadow-sm">
+        <div class="px-4 py-4 lg:px-8">
+            <div class="mx-auto flex max-w-7xl items-center justify-between gap-4">
+                <div class="flex items-center gap-10">
+                    <a class="font-heading text-2xl font-black uppercase tracking-tight text-primary" asp-area="" asp-controller="Home" asp-action="Index">CineStar</a>
+                    <nav class="hidden items-center gap-8 lg:flex">
+                        <a class="text-sm font-semibold transition hover:text-primary @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "text-primary border-b-2 border-primary pb-1" : "text-slate-700")" asp-area="" asp-controller="Home" asp-action="Index">Trang Chủ</a>
+                        <a class="text-sm font-semibold transition hover:text-primary @(ViewContext.RouteData.Values["controller"]?.ToString() == "Movies" ? "text-primary border-b-2 border-primary pb-1" : "text-slate-700")" asp-area="" asp-controller="Movies" asp-action="Index">Phim</a>
+                        <a class="text-sm font-semibold transition hover:text-primary text-slate-700" href="#">Giá Vé</a>
+                        <a class="text-sm font-semibold transition hover:text-primary text-slate-700" href="#">Khuyến Mãi</a>
+                        <a class="text-sm font-semibold transition hover:text-primary text-slate-700" href="#">Tin Điện Ảnh</a>
+                    </nav>
+                </div>
+                <div class="flex items-center gap-3">
+                    <form asp-controller="Movies" asp-action="Search" method="get" class="hidden relative lg:block">
+                        <input id="movie-search-input" type="text" name="find" maxlength="30" value="@(ViewData["SearchKeyword"] ?? string.Empty)" placeholder="Tìm kiếm phim" class="w-72 rounded-full border border-slate-200 bg-slate-100 py-2 pl-4 pr-11 text-sm text-slate-800 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                        <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500" aria-label="Tìm kiếm">
+                            <span class="material-symbols-outlined">search</span>
+                        </button>
+                    </form>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm font-semibold text-slate-700">Xin chào, @User.Identity!.Name</span>
+                            <form asp-controller="Login" asp-action="Logout" method="post">
+                                <button type="submit" class="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark">Đăng Xuất</button>
+                            </form>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="flex items-center gap-2">
+                            <a asp-controller="Login" asp-action="Login" class="text-sm font-semibold text-primary transition hover:text-primary-dark">Đăng Nhập</a>
+                            <a asp-controller="Register" asp-action="Register" class="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark">Đăng Ký</a>
+                        </div>
+                    }
                 </div>
             </div>
-        </nav>
+        </div>
     </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - Cinema_System - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <main class="pt-28">
+        @RenderBody()
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-200 bg-slate-100 text-slate-700">
+        <div class="mx-auto grid max-w-7xl gap-10 px-4 py-16 lg:grid-cols-[1.4fr_1fr_1fr_1fr] lg:px-8">
+            <div class="space-y-5">
+                <a class="inline-block font-heading text-2xl font-black uppercase tracking-tight text-primary" href="#">CineStar</a>
+                <p>Hệ thống rạp chiếu phim hiện đại với công nghệ âm thanh hình ảnh hàng đầu Việt Nam.</p>
+                <div class="flex items-center gap-2">
+                    <a href="#" class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm transition hover:bg-primary hover:text-white"><span class="material-symbols-outlined">face_nod</span></a>
+                    <a href="#" class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm transition hover:bg-primary hover:text-white"><span class="material-symbols-outlined">play_circle</span></a>
+                    <a href="#" class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm transition hover:bg-primary hover:text-white"><span class="material-symbols-outlined">camera</span></a>
+                </div>
+            </div>
+            <div>
+                <h4 class="mb-4 text-sm font-semibold uppercase tracking-[0.16em] text-slate-900">Về Chúng Tôi</h4>
+                <ul class="space-y-3 text-sm text-slate-600">
+                    <li><a class="transition hover:text-primary" href="#">Giới thiệu CineStar</a></li>
+                    <li><a class="transition hover:text-primary" href="#">Tuyển dụng</a></li>
+                    <li><a class="transition hover:text-primary" href="#">Chính sách bảo mật</a></li>
+                    <li><a class="transition hover:text-primary" href="#">Điều khoản sử dụng</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="mb-4 text-sm font-semibold uppercase tracking-[0.16em] text-slate-900">Hỗ Trợ Khách Hàng</h4>
+                <ul class="space-y-3 text-sm text-slate-600">
+                    <li><a class="transition hover:text-primary" href="#">Hướng dẫn đặt vé</a></li>
+                    <li><a class="transition hover:text-primary" href="#">Quy định xem phim</a></li>
+                    <li><a class="transition hover:text-primary" href="#">Liên hệ quảng cáo</a></li>
+                    <li><a class="transition hover:text-primary" href="#">Giải quyết khiếu nại</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="mb-4 text-sm font-semibold uppercase tracking-[0.16em] text-slate-900">Chấp Nhận Thanh Toán</h4>
+                <div class="mb-6 grid gap-2 text-sm text-slate-700">
+                    <span class="inline-flex items-center justify-center rounded-full bg-white px-3 py-2 shadow-sm">VISA</span>
+                    <span class="inline-flex items-center justify-center rounded-full bg-white px-3 py-2 shadow-sm">MoMo</span>
+                    <span class="inline-flex items-center justify-center rounded-full bg-white px-3 py-2 shadow-sm">ATM</span>
+                    <span class="inline-flex items-center justify-center rounded-full bg-white px-3 py-2 shadow-sm">VNPAY</span>
+                </div>
+                <h4 class="mb-4 text-sm font-semibold uppercase tracking-[0.16em] text-slate-900">Tải Ứng Dụng</h4>
+                <div class="flex flex-wrap gap-3">
+                    <button class="flex items-center gap-3 rounded-2xl bg-white px-4 py-3 text-left text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-primary hover:text-white">
+                        <span class="material-symbols-outlined">phone_iphone</span>
+                        <div>
+                            <p class="text-[0.65rem] uppercase tracking-[0.18em] text-slate-500">Download on</p>
+                            <p class="text-sm font-bold text-slate-900">App Store</p>
+                        </div>
+                    </button>
+                    <button class="flex items-center gap-3 rounded-2xl bg-white px-4 py-3 text-left text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-primary hover:text-white">
+                        <span class="material-symbols-outlined">play_arrow</span>
+                        <div>
+                            <p class="text-[0.65rem] uppercase tracking-[0.18em] text-slate-500">Get it on</p>
+                            <p class="text-sm font-bold text-slate-900">Google Play</p>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="border-t border-slate-200 bg-slate-100/80 px-4 py-5 text-sm text-slate-500 lg:px-8">
+            <div class="mx-auto flex max-w-7xl flex-col gap-3 text-center lg:flex-row lg:items-center lg:justify-between">
+                <p>© 2024 CineStar. Toàn bộ bản quyền được bảo lưu.</p>
+                <div class="flex flex-wrap items-center justify-center gap-3 text-xs text-slate-500 lg:justify-end">
+                    <span>Công ty Cổ phần Giải trí CineStar</span>
+                    <span class="text-slate-300">|</span>
+                    <span>MST: 0123456789</span>
+                </div>
+            </div>
         </div>
     </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

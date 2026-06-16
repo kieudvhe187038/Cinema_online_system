@@ -11,5 +11,23 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<Role> Roles { get; }
 
+    IGenericRepository<SystemConfig> SystemConfigs { get; }
+
+    IGenericRepository<SeatType> SeatTypes { get; }
+
+    IGenericRepository<Seat> Seats { get; }
+
+    IGenericRepository<PriceSeatConfig> PriceSeatConfigs { get; }
+
+    IGenericRepository<RoomType> RoomTypes { get; }
+
+    IGenericRepository<Room> Rooms { get; }
+
+    IGenericRepository<PriceRoomTypeConfig> PriceRoomTypeConfigs { get; }
+
+    IGenericRepository<Movie> Movies { get; }
+
+    IGenericRepository<Genre> Genres { get; }
+
     Task<int> SaveChangesAsync();
 }
