@@ -4,22 +4,22 @@ namespace Cinema_System.Application.Common;
 /// Kết quả trả về chuẩn cho tầng Application/Service.
 /// Giúp Controller phân biệt thành công/thất bại mà không cần ném exception.
 /// </summary>
-public class Result<T>
+public class Result
 {
-    public bool Succeeded { get; private set; }
+    public bool Succeeded { get; protected set; }
 
-    public string? Error { get; private set; }
+    public string? Error { get; protected set; }
 
+    public static Result Success() => new() { Succeeded = true };
+
+    public static Result Failure(string error) => new() { Succeeded = false, Error = error };
+}
+
+public class Result<T> : Result
+{
     public T? Data { get; private set; }
 
-    private Result(bool succeeded, T? data, string? error)
-    {
-        Succeeded = succeeded;
-        Data = data;
-        Error = error;
-    }
+    public static Result<T> Success(T data) => new() { Succeeded = true, Data = data };
 
-    public static Result<T> Success(T data) => new(true, data, null);
-
-    public static Result<T> Failure(string error) => new(false, default, error);
+    public static new Result<T> Failure(string error) => new() { Succeeded = false, Error = error };
 }

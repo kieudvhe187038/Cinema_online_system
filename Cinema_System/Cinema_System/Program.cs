@@ -17,8 +17,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 // AutoMapper 16.x: quét toàn bộ assembly Application để nạp mọi Profile
-// (UserProfile, AuthMappingProfile, MovieMappingProfile).
-builder.Services.AddAutoMapper(cfg => cfg.AddMaps(typeof(MovieMappingProfile).Assembly));
+// (UserProfile, AuthMappingProfile, MovieProfile, FoodBeverageProfile, ProfileMappingProfile).
+builder.Services.AddAutoMapper(cfg => cfg.AddMaps(typeof(MovieProfile).Assembly));
 
 // Kết nối đến cơ sở dữ liệu SQL Server của ứng dụng.
 var connectionStr = builder.Configuration.GetConnectionString("MyCnn");
@@ -36,6 +36,7 @@ builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<IRegistrationService, RegistrationService>();
 builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 builder.Services.AddScoped<IMovieService, MovieService>();
+builder.Services.AddScoped<IFoodBeverageService, FoodBeverageService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 
 // Session lưu thông tin đăng ký tạm thời (chờ xác nhận OTP).

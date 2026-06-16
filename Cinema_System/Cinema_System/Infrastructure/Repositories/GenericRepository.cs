@@ -27,6 +27,7 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
     public async Task<IEnumerable<T>> GetAllAsync(
         Expression<Func<T, bool>>? predicate = null,
         string[]? includeProperties = null,
+        Func<IQueryable<T>, IQueryable<T>>? include = null,
         Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null)
     {
         IQueryable<T> query = _dbSet.AsNoTracking();
@@ -38,6 +39,9 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
                 query = query.Include(inc);
             }
         }
+
+        if (include is not null)
+            query = include(query);
 
         if (predicate is not null)
             query = query.Where(predicate);
@@ -51,7 +55,8 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
     // Lấy 1 bản ghi theo điều kiện, dùng để kiểm tra tồn tại hoặc lấy chi tiết đơn lẻ
     public async Task<T?> FirstOrDefaultAsync(
         Expression<Func<T, bool>> predicate,
-        string[]? includeProperties = null)
+        string[]? includeProperties = null,
+        Func<IQueryable<T>, IQueryable<T>>? include = null)
     {
         IQueryable<T> query = _dbSet;
 
@@ -62,6 +67,9 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
                 query = query.Include(inc);
             }
         }
+
+        if (include is not null)
+            query = include(query);
 
         return await query.FirstOrDefaultAsync(predicate);
     }
