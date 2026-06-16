@@ -35,7 +35,8 @@ public class BookingService : IBookingService
             (string.IsNullOrEmpty(keyword)
                 || (b.QrCode != null && b.QrCode.Contains(keyword, StringComparison.OrdinalIgnoreCase))
                 || (b.User != null && b.User.FullName.Contains(keyword, StringComparison.OrdinalIgnoreCase))
-                || (b.User != null && b.User.Phone != null && b.User.Phone.Contains(keyword, StringComparison.OrdinalIgnoreCase)))
+                || (b.User != null && b.User.Phone != null && b.User.Phone.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+                || (b.Staff != null && b.Staff.FullName.Contains(keyword, StringComparison.OrdinalIgnoreCase)))
             && (string.IsNullOrEmpty(bookingType) || b.BookingType == bookingType)
             && (string.IsNullOrEmpty(paymentStatus) || b.PaymentStatus == paymentStatus))
             .ToList();
