@@ -36,6 +36,7 @@ builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<IRegistrationService, RegistrationService>();
 builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 builder.Services.AddScoped<IMovieService, MovieService>();
+builder.Services.AddScoped<IProfileService, ProfileService>();
 
 // Session lưu thông tin đăng ký tạm thời (chờ xác nhận OTP).
 builder.Services.AddDistributedMemoryCache();
