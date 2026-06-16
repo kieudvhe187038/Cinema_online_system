@@ -11,7 +11,7 @@ namespace Cinema_System.Controllers.Public
         private readonly ILogger<HomeController> _logger;
         private readonly IMovieService _movieService;
 
-        public HomeController(ILogger<HomeController> logger, IMovieService movieService)
+        public HomeController(ILogger<HomeController> logger, IMovieService movieService) 
         {
             _logger = logger;
             _movieService = movieService;
