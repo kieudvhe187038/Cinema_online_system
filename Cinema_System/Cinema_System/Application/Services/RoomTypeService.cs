@@ -1,3 +1,4 @@
+using AutoMapper;
 using Cinema_System.Application.Common;
 using Cinema_System.Application.DTOs;
 using Cinema_System.Application.Interfaces;
@@ -9,10 +10,12 @@ namespace Cinema_System.Application.Services;
 public class RoomTypeService : IRoomTypeService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IMapper _mapper;
 
-    public RoomTypeService(IUnitOfWork unitOfWork)
+    public RoomTypeService(IUnitOfWork unitOfWork, IMapper mapper)
     {
         _unitOfWork = unitOfWork;
+        _mapper = mapper;
     }
 
     public async Task<IEnumerable<RoomTypeDTO>> GetAllAsync()
@@ -26,14 +29,10 @@ public class RoomTypeService : IRoomTypeService
             var roomCount = await _unitOfWork.Rooms.CountAsync(r => r.RoomTypeId == t.Id);
             var usedInPricing = await _unitOfWork.PriceRoomTypeConfigs.ExistsAsync(p => p.RoomTypeId == t.Id);
 
-            result.Add(new RoomTypeDTO
-            {
-                Id = t.Id,
-                Name = t.Name,
-                Description = t.Description,
-                RoomCount = roomCount,
-                InUse = roomCount > 0 || usedInPricing
-            });
+            var dto = _mapper.Map<RoomTypeDTO>(t);
+            dto.RoomCount = roomCount;
+            dto.InUse = roomCount > 0 || usedInPricing;
+            result.Add(dto);
         }
 
         return result;
@@ -44,12 +43,7 @@ public class RoomTypeService : IRoomTypeService
         var roomType = await _unitOfWork.RoomTypes.GetByIdAsync(id);
         if (roomType is null) return null;
 
-        return new RoomTypeFormViewModel
-        {
-            Id = roomType.Id,
-            Name = roomType.Name,
-            Description = roomType.Description
-        };
+        return _mapper.Map<RoomTypeFormViewModel>(roomType);
     }
 
     public async Task<Result> CreateAsync(RoomTypeFormViewModel model)

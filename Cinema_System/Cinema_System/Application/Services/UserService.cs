@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using AutoMapper;
 using Cinema_System.Application.Common;
 using Cinema_System.Application.DTOs;
 using Cinema_System.Application.Interfaces;
@@ -14,10 +15,12 @@ public class UserService : IUserService
     private const string StatusInactive = "Locked";
 
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IMapper _mapper;
 
-    public UserService(IUnitOfWork unitOfWork)
+    public UserService(IUnitOfWork unitOfWork, IMapper mapper)
     {
         _unitOfWork = unitOfWork;
+        _mapper = mapper;
     }
 
     public async Task<UserListViewModel> GetUsersAsync(
@@ -39,11 +42,11 @@ public class UserService : IUserService
         if (page < 1) page = 1;
         if (page > totalPages) page = totalPages;
 
-        var items = users
+        var pageItems = users
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(MapToDTO)
             .ToList();
+        var items = _mapper.Map<List<UserDTO>>(pageItems);
 
         return new UserListViewModel
         {
@@ -65,7 +68,7 @@ public class UserService : IUserService
             u => u.Id == id,
             include: q => q.Include(u => u.Role));
 
-        return user is null ? null : MapToDTO(user);
+        return user is null ? null : _mapper.Map<UserDTO>(user);
     }
 
     public async Task<UserEditViewModel?> GetUserForEditAsync(Guid id)
@@ -73,16 +76,9 @@ public class UserService : IUserService
         var user = await _unitOfWork.Users.GetByIdAsync(id);
         if (user is null) return null;
 
-        return new UserEditViewModel
-        {
-            Id = user.Id,
-            FullName = user.FullName,
-            Email = user.Email,
-            Phone = user.Phone,
-            DateOfBirth = user.DateOfBirth,
-            RoleId = user.RoleId,
-            Roles = await GetRolesAsync()
-        };
+        var vm = _mapper.Map<UserEditViewModel>(user);
+        vm.Roles = await GetRolesAsync();
+        return vm;
     }
 
     public async Task<IEnumerable<RoleDTO>> GetRolesAsync()
@@ -90,12 +86,7 @@ public class UserService : IUserService
         var roles = await _unitOfWork.Roles.GetAllAsync(
             orderBy: q => q.OrderBy(r => r.Name));
 
-        return roles.Select(r => new RoleDTO
-        {
-            Id = r.Id,
-            Name = r.Name,
-            Description = r.Description
-        }).ToList();
+        return _mapper.Map<List<RoleDTO>>(roles);
     }
 
     public async Task<Result> UpdateUserAsync(UserEditViewModel model)
@@ -203,22 +194,5 @@ public class UserService : IUserService
             chars[i] = all[bytes[i] % all.Length];
 
         return new string(chars);
-    }
-
-    private static UserDTO MapToDTO(User u)
-    {
-        return new UserDTO
-        {
-            Id = u.Id,
-            FullName = u.FullName,
-            Email = u.Email,
-            Phone = u.Phone,
-            DateOfBirth = u.DateOfBirth,
-            RewardPoints = u.RewardPoints,
-            Status = u.Status,
-            RoleId = u.RoleId,
-            RoleName = u.Role?.Name ?? string.Empty,
-            CreatedAt = u.CreatedAt
-        };
     }
 }
