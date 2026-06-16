@@ -17,7 +17,11 @@ public class MemberService : IMemberService
         if (string.IsNullOrWhiteSpace(phone))
             return null;
 
-        var normalized = phone.Trim();
+        // Bỏ mọi khoảng trắng để "0912 345 678" khớp với "0912345678" lưu trong DB.
+        var normalized = new string(phone.Where(c => !char.IsWhiteSpace(c)).ToArray());
+        if (normalized.Length == 0)
+            return null;
+
         var user = await _unitOfWork.Users.FirstOrDefaultAsync(
             u => u.Phone == normalized);
 
