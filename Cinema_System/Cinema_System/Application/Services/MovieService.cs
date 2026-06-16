@@ -1,52 +1,66 @@
-using System.Linq;
+using Cinema_System.Application.Common;
 using Cinema_System.Application.DTOs;
 using Cinema_System.Application.Interfaces;
 using Cinema_System.Domain.Entities;
 
 namespace Cinema_System.Application.Services;
 
-// Dịch vụ phim xử lý truy vấn dữ liệu phim và đóng gói thành ViewModel cho giao diện.
+// Dịch vụ phim xử lý truy vấn dữ liệu phim và đóng gói thành DTO cho giao diện.
 public class MovieService : IMovieService
 {
-    private const string ShowtimesIncludeProperty = "Showtimes"; // Dùng để include lịch chiếu khi truy vấn
-    private const string StoppedMovieStatusLower = "stopped"; // Trạng thái phim đã ngừng chiếu
+    private const string ShowtimesIncludeProperty = "Showtimes"; // Include lịch chiếu khi truy vấn
+    private const string GenresIncludeProperty = "Genres";       // Include thể loại khi truy vấn
 
     private readonly IUnitOfWork _unitOfWork;
     private readonly AutoMapper.IMapper _mapper;
 
-    public MovieService(IUnitOfWork unitOfWork, AutoMapper.IMapper mapper)   
+    public MovieService(IUnitOfWork unitOfWork, AutoMapper.IMapper mapper)
     {
-        _unitOfWork = unitOfWork; 
+        _unitOfWork = unitOfWork;
         _mapper = mapper;
     }
 
-    // Lấy danh sách phim cho trang theo tab hiện tại và phân trang kết quả.
-    public async Task<Cinema_System.Application.ViewModels.MoviesPageViewModel> GetMoviesPageAsync(string tab, int page, int pageSize)
+    // Lấy danh sách phim cho trang theo tab hiện tại, lọc theo thể loại/độ tuổi rồi phân trang.
+    public async Task<PagedResult<MovieDTO>> GetMoviesPageAsync(string tab, int page, int pageSize, string? genre = null, string? ageRating = null)
     {
-        IEnumerable<MovieDTO> moviesForTab = tab?.ToLower() switch
+        var tabMovies = await GetTabMoviesAsync(tab?.ToLower());
+
+        var genreLower = genre?.Trim().ToLower();
+        var ageRatingLower = ageRating?.Trim().ToLower();
+
+        // Lọc thể loại/độ tuổi ngay trong tập của tab (tập nhỏ nên lọc trong bộ nhớ);
+        // thể loại cần navigation Genres nên không thể đẩy qua DTO.
+        var filtered = tabMovies.Where(movie =>
+            (string.IsNullOrWhiteSpace(genreLower) ||
+                (movie.Genres != null && movie.Genres.Any(genreEntity => genreEntity.Name != null && genreEntity.Name.ToLower() == genreLower))) &&
+            (string.IsNullOrWhiteSpace(ageRatingLower) ||
+                (movie.AgeRating != null && movie.AgeRating.ToLower() == ageRatingLower)));
+
+        var dtos = _mapper.Map<List<MovieDTO>>(filtered);
+        return PagedResult<MovieDTO>.Create(dtos, page, pageSize);
+    }
+
+    // Lấy entity phim theo tab (kèm Showtimes + Genres) để phục vụ lọc trong tab.
+    private async Task<IEnumerable<Movie>> GetTabMoviesAsync(string? tabKey)
+    {
+        var includes = new[] { ShowtimesIncludeProperty, GenresIncludeProperty };
+
+        return tabKey switch
         {
-            "coming" => (await GetComingSoonMoviesAsync()).ToList(),
-            "special" => (await GetSpecialShowtimeMoviesAsync()).ToList(),
-            _ => (await GetNowShowingMoviesAsync()).ToList(),
+            "coming" => await _unitOfWork.Movies.GetAllAsync(
+                predicate: movie => movie.Status == MovieStatus.ComingSoon,
+                includeProperties: includes),
+            "special" => await _unitOfWork.Movies.GetAllAsync(
+                predicate: movie => movie.Status != null && movie.Status.ToLower() != MovieStatus.StoppedLower &&
+                    movie.Showtimes.Any(showtime =>
+                        showtime.Status == ShowtimeStatus.Special ||
+                        showtime.Status == ShowtimeStatus.SpecialScreening ||
+                        (showtime.Status != null && showtime.Status.Contains(ShowtimeStatus.SpecialKeyword))),
+                includeProperties: includes),
+            _ => await _unitOfWork.Movies.GetAllAsync(
+                predicate: movie => movie.Status == MovieStatus.NowShowing,
+                includeProperties: includes),
         };
-
-        var totalCount = moviesForTab.Count();
-        var totalPages = totalCount == 0 ? 1 : (int)Math.Ceiling(totalCount / (double)pageSize);
-        if (page < 1) page = 1;
-        if (page > totalPages) page = totalPages;
-
-        var pagedMovies = moviesForTab.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-
-        var moviesPageViewModel = new Cinema_System.Application.ViewModels.MoviesPageViewModel
-        {
-            SelectedTab = tab?.ToLower() ?? "now",
-            Movies = pagedMovies,
-            CurrentPage = page,
-            TotalPages = totalPages,
-            PageSize = pageSize
-        };
-
-        return moviesPageViewModel;
     }
 
     // Lấy danh sách tất cả phim, dùng khi cần dữ liệu không phân trang.
@@ -63,7 +77,7 @@ public class MovieService : IMovieService
     public async Task<IEnumerable<MovieDTO>> GetNowShowingMoviesAsync()
     {
         var nowShowingMovies = await _unitOfWork.Movies.GetAllAsync(
-            predicate: movie => movie.Status == "Now Showing",
+            predicate: movie => movie.Status == MovieStatus.NowShowing,
             includeProperties: new[] { ShowtimesIncludeProperty }
         );
 
@@ -74,25 +88,30 @@ public class MovieService : IMovieService
     public async Task<IEnumerable<MovieDTO>> GetComingSoonMoviesAsync()
     {
         var comingSoonMovies = await _unitOfWork.Movies.GetAllAsync(
-            predicate: movie => movie.Status == "Coming Soon",
+            predicate: movie => movie.Status == MovieStatus.ComingSoon,
             includeProperties: new[] { ShowtimesIncludeProperty }
         );
 
         return _mapper.Map<IEnumerable<MovieDTO>>(comingSoonMovies);
     }
 
-    // Lọc phim theo thể loại, độ tuổi và trạng thái, loại bỏ phim đã ngừng chiếu.
+    // Lọc phim theo thể loại, độ tuổi và trạng thái (đẩy điều kiện xuống SQL), loại bỏ phim đã ngừng chiếu.
     public async Task<IEnumerable<MovieDTO>> GetFilteredMoviesAsync(string? genre, string? ageRating, string? status)
     {
-        var allMovies = await _unitOfWork.Movies.GetAllAsync(
-            includeProperties: new[] { ShowtimesIncludeProperty, "Genres" }
-        );
+        var genreLower = genre?.Trim().ToLower();
+        var ageRatingLower = ageRating?.Trim().ToLower();
+        var statusLower = status?.Trim().ToLower();
 
-        var filteredMovies = allMovies.Where(movie =>
-            movie.Status != null && movie.Status.ToLower() != StoppedMovieStatusLower &&
-            (string.IsNullOrWhiteSpace(genre) || (movie.Genres != null && movie.Genres.Any(genreEntity => genreEntity.Name != null && genreEntity.Name.ToLower() == genre.ToLower()))) &&
-            (string.IsNullOrWhiteSpace(ageRating) || (movie.AgeRating != null && movie.AgeRating.ToLower() == ageRating.ToLower())) &&
-            (string.IsNullOrWhiteSpace(status) || (movie.Status != null && movie.Status.ToLower() == status.ToLower()))
+        var filteredMovies = await _unitOfWork.Movies.GetAllAsync(
+            predicate: movie =>
+                movie.Status != null && movie.Status.ToLower() != MovieStatus.StoppedLower &&
+                (string.IsNullOrWhiteSpace(genreLower) ||
+                    movie.Genres.Any(genreEntity => genreEntity.Name != null && genreEntity.Name.ToLower() == genreLower)) &&
+                (string.IsNullOrWhiteSpace(ageRatingLower) ||
+                    (movie.AgeRating != null && movie.AgeRating.ToLower() == ageRatingLower)) &&
+                (string.IsNullOrWhiteSpace(statusLower) ||
+                    movie.Status.ToLower() == statusLower),
+            includeProperties: new[] { ShowtimesIncludeProperty, GenresIncludeProperty }
         );
 
         return _mapper.Map<IEnumerable<MovieDTO>>(filteredMovies);
@@ -101,9 +120,7 @@ public class MovieService : IMovieService
     // Lấy tất cả thể loại phim đã được cấu hình trong hệ thống.
     public async Task<IEnumerable<string>> GetAllGenresAsync()
     {
-        var genres = await _unitOfWork.Genres.GetAllAsync(
-            orderBy: genresQuery => genresQuery.OrderBy(genre => genre.Name)
-        );
+        var genres = await _unitOfWork.Genres.GetAllAsync();
 
         return genres
             .Select(genre => genre.Name)
@@ -113,11 +130,12 @@ public class MovieService : IMovieService
             .ToList();
     }
 
-    // Lấy phim còn hiển thị (chưa stopped) để dùng cho các danh sách phụ.
-    private async Task<IEnumerable<Domain.Entities.Movie>> GetVisibleMoviesAsync()
+    // Lấy phim còn hiển thị (chưa stopped) để dùng cho các danh sách phụ — lọc ngay ở SQL.
+    private async Task<IEnumerable<Movie>> GetVisibleMoviesAsync()
     {
-        return (await _unitOfWork.Movies.GetAllAsync())
-            .Where(movie => movie.Status != null && movie.Status.ToLower() != StoppedMovieStatusLower);
+        return await _unitOfWork.Movies.GetAllAsync(
+            predicate: movie => movie.Status != null && movie.Status.ToLower() != MovieStatus.StoppedLower
+        );
     }
 
     // Lấy danh sách các độ tuổi (P, C13, C16, C18) tồn tại trong phim đang hiển thị.
@@ -131,12 +149,12 @@ public class MovieService : IMovieService
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        var order = new List<string> { "P", "C13", "C16", "C18" };
+        var order = AgeRatingPolicy.DisplayOrder;
         return ratings
             .OrderBy(rating =>
             {
-                var index = order.FindIndex(x => string.Equals(x, rating, StringComparison.OrdinalIgnoreCase));
-                return index >= 0 ? index : order.Count;
+                var index = Array.FindIndex(order, x => string.Equals(x, rating, StringComparison.OrdinalIgnoreCase));
+                return index >= 0 ? index : order.Length;
             })
             .ThenBy(rating => rating, StringComparer.OrdinalIgnoreCase)
             .ToList();
@@ -169,11 +187,11 @@ public class MovieService : IMovieService
     public async Task<IEnumerable<MovieDTO>> GetSpecialShowtimeMoviesAsync()
     {
         var specialShowtimeMovies = await _unitOfWork.Movies.GetAllAsync(
-            predicate: movie => movie.Status != null && movie.Status.ToLower() != StoppedMovieStatusLower &&
+            predicate: movie => movie.Status != null && movie.Status.ToLower() != MovieStatus.StoppedLower &&
                 movie.Showtimes.Any(showtime =>
-                    showtime.Status == "Special" ||
-                    showtime.Status == "Special Screening" ||
-                    (showtime.Status != null && showtime.Status.Contains("Đặc"))
+                    showtime.Status == ShowtimeStatus.Special ||
+                    showtime.Status == ShowtimeStatus.SpecialScreening ||
+                    (showtime.Status != null && showtime.Status.Contains(ShowtimeStatus.SpecialKeyword))
                 ),
             includeProperties: new[] { ShowtimesIncludeProperty }
         );
@@ -181,27 +199,19 @@ public class MovieService : IMovieService
         return _mapper.Map<IEnumerable<MovieDTO>>(specialShowtimeMovies);
     }
 
-    // Tìm phim theo từ khóa và trả về kết quả phân trang.
-    public async Task<Cinema_System.Application.ViewModels.MoviesPageViewModel> SearchMoviesAsync(string keyword, int page, int pageSize)
+    // Tìm phim theo từ khóa (đẩy điều kiện xuống SQL) và trả về kết quả phân trang.
+    public async Task<PagedResult<MovieDTO>> SearchMoviesAsync(string keyword, int page, int pageSize)
     {
         var searchTerm = keyword?.Trim().ToLowerInvariant() ?? string.Empty;
 
         if (string.IsNullOrWhiteSpace(searchTerm))
         {
-            return new Cinema_System.Application.ViewModels.MoviesPageViewModel
-            {
-                SelectedTab = "search",
-                SearchKeyword = string.Empty,
-                Movies = new List<MovieDTO>(),
-                CurrentPage = page,
-                TotalPages = 1,
-                PageSize = pageSize
-            };
+            return PagedResult<MovieDTO>.Create(Array.Empty<MovieDTO>(), page, pageSize);
         }
 
         var searchResults = await _unitOfWork.Movies.GetAllAsync(
             predicate: movie =>
-                movie.Status != null && movie.Status.ToLower() != StoppedMovieStatusLower &&
+                movie.Status != null && movie.Status.ToLower() != MovieStatus.StoppedLower &&
                 ((movie.Title != null && movie.Title.ToLower().Contains(searchTerm)) ||
                 (movie.Description != null && movie.Description.ToLower().Contains(searchTerm)) ||
                 (movie.Director != null && movie.Director.ToLower().Contains(searchTerm)) ||
@@ -210,21 +220,6 @@ public class MovieService : IMovieService
         );
 
         var searchResultsDto = _mapper.Map<List<MovieDTO>>(searchResults);
-        var totalCount = searchResultsDto.Count;
-        var totalPages = totalCount == 0 ? 1 : (int)Math.Ceiling(totalCount / (double)pageSize);
-        if (page < 1) page = 1;
-        if (page > totalPages) page = totalPages;
-
-        var pagedSearchResults = searchResultsDto.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-
-        return new Cinema_System.Application.ViewModels.MoviesPageViewModel
-        {
-            SelectedTab = "search",
-            SearchKeyword = searchTerm,
-            Movies = pagedSearchResults,
-            CurrentPage = page,
-            TotalPages = totalPages,
-            PageSize = pageSize
-        };
+        return PagedResult<MovieDTO>.Create(searchResultsDto, page, pageSize);
     }
 }

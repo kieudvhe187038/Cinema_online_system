@@ -1,0 +1,53 @@
+@model Cinema_System.Application.DTOs.MovieDTO
+@{
+    var badge = ViewData["Badge"] as string;
+    var badgeClass = ViewData["BadgeClass"] as string ?? "from-orange-500 to-red-500";
+    var poster = string.IsNullOrEmpty(Model.PosterUrl)
+        ? $"https://placehold.co/300x420?text={Uri.EscapeDataString(Model.Title)}&font=raleway"
+        : Model.PosterUrl;
+    var hideBuyButton = ViewData["HideBuyButton"] as bool? ?? false;
+}
+<article class="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-300/50 bg-white shadow-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-2">
+    @if (!string.IsNullOrEmpty(badge))
+    {
+        <div class="absolute top-3 right-3 z-10 rounded-full bg-gradient-to-r @badgeClass px-4 py-1.5 text-xs font-bold text-white shadow-lg">@badge</div>
+    }
+    <div class="relative overflow-hidden bg-slate-950">
+        <img src="@poster" alt="@Model.Title" onerror="this.src='https://placehold.co/300x420?text=@Uri.EscapeDataString(Model.Title)&font=raleway'" class="h-72 w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+        <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-900/40"></div>
+    </div>
+    <div class="flex flex-1 flex-col gap-4 p-6">
+        <div class="flex min-h-[2.25rem] flex-wrap items-center gap-2">
+            @if (!string.IsNullOrEmpty(Model.Language))
+            {
+                <span class="inline-flex items-center gap-1 rounded-full bg-primary/15 px-3 py-1.5 text-xs font-semibold text-primary transition group-hover:bg-primary/25"><span class="material-symbols-outlined text-sm">language</span>@Model.Language</span>
+            }
+            @if (!string.IsNullOrEmpty(Model.AgeRating))
+            {
+                <span class="rounded-full bg-slate-300/40 px-3 py-1.5 text-xs font-semibold text-slate-800 transition group-hover:bg-slate-300/60">@Model.AgeRating</span>
+            }
+        </div>
+        <h3 class="min-h-[3.5rem] text-lg font-bold leading-snug text-slate-900 line-clamp-2 group-hover:text-primary transition">@Model.Title</h3>
+        <div class="flex min-h-[2rem] flex-wrap items-center gap-3 pt-2 border-t border-slate-200/50 text-xs text-slate-600">
+            @if (Model.ReleaseDate.HasValue)
+            {
+                <span class="inline-flex items-center gap-1"><span class="material-symbols-outlined text-sm">calendar_today</span>@Model.ReleaseDate.Value.ToString("dd/MM/yyyy")</span>
+            }
+            @if (!string.IsNullOrEmpty(Model.Director))
+            {
+                <span class="inline-flex items-center gap-1"><span class="material-symbols-outlined text-sm">person</span>@Model.Director</span>
+            }
+            @if (Model.DurationMinutes.HasValue)
+            {
+                <span class="inline-flex items-center gap-1"><span class="material-symbols-outlined text-sm">schedule</span>@Model.DurationMinutes phút</span>
+            }
+        </div>
+        <div class="mt-auto flex flex-wrap gap-2 pt-4">
+            @if (!hideBuyButton)
+            {
+                <button class="flex-1 rounded-full bg-gradient-to-r from-primary to-orange-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/30 transition hover:shadow-xl hover:scale-105 active:scale-95">MUA VÉ</button>
+            }
+            <button class="flex-1 rounded-full border-2 border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:border-primary hover:bg-primary hover:text-white">CHI TIẾT</button>
+        </div>
+    </div>
+</article>
