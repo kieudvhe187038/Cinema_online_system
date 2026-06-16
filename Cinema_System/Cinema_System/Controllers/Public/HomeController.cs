@@ -3,7 +3,7 @@ using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Cinema_System.Controllers
+namespace Cinema_System.Controllers.Public
 {
     // Controller chính cho trang chủ và các bộ lọc phim.
     public class HomeController : Controller

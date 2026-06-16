@@ -7,7 +7,7 @@ using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Cinema_System.Controllers;
+namespace Cinema_System.Controllers.Auth;
 
 /// <summary>
 /// Xử lý đăng ký tài khoản và xác nhận email bằng OTP.

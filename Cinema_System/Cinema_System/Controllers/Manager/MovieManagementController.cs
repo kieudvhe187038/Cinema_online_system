@@ -2,7 +2,7 @@ using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Cinema_System.Controllers;
+namespace Cinema_System.Controllers.Manager;
 
 [Route("Manager/Movies")]
 public class MovieManagementController : Controller

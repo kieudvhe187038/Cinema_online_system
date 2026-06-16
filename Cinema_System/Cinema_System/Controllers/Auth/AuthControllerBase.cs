@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Cinema_System.Controllers;
+namespace Cinema_System.Controllers.Auth;
 
 /// <summary>
 /// Lớp cơ sở chứa logic xác thực dùng chung cho LoginController và RegisterController.
