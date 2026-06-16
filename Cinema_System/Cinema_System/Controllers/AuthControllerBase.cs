@@ -14,6 +14,9 @@ public abstract class AuthControllerBase : Controller
     /// <summary>Thời hạn giữ đăng nhập: ở lại cho tới khi đăng xuất hoặc hết 15 ngày.</summary>
     private static readonly TimeSpan AuthCookieDuration = TimeSpan.FromDays(15);
 
+    /// <summary>Claim lưu đường dẫn ảnh đại diện để header hiển thị không cần truy vấn DB mỗi request.</summary>
+    public const string AvatarUrlClaimType = "avatar_url";
+
     /// <summary>
     /// Đăng nhập người dùng: tạo Claims (kèm Role) và phát hành cookie persistent (15 ngày).
     /// </summary>
@@ -26,6 +29,10 @@ public abstract class AuthControllerBase : Controller
             new(ClaimTypes.Email, user.Email),
             new(ClaimTypes.Role, user.RoleName)
         };
+
+        // Chỉ thêm claim avatar khi user có ảnh (tránh claim rỗng vô nghĩa).
+        if (!string.IsNullOrEmpty(user.AvatarUrl))
+            claims.Add(new Claim(AvatarUrlClaimType, user.AvatarUrl));
 
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
 
