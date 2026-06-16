@@ -1,3 +1,4 @@
+using AutoMapper;
 using Cinema_System.Application.Common;
 using Cinema_System.Application.DTOs;
 using Cinema_System.Application.Interfaces;
@@ -9,10 +10,12 @@ namespace Cinema_System.Application.Services;
 public class SeatTypeService : ISeatTypeService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IMapper _mapper;
 
-    public SeatTypeService(IUnitOfWork unitOfWork)
+    public SeatTypeService(IUnitOfWork unitOfWork, IMapper mapper)
     {
         _unitOfWork = unitOfWork;
+        _mapper = mapper;
     }
 
     public async Task<IEnumerable<SeatTypeDTO>> GetAllAsync()
@@ -26,15 +29,10 @@ public class SeatTypeService : ISeatTypeService
             var seatCount = await _unitOfWork.Seats.CountAsync(s => s.SeatTypeId == t.Id);
             var usedInPricing = await _unitOfWork.PriceSeatConfigs.ExistsAsync(p => p.SeatTypeId == t.Id);
 
-            result.Add(new SeatTypeDTO
-            {
-                Id = t.Id,
-                Name = t.Name,
-                Capacity = t.Capacity,
-                ColumnSpan = t.ColumnSpan,
-                SeatCount = seatCount,
-                InUse = seatCount > 0 || usedInPricing
-            });
+            var dto = _mapper.Map<SeatTypeDTO>(t);
+            dto.SeatCount = seatCount;
+            dto.InUse = seatCount > 0 || usedInPricing;
+            result.Add(dto);
         }
 
         return result;
@@ -45,13 +43,7 @@ public class SeatTypeService : ISeatTypeService
         var seatType = await _unitOfWork.SeatTypes.GetByIdAsync(id);
         if (seatType is null) return null;
 
-        return new SeatTypeFormViewModel
-        {
-            Id = seatType.Id,
-            Name = seatType.Name,
-            Capacity = seatType.Capacity,
-            ColumnSpan = seatType.ColumnSpan
-        };
+        return _mapper.Map<SeatTypeFormViewModel>(seatType);
     }
 
     public async Task<Result> CreateAsync(SeatTypeFormViewModel model)
