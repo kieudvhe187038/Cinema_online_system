@@ -1,0 +1,127 @@
+@model Cinema_System.Application.ViewModels.RegisterViewModel
+@{
+    ViewData["Title"] = "Đăng ký";
+    ViewData["CardWidth"] = "max-w-lg";
+    Layout = "_AuthLayout";
+    var summaryErrors = ViewData.ModelState[string.Empty]?.Errors;
+    var today = DateTime.Today.ToString("yyyy-MM-dd");
+}
+
+<div class="text-center mb-6">
+    <div class="font-display-lg text-[36px] leading-none font-extrabold tracking-tight text-primary-container mb-2">CineStar</div>
+    <h1 class="font-headline-md text-[22px] font-bold text-on-surface mb-1">Tạo Tài Khoản Mới</h1>
+    <p class="font-body-md text-[15px] text-on-surface-variant">Đăng ký để bắt đầu trải nghiệm điện ảnh</p>
+</div>
+
+<form asp-action="Register" method="post" class="space-y-4">
+    <input type="hidden" asp-for="ReturnUrl" />
+
+    @if (summaryErrors != null && summaryErrors.Count > 0)
+    {
+        <div class="bg-error-container text-on-error-container rounded-lg px-md py-sm flex items-center gap-xs text-label-md">
+            <span class="material-symbols-outlined text-[20px]">error</span>
+            <span>@summaryErrors[0].ErrorMessage</span>
+        </div>
+    }
+
+    <!-- Họ tên -->
+    <div class="space-y-2">
+        <label asp-for="FullName" class="font-label-md text-label-md text-on-surface-variant block"></label>
+        <div class="relative">
+            <span class="material-symbols-outlined text-[20px] absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">badge</span>
+            <input asp-for="FullName" autocomplete="name" placeholder="Nguyễn Văn A"
+                   class="w-full pl-11 pr-4 py-3 bg-surface-container rounded-lg border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none" />
+        </div>
+        <span asp-validation-for="FullName" class="text-error text-label-sm block"></span>
+    </div>
+
+    <!-- Email -->
+    <div class="space-y-2">
+        <label asp-for="Email" class="font-label-md text-label-md text-on-surface-variant block"></label>
+        <div class="relative">
+            <span class="material-symbols-outlined text-[20px] absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">mail</span>
+            <input asp-for="Email" autocomplete="email" placeholder="example@gmail.com"
+                   class="w-full pl-11 pr-4 py-3 bg-surface-container rounded-lg border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none" />
+        </div>
+        <span asp-validation-for="Email" class="text-error text-label-sm block"></span>
+    </div>
+
+    <!-- Số điện thoại + Ngày sinh (2 cột) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="space-y-2">
+            <label asp-for="Phone" class="font-label-md text-label-md text-on-surface-variant block"></label>
+            <div class="relative">
+                <span class="material-symbols-outlined text-[20px] absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">call</span>
+                <input asp-for="Phone" type="tel" autocomplete="tel" placeholder="0901234567"
+                       class="w-full pl-11 pr-4 py-3 bg-surface-container rounded-lg border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none" />
+            </div>
+            <span asp-validation-for="Phone" class="text-error text-label-sm block"></span>
+        </div>
+
+        <div class="space-y-2">
+            <label asp-for="DateOfBirth" class="font-label-md text-label-md text-on-surface-variant block"></label>
+            <div class="relative">
+                <span class="material-symbols-outlined text-[20px] absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">cake</span>
+                <input asp-for="DateOfBirth" type="date" max="@today"
+                       class="w-full pl-11 pr-3 py-3 bg-surface-container rounded-lg border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none" />
+            </div>
+            <span asp-validation-for="DateOfBirth" class="text-error text-label-sm block"></span>
+        </div>
+    </div>
+
+    <!-- Mật khẩu (full-width cho dễ nhập) -->
+    <div class="space-y-2">
+        <label asp-for="Password" class="font-label-md text-label-md text-on-surface-variant block"></label>
+        <div class="relative">
+            <span class="material-symbols-outlined text-[20px] absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">lock</span>
+            <input asp-for="Password" autocomplete="new-password" placeholder="6–72 ký tự (chữ, số, ký tự đặc biệt)"
+                   minlength="6" maxlength="72" pattern="[!-~]{6,72}"
+                   title="Mật khẩu 6–72 ký tự, gồm chữ/số/ký tự đặc biệt, không dấu tiếng Việt hay khoảng trắng."
+                   class="w-full pl-11 pr-11 py-3 bg-surface-container rounded-lg border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none" />
+            <button type="button" class="toggle-pw absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary">
+                <span class="material-symbols-outlined text-[20px]">visibility</span>
+            </button>
+        </div>
+        <span asp-validation-for="Password" class="text-error text-label-sm block"></span>
+    </div>
+
+    <!-- Nhập lại mật khẩu (full-width) -->
+    <div class="space-y-2">
+        <label asp-for="ConfirmPassword" class="font-label-md text-label-md text-on-surface-variant block"></label>
+        <div class="relative">
+            <span class="material-symbols-outlined text-[20px] absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">lock_reset</span>
+            <input asp-for="ConfirmPassword" autocomplete="new-password" placeholder="Nhập lại mật khẩu"
+                   minlength="6" maxlength="72"
+                   class="w-full pl-11 pr-11 py-3 bg-surface-container rounded-lg border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none" />
+            <button type="button" class="toggle-pw absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary">
+                <span class="material-symbols-outlined text-[20px]">visibility</span>
+            </button>
+        </div>
+        <span asp-validation-for="ConfirmPassword" class="text-error text-label-sm block"></span>
+    </div>
+
+    <button class="w-full bg-primary-container text-on-primary py-3 rounded-lg font-headline-md text-[16px] font-bold hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 shadow-lg shadow-primary-container/30 mt-1" type="submit">
+        Đăng Ký
+    </button>
+</form>
+
+<div class="mt-6 text-center">
+    <p class="font-body-md text-[15px] text-on-surface-variant">
+        Đã có tài khoản?
+        <a class="text-primary font-bold hover:underline ml-1" asp-controller="Login" asp-action="Login">Đăng nhập</a>
+    </p>
+</div>
+
+@section Scripts {
+    <script>
+        // Hiện/ẩn mật khẩu cho các ô có nút toggle
+        document.querySelectorAll('.toggle-pw').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const input = btn.parentElement.querySelector('input');
+                const icon = btn.querySelector('.material-symbols-outlined');
+                if (input.type === 'password') { input.type = 'text'; icon.textContent = 'visibility_off'; }
+                else { input.type = 'password'; icon.textContent = 'visibility'; }
+            });
+        });
+    </script>
+}

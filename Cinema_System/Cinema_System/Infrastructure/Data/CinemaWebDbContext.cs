@@ -975,7 +975,9 @@ public partial class CinemaWebDbContext : DbContext
         {
             entity.HasIndex(e => e.Email, "UK_Users_email").IsUnique();
 
-            entity.HasIndex(e => e.Phone, "UK_Users_phone").IsUnique();
+            entity.HasIndex(e => e.Phone, "UX_Users_phone")
+                .IsUnique()
+                .HasFilter("[phone] IS NOT NULL");
 
             entity.Property(e => e.Id)
                 .HasDefaultValueSql("(newid())")
