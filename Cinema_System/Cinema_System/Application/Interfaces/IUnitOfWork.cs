@@ -31,5 +31,9 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<RewardPointHistory> RewardPointHistories { get; }
 
+    IGenericRepository<FoodBeverage> FoodBeverages { get; }
+
+    IGenericRepository<BookingFood> BookingFoods { get; }
+
     Task<int> SaveChangesAsync();
 }
