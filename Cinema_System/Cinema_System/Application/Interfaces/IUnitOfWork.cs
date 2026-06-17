@@ -4,7 +4,7 @@ namespace Cinema_System.Application.Interfaces;
 
 public interface IUnitOfWork : IDisposable
 {
-    IGenericRepository<User> Users { get; }
+    IUserRepository Users { get; }
 
     IGenericRepository<Role> Roles { get; }
 
@@ -12,18 +12,18 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<SeatType> SeatTypes { get; }
 
-    IGenericRepository<Seat> Seats { get; }
+    ISeatRepository Seats { get; }
 
     IGenericRepository<PriceSeatConfig> PriceSeatConfigs { get; }
 
     IGenericRepository<RoomType> RoomTypes { get; }
 
-    IGenericRepository<Room> Rooms { get; }
+    IRoomRepository Rooms { get; }
 
     IGenericRepository<PriceRoomTypeConfig> PriceRoomTypeConfigs { get; }
 
     // --- Booking / counter-sale flow (Inter2 - Staff) ---
-    IGenericRepository<Booking> Bookings { get; }
+    IBookingRepository Bookings { get; }
 
     IGenericRepository<Ticket> Tickets { get; }
 
@@ -31,7 +31,7 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<BookingFood> BookingFoods { get; }
 
-    IGenericRepository<Showtime> Showtimes { get; }
+    IShowtimeRepository Showtimes { get; }
 
     IGenericRepository<Movie> Movies { get; }
 
@@ -52,4 +52,11 @@ public interface IUnitOfWork : IDisposable
     IGenericRepository<PriceTimeConfig> PriceTimeConfigs { get; }
 
     Task<int> SaveChangesAsync();
+
+    /// <summary>
+    /// Lưu thay đổi nhưng trả về <c>false</c> khi vi phạm ràng buộc dữ liệu
+    /// (DbUpdateException) — backstop chống đặt trùng ghế khi có người đặt cùng lúc.
+    /// Các loại lỗi khác vẫn được ném ra như thường.
+    /// </summary>
+    Task<bool> TrySaveChangesAsync();
 }

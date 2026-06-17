@@ -3,7 +3,6 @@ using Cinema_System.Application.DTOs;
 using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
 using Cinema_System.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace Cinema_System.Application.Services;
 
@@ -21,32 +20,10 @@ public class BookingService : IBookingService
     public async Task<BookingListViewModel> GetBookingsAsync(
         string? search, string? bookingType, string? paymentStatus, int page, int pageSize)
     {
-        // Toàn bộ lọc + phân trang được đẩy xuống SQL (Skip/Take) nên mỗi lần chỉ
-        // tải đúng 1 trang — tránh kéo cả bảng Bookings về bộ nhớ gây timeout.
-        var typeFilter = string.IsNullOrEmpty(bookingType) ? null : bookingType;
-        var statusFilter = string.IsNullOrEmpty(paymentStatus) ? null : paymentStatus;
-        var keyword = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
-
-        // SQL Server dùng collation không phân biệt hoa thường nên Contains dịch
-        // được sang LIKE. Không dùng StringComparison vì không dịch sang SQL.
-        var (rows, totalCount) = await _unitOfWork.Bookings.GetPagedAsync(
-            page, pageSize,
-            predicate: b =>
-                (typeFilter == null || b.BookingType == typeFilter)
-                && (statusFilter == null || b.PaymentStatus == statusFilter)
-                && (keyword == null
-                    || (b.QrCode != null && b.QrCode.Contains(keyword))
-                    || (b.User != null && b.User.FullName.Contains(keyword))
-                    || (b.User != null && b.User.Phone != null && b.User.Phone.Contains(keyword))
-                    || (b.Staff != null && b.Staff.FullName.Contains(keyword))),
-            include: q => q
-                .Include(b => b.Showtime).ThenInclude(s => s.Movie)
-                .Include(b => b.Showtime).ThenInclude(s => s.Room)
-                .Include(b => b.User)
-                .Include(b => b.Staff)
-                .Include(b => b.Tickets)
-                .AsSplitQuery(),
-            orderBy: q => q.OrderByDescending(b => b.CreatedAt));
+        // Lọc + phân trang được đẩy xuống SQL trong repository nên mỗi lần chỉ tải
+        // đúng 1 trang — tránh kéo cả bảng Bookings về bộ nhớ gây timeout.
+        var (rows, totalCount) = await _unitOfWork.Bookings.GetPagedListAsync(
+            bookingType, paymentStatus, search, page, pageSize);
 
         var totalPages = totalCount == 0 ? 1 : (int)Math.Ceiling(totalCount / (double)pageSize);
         if (page < 1) page = 1;
@@ -85,7 +62,7 @@ public class BookingService : IBookingService
 
     public async Task<BookingDetailDTO?> GetBookingDetailAsync(Guid id)
     {
-        var b = await LoadFullBookingAsync(id);
+        var b = await _unitOfWork.Bookings.GetDetailByIdAsync(id);
         if (b is null) return null;
 
         return new BookingDetailDTO
@@ -137,7 +114,7 @@ public class BookingService : IBookingService
 
     public async Task<TicketPrintViewModel?> GetTicketPrintAsync(Guid bookingId)
     {
-        var b = await LoadFullBookingAsync(bookingId);
+        var b = await _unitOfWork.Bookings.GetDetailByIdAsync(bookingId);
         if (b is null) return null;
 
         var payment = b.Payments.OrderByDescending(p => p.PaidAt).FirstOrDefault();
@@ -185,20 +162,5 @@ public class BookingService : IBookingService
                 PaidAt = payment.PaidAt
             }
         };
-    }
-
-    private async Task<Booking?> LoadFullBookingAsync(Guid id)
-    {
-        return await _unitOfWork.Bookings.FirstOrDefaultAsync(
-            b => b.Id == id,
-            include: q => q
-                .Include(b => b.Showtime).ThenInclude(s => s.Movie)
-                .Include(b => b.Showtime).ThenInclude(s => s.Room).ThenInclude(r => r.Cinema)
-                .Include(b => b.User)
-                .Include(b => b.Staff)
-                .Include(b => b.Tickets).ThenInclude(t => t.Seat).ThenInclude(s => s.SeatType)
-                .Include(b => b.BookingFoods).ThenInclude(f => f.Fb)
-                .Include(b => b.Payments)
-                .AsSplitQuery());
     }
 }

@@ -22,8 +22,7 @@ public class MemberService : IMemberService
         if (normalized.Length == 0)
             return null;
 
-        var user = await _unitOfWork.Users.FirstOrDefaultAsync(
-            u => u.Phone == normalized);
+        var user = await _unitOfWork.Users.GetByPhoneAsync(normalized);
 
         if (user is null)
             return null;
