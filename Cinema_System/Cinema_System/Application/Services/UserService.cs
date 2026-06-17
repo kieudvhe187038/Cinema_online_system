@@ -29,19 +29,18 @@ public class UserService : IUserService
             && (roleId == null || u.RoleId == roleId)
             && (status == null || u.Status == status);
 
-        var users = (await _unitOfWork.Users.GetAllAsync(
+        // Phân trang tại SQL (Skip/Take) — chỉ tải đúng 1 trang, tránh kéo cả bảng.
+        var (rows, totalCount) = await _unitOfWork.Users.GetPagedAsync(
+            page, pageSize,
             predicate,
             include: q => q.Include(u => u.Role),
-            orderBy: q => q.OrderByDescending(u => u.CreatedAt))).ToList();
+            orderBy: q => q.OrderByDescending(u => u.CreatedAt));
 
-        var totalCount = users.Count;
         var totalPages = totalCount == 0 ? 1 : (int)Math.Ceiling(totalCount / (double)pageSize);
         if (page < 1) page = 1;
         if (page > totalPages) page = totalPages;
 
-        var items = users
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+        var items = rows
             .Select(MapToDTO)
             .ToList();
 
