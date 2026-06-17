@@ -15,6 +15,7 @@ public interface IMovieService
     Task<IEnumerable<string>> GetAllGenresAsync();
     Task<IEnumerable<string>> GetAllAgeRatingsAsync();
     Task<MovieDTO?> GetMovieByIdAsync(Guid id);
+    Task<MovieDTO?> GetMovieBySlugAsync(string slug);
     // Lấy dữ liệu trang phim theo tab (now/coming/special), lọc thể loại/độ tuổi và phân trang.
     Task<PagedResult<MovieDTO>> GetMoviesPageAsync(string tab, int page, int pageSize, string? genre = null, string? ageRating = null);
     // Tìm phim theo từ khóa và trả về kết quả phân trang.

@@ -1,0 +1,117 @@
+@model Cinema_System.Application.ViewModels.MovieDetailsViewModel
+
+@{
+    ViewData["Title"] = Model.Movie.Title;
+    var trailer = Model.Movie.TrailerUrl;
+    if (!string.IsNullOrEmpty(trailer) && trailer.Contains("watch?v="))
+    {
+        trailer = trailer.Replace("watch?v=", "embed/");
+    }
+    var genres = Model.Movie.GenreNames.Any() ? string.Join(" • ", Model.Movie.GenreNames) : "Chưa rõ thể loại";
+    var durationText = Model.Movie.DurationMinutes.HasValue ? $"{Model.Movie.DurationMinutes.Value} phút" : "Chưa rõ";
+}
+
+<div class="max-w-7xl mx-auto px-4 py-10">
+    <div class="overflow-hidden rounded-[2rem] bg-white shadow-[0_40px_120px_-40px_rgba(15,23,42,0.35)]">
+        <div class="grid grid-cols-1 gap-8 lg:grid-cols-[2.3fr_1fr]">
+            <div class="relative overflow-hidden bg-slate-950">
+                @if (!string.IsNullOrEmpty(trailer))
+                {
+                    <div class="aspect-[16/9] w-full bg-black">
+                        <iframe class="h-full w-full" src="@trailer" title="Trailer @Model.Movie.Title" frameborder="0" allowfullscreen></iframe>
+                    </div>
+                }
+                else if (!string.IsNullOrEmpty(Model.Movie.PosterUrl))
+                {
+                    <img src="@Model.Movie.PosterUrl" alt="@Model.Movie.Title" class="h-full w-full object-cover" />
+                }
+                else
+                {
+                    <div class="aspect-[16/9] flex items-center justify-center bg-slate-900 text-slate-400">Chưa có trailer</div>
+                }
+            </div>
+
+            <aside class="space-y-6 border-l border-slate-200/70 bg-slate-50 p-8 lg:p-10">
+                <div class="rounded-3xl bg-white p-6 shadow-sm">
+                    <h1 class="text-3xl font-heading font-black text-slate-900">@Model.Movie.Title</h1>
+                    <p class="mt-3 text-sm uppercase tracking-[0.25em] text-orange-600">@genres</p>
+                    <div class="mt-4 space-y-3 text-slate-600">
+                        <p><span class="font-semibold text-slate-900">Thời lượng:</span> @durationText</p>
+                        <p><span class="font-semibold text-slate-900">Ngôn ngữ:</span> @(string.IsNullOrEmpty(Model.Movie.Language) ? "Chưa rõ" : Model.Movie.Language)</p>
+                        <p><span class="font-semibold text-slate-900">Độ tuổi:</span> @(string.IsNullOrEmpty(Model.Movie.AgeRating) ? "Chưa rõ" : Model.Movie.AgeRating)</p>
+                        <p><span class="font-semibold text-slate-900">Đạo diễn:</span> @(string.IsNullOrEmpty(Model.Movie.Director) ? "Chưa rõ" : Model.Movie.Director)</p>
+                        <p><span class="font-semibold text-slate-900">Khởi chiếu:</span> @(Model.Movie.ReleaseDate.HasValue ? Model.Movie.ReleaseDate.Value.ToString("dd/MM/yyyy") : "Chưa rõ")</p>
+                    </div>
+                    <div class="mt-6 flex flex-wrap gap-3">
+                        <span class="inline-flex items-center rounded-full bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">Review</span>
+                        <span class="inline-flex items-center rounded-full bg-slate-100 px-4 py-2 text-sm text-slate-700">@durationText</span>
+                    </div>
+                </div>
+
+                <div class="rounded-3xl bg-white p-6 shadow-sm">
+                    <p class="text-sm font-semibold text-slate-900">Trạng thái</p>
+                    <p class="mt-3 text-slate-600">@(string.IsNullOrEmpty(Model.Movie.Status) ? "Đang cập nhật" : Model.Movie.Status)</p>
+                </div>
+            </aside>
+        </div>
+
+        <div class="space-y-10 bg-slate-50 p-8 lg:p-10">
+            <section class="rounded-[2rem] bg-white p-8 shadow-sm">
+                <h2 class="text-2xl font-heading font-bold text-slate-900">Mô tả phim</h2>
+                <div class="mt-4 space-y-4 text-slate-700 leading-relaxed">
+                    @Html.Raw(Model.Movie.Description ?? "<p>Chưa có mô tả.</p>")
+                </div>
+            </section>
+
+            <section class="rounded-[2rem] bg-white p-8 shadow-sm">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-2xl font-heading font-bold text-slate-900">Đánh giá khán giả</h2>
+                        <p class="mt-2 text-sm text-slate-500">Xem cảm nhận từ những khán giả đã từng xem phim.</p>
+                    </div>
+                    @if (User.Identity?.IsAuthenticated ?? false)
+                    {
+                        <a asp-controller="Reviews" asp-action="Create" asp-route-movieId="@Model.Movie.Id" class="inline-flex items-center rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-dark">Viết đánh giá</a>
+                    }
+                    else
+                    {
+                        <a href="~/login?returnUrl=@Url.Action("Details", "Movies", new { id = Model.Movie.Slug })" class="inline-flex items-center rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-primary hover:text-primary">Đăng nhập để viết đánh giá</a>
+                    }
+                </div>
+
+                <div class="mt-6 space-y-4">
+                    @if (Model.Reviews.Items.Any())
+                    {
+                        @foreach (var r in Model.Reviews.Items)
+                        {
+                            <div class="rounded-3xl border border-slate-200 bg-slate-50 p-6">
+                                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <p class="text-lg font-semibold text-slate-900">@r.UserName</p>
+                                        <p class="text-sm text-slate-500">@r.CreatedAt?.ToString("dd/MM/yyyy")</p>
+                                    </div>
+                                    <div class="flex items-center gap-1 text-yellow-400">
+                                        @for (int i = 1; i <= 5; i++)
+                                        {
+                                            <span class="text-xl @(i <= r.Rating ? "text-yellow-400" : "text-slate-300")">★</span>
+                                        }
+                                    </div>
+                                </div>
+                                @if (!string.IsNullOrEmpty(r.Comment))
+                                {
+                                    <p class="mt-4 text-slate-700 leading-relaxed">@r.Comment</p>
+                                }
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-slate-600">
+                            Chưa có đánh giá nào cho phim này.
+                        </div>
+                    }
+                </div>
+            </section>
+        </div>
+    </div>
+</div>

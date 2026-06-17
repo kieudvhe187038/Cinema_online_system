@@ -155,6 +155,21 @@ public class MovieService : IMovieService
         return movie == null ? null : _mapper.Map<MovieDTO>(movie);
     }
 
+    // Lấy chi tiết phim theo slug.
+    public async Task<MovieDTO?> GetMovieBySlugAsync(string slug)
+    {
+        if (string.IsNullOrWhiteSpace(slug))
+            return null;
+
+        var normalizedSlug = slug.Trim().ToLowerInvariant();
+        var movie = await _unitOfWork.Movies.FirstOrDefaultAsync(
+            predicate: movieEntity => movieEntity.Slug == normalizedSlug,
+            includeProperties: new[] { ShowtimesIncludeProperty, GenresIncludeProperty }
+        );
+
+        return movie == null ? null : _mapper.Map<MovieDTO>(movie);
+    }
+
     // Lấy phim có trạng thái suất chiếu đặc biệt.
     public async Task<IEnumerable<MovieDTO>> GetSpecialMoviesAsync()
     {
