@@ -39,6 +39,16 @@ namespace Cinema_System.Controllers.Public
             return View(vm);
         }
 
+        // Trang chọn đồ ăn & nước (bước sau khi chọn ghế).
+        // Nếu user không còn giữ ghế nào (hết giờ giữ) -> quay lại trang chọn ghế.
+        [Authorize(Roles = "CUSTOMER,STAFF")]
+        public async Task<IActionResult> Food(Guid id)
+        {
+            var vm = await _showtimeService.GetFoodOrderAsync(id, CurrentUserId);
+            if (vm is null) return RedirectToAction(nameof(SelectSeats), new { id });
+            return View(vm);
+        }
+
         // Giữ 1 ghế trong 10 phút cho user hiện tại.
         [HttpPost]
         [Authorize(Roles = "CUSTOMER,STAFF")]
