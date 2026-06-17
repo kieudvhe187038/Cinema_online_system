@@ -23,6 +23,10 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<Room> Rooms { get; }
 
+    IGenericRepository<Showtime> Showtimes { get; }
+
+    IGenericRepository<Cinema> Cinemas { get; }
+
     IGenericRepository<PriceRoomTypeConfig> PriceRoomTypeConfigs { get; }
 
     IGenericRepository<Movie> Movies { get; }
