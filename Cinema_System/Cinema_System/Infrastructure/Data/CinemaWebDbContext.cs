@@ -34,8 +34,6 @@ public partial class CinemaWebDbContext : DbContext
 
     public virtual DbSet<Movie> Movies { get; set; }
 
-    public virtual DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
-
     public virtual DbSet<Payment> Payments { get; set; }
 
     public virtual DbSet<PriceBaseConfig> PriceBaseConfigs { get; set; }
@@ -402,35 +400,6 @@ public partial class CinemaWebDbContext : DbContext
                         j.IndexerProperty<Guid>("MovieId").HasColumnName("movie_id");
                         j.IndexerProperty<Guid>("GenreId").HasColumnName("genre_id");
                     });
-        });
-
-        modelBuilder.Entity<PasswordResetToken>(entity =>
-        {
-            entity.ToTable("Password_Reset_Tokens");
-
-            entity.Property(e => e.Id)
-                .HasDefaultValueSql("(newid())")
-                .HasColumnName("id");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime")
-                .HasColumnName("created_at");
-            entity.Property(e => e.ExpiryAt)
-                .HasColumnType("datetime")
-                .HasColumnName("expiry_at");
-            entity.Property(e => e.IsUsed)
-                .HasDefaultValue(false)
-                .HasColumnName("is_used");
-            entity.Property(e => e.TokenHash)
-                .HasMaxLength(255)
-                .IsUnicode(false)
-                .HasColumnName("token_hash");
-            entity.Property(e => e.UserId).HasColumnName("user_id");
-
-            entity.HasOne(d => d.User).WithMany(p => p.PasswordResetTokens)
-                .HasForeignKey(d => d.UserId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_PasswordReset_Users");
         });
 
         modelBuilder.Entity<Payment>(entity =>

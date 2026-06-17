@@ -37,8 +37,6 @@ public partial class User
 
     public virtual ICollection<ChatbotLog> ChatbotLogs { get; set; } = new List<ChatbotLog>();
 
-    public virtual ICollection<PasswordResetToken> PasswordResetTokens { get; set; } = new List<PasswordResetToken>();
-
     public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
 
     public virtual ICollection<RewardPointHistory> RewardPointHistories { get; set; } = new List<RewardPointHistory>();

@@ -61,11 +61,7 @@ public class MovieService : IMovieService
                 predicate: movie => movie.Status == MovieStatus.ComingSoon,
                 includeProperties: includes),
             "special" => await _unitOfWork.Movies.GetAllAsync(
-                predicate: movie => movie.Status != null && movie.Status.ToLower() != MovieStatus.StoppedLower &&
-                    movie.Showtimes.Any(showtime =>
-                        showtime.Status == ShowtimeStatus.Special ||
-                        showtime.Status == ShowtimeStatus.SpecialScreening ||
-                        (showtime.Status != null && showtime.Status.Contains(ShowtimeStatus.SpecialKeyword))),
+                predicate: movie => movie.Status == MovieStatus.Special,
                 includeProperties: includes),
             _ => await _unitOfWork.Movies.GetAllAsync(
                 predicate: movie => movie.Status == MovieStatus.NowShowing,
@@ -159,20 +155,15 @@ public class MovieService : IMovieService
         return movie == null ? null : _mapper.Map<MovieDTO>(movie);
     }
 
-    // Lấy phim có suất chiếu đặc biệt hoặc đặc sắc.
-    public async Task<IEnumerable<MovieDTO>> GetSpecialShowtimeMoviesAsync()
+    // Lấy phim có trạng thái suất chiếu đặc biệt.
+    public async Task<IEnumerable<MovieDTO>> GetSpecialMoviesAsync()
     {
-        var specialShowtimeMovies = await _unitOfWork.Movies.GetAllAsync(
-            predicate: movie => movie.Status != null && movie.Status.ToLower() != MovieStatus.StoppedLower &&
-                movie.Showtimes.Any(showtime =>
-                    showtime.Status == ShowtimeStatus.Special ||
-                    showtime.Status == ShowtimeStatus.SpecialScreening ||
-                    (showtime.Status != null && showtime.Status.Contains(ShowtimeStatus.SpecialKeyword))
-                ),
+        var specialMovies = await _unitOfWork.Movies.GetAllAsync(
+            predicate: movie => movie.Status == MovieStatus.Special,
             includeProperties: new[] { ShowtimesIncludeProperty, GenresIncludeProperty }
         );
 
-        return _mapper.Map<IEnumerable<MovieDTO>>(specialShowtimeMovies);
+        return _mapper.Map<IEnumerable<MovieDTO>>(specialMovies);
     }
 
     // Tìm phim theo từ khóa (đẩy điều kiện xuống SQL) và trả về kết quả phân trang.
