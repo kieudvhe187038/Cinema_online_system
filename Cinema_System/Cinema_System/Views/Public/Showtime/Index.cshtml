@@ -1,10 +1,13 @@
+@* Trang Lịch Chiếu công khai: chọn ngày + lọc theo phim/phòng, suất chiếu nhóm theo phim. *@
 @model Cinema_System.Application.ViewModels.ShowtimePageViewModel
 @{
     ViewData["Title"] = "Lịch Chiếu";
 
+    // Tạo URL giữ nguyên bộ lọc phim/phòng khi đổi ngày trên thanh ngày.
     string DateUrl(DateOnly d) => Url.Action("Index", "Showtime",
         new { movieId = Model.MovieId, roomId = Model.RoomId, date = d.ToString("yyyy-MM-dd") })!;
 
+    // Nhãn thứ trong tuần cho thanh chọn ngày.
     string[] weekdays = { "CN", "T2", "T3", "T4", "T5", "T6", "T7" };
     string Weekday(DateOnly d) => weekdays[(int)d.DayOfWeek];
 

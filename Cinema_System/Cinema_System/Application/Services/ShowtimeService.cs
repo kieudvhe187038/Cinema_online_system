@@ -10,6 +10,7 @@ public class ShowtimeService : IShowtimeService
 {
     private readonly IUnitOfWork _unitOfWork;
 
+    // Nhận UnitOfWork qua DI để truy cập các repository (Showtimes, Seats, Tickets...).
     public ShowtimeService(IUnitOfWork unitOfWork)
     {
         _unitOfWork = unitOfWork;
