@@ -42,7 +42,7 @@
                     $r.html(
                         '<div class="ml-result">' +
                         '<div class="ml-line"><span>Họ tên</span><span>' + m.fullName + '</span></div>' +
-                        '<div class="ml-line"><span>SĐT</span><span>' + (m.phone || '—') + '</span></div>' +
+                        '<div class="ml-line"><span>SĐT</span><span>' + (m.maskedPhone || '—') + '</span></div>' +
                         '<div class="ml-line"><span>Email</span><span>' + (m.email || '—') + '</span></div>' +
                         '<div class="ml-line"><span>Điểm thưởng</span><span class="ml-points">' + (m.rewardPoints || 0) + '</span></div>' +
                         '</div>');

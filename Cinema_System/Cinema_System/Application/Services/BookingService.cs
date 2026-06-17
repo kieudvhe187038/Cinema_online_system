@@ -21,24 +21,32 @@ public class BookingService : IBookingService
     public async Task<BookingListViewModel> GetBookingsAsync(
         string? search, string? bookingType, string? paymentStatus, int page, int pageSize)
     {
+        // Lọc theo loại đơn / trạng thái ngay tại DB (dịch được sang SQL) để không
+        // phải tải toàn bộ bảng Bookings về bộ nhớ — tránh timeout khi dữ liệu lớn.
+        var typeFilter = string.IsNullOrEmpty(bookingType) ? null : bookingType;
+        var statusFilter = string.IsNullOrEmpty(paymentStatus) ? null : paymentStatus;
+
         var bookings = (await _unitOfWork.Bookings.GetAllAsync(
+            predicate: b => (typeFilter == null || b.BookingType == typeFilter)
+                            && (statusFilter == null || b.PaymentStatus == statusFilter),
             include: q => q
                 .Include(b => b.Showtime).ThenInclude(s => s.Movie)
                 .Include(b => b.Showtime).ThenInclude(s => s.Room)
                 .Include(b => b.User)
                 .Include(b => b.Staff)
-                .Include(b => b.Tickets),
+                .Include(b => b.Tickets)
+                .AsSplitQuery(),
             orderBy: q => q.OrderByDescending(b => b.CreatedAt))).ToList();
 
+        // Tìm kiếm tự do (mã/tên/SĐT) xử lý trên bộ nhớ vì so khớp không phân biệt hoa
+        // thường trên nhiều cột điều hướng không dịch trực tiếp sang SQL được.
         var keyword = search?.Trim();
         var filtered = bookings.Where(b =>
-            (string.IsNullOrEmpty(keyword)
+            string.IsNullOrEmpty(keyword)
                 || (b.QrCode != null && b.QrCode.Contains(keyword, StringComparison.OrdinalIgnoreCase))
                 || (b.User != null && b.User.FullName.Contains(keyword, StringComparison.OrdinalIgnoreCase))
                 || (b.User != null && b.User.Phone != null && b.User.Phone.Contains(keyword, StringComparison.OrdinalIgnoreCase))
                 || (b.Staff != null && b.Staff.FullName.Contains(keyword, StringComparison.OrdinalIgnoreCase)))
-            && (string.IsNullOrEmpty(bookingType) || b.BookingType == bookingType)
-            && (string.IsNullOrEmpty(paymentStatus) || b.PaymentStatus == paymentStatus))
             .ToList();
 
         var totalCount = filtered.Count;
@@ -194,6 +202,7 @@ public class BookingService : IBookingService
                 .Include(b => b.Staff)
                 .Include(b => b.Tickets).ThenInclude(t => t.Seat).ThenInclude(s => s.SeatType)
                 .Include(b => b.BookingFoods).ThenInclude(f => f.Fb)
-                .Include(b => b.Payments));
+                .Include(b => b.Payments)
+                .AsSplitQuery());
     }
 }

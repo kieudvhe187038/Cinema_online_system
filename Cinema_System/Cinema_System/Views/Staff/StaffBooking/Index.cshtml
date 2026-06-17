@@ -31,9 +31,6 @@
         .bk-chip.cancelled { background: #fde8e8; color: #b91c1c; }
         .bk-link { color: var(--secondary); text-decoration: none; font-weight: 600; font-size: .85rem; }
         .bk-link:hover { color: var(--primary); }
-        .bk-pager { display: flex; gap: .35rem; margin-top: 1.25rem; justify-content: center; }
-        .bk-pager a { padding: .4rem .75rem; border: 1px solid var(--outline-variant); border-radius: var(--radius); text-decoration: none; color: var(--on-surface); }
-        .bk-pager a.active { background: var(--primary); color: var(--white); border-color: var(--primary); }
         .bk-empty { text-align: center; padding: 3rem; color: var(--on-surface-variant); }
         .bk-meta { color: var(--on-surface-variant); font-size: .85rem; margin-bottom: .75rem; }
         .bk-amount { font-weight: 700; }
@@ -120,13 +117,19 @@
 
         @if (Model.TotalPages > 1)
         {
-            <div class="bk-pager">
-                @for (int p = 1; p <= Model.TotalPages; p++)
+            @await Html.PartialAsync("_Pager", new PagerModel
+            {
+                CurrentPage = Model.CurrentPage,
+                TotalPages = Model.TotalPages,
+                Action = "Index",
+                Controller = "StaffBooking",
+                RouteValues = new Dictionary<string, string?>
                 {
-                    <a class="@(p == Model.CurrentPage ? "active" : "")"
-                       href="@Url.Action("Index", "StaffBooking", new { search = Model.Search, bookingType = Model.BookingType, paymentStatus = Model.PaymentStatus, page = p })">@p</a>
+                    ["search"] = Model.Search,
+                    ["bookingType"] = Model.BookingType,
+                    ["paymentStatus"] = Model.PaymentStatus
                 }
-            </div>
+            })
         }
     }
     else
