@@ -9,6 +9,7 @@ namespace Cinema_System.Controllers.Public
     {
         private readonly IShowtimeService _showtimeService;
 
+        // Nhận IShowtimeService qua DI để truy vấn lịch chiếu & sơ đồ ghế.
         public ShowtimeController(IShowtimeService showtimeService)
         {
             _showtimeService = showtimeService;
@@ -22,8 +23,8 @@ namespace Cinema_System.Controllers.Public
         }
 
         // Trang chọn ghế cho một suất chiếu (click từ lịch chiếu sang).
-        // Chỉ khách hàng đã đăng nhập (role CUSTOMER) mới được vào; guest sẽ bị chuyển tới trang đăng nhập.
-        [Authorize(Roles = "CUSTOMER")]
+        // Cho CUSTOMER (tự mua) và STAFF (mua hộ khách tại quầy); guest sẽ bị chuyển tới trang đăng nhập.
+        [Authorize(Roles = "CUSTOMER,STAFF")]
         public async Task<IActionResult> SelectSeats(Guid id)
         {
             var vm = await _showtimeService.GetSeatSelectionAsync(id);
