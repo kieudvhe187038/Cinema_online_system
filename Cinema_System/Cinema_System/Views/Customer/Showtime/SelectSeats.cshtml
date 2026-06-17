@@ -172,6 +172,7 @@
                 return fetch(url, { method: 'POST', body: fd }).then(r => r.json());
             }
 
+            // Hiện 1 thông báo tạm thời rồi tự ẩn sau ~2.8 giây.
             function flash(el, ref, msg) {
                 if (msg) el.textContent = msg;
                 el.classList.remove('hidden');
@@ -179,6 +180,7 @@
                 ref.t = setTimeout(() => el.classList.add('hidden'), 2800);
             }
 
+            // Định dạng số tiền sang VND, và số giây sang mm:ss.
             const vnd = n => n.toLocaleString('vi-VN') + ' ₫';
             function fmt(s) {
                 const m = Math.floor(s / 60), ss = s % 60;
@@ -198,6 +200,7 @@
                 }
             }, 1000);
 
+            // Vẽ lại panel: danh sách ghế đã chọn, số lượng và tạm tính tổng tiền.
             function render() {
                 let total = 0;
                 selected.forEach(v => total += v.price);
