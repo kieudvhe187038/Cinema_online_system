@@ -13,6 +13,10 @@ public interface IShowtimeService
     // currentUserId: ghế do chính user này đang giữ sẽ không bị tính là "đang giữ" (để họ chọn lại được).
     Task<SeatSelectionViewModel?> GetSeatSelectionAsync(Guid showtimeId, Guid? currentUserId = null);
 
+    // Lấy dữ liệu trang chọn đồ ăn/nước: ghế user đang giữ + danh sách món + thời gian giữ còn lại.
+    // Trả null nếu user không còn giữ ghế nào (hết giờ giữ) -> caller điều hướng lại.
+    Task<FoodOrderViewModel?> GetFoodOrderAsync(Guid showtimeId, Guid userId);
+
     // Giữ 1 ghế cho user trong holdMinutes phút (tạo mới hoặc gia hạn); fail nếu ghế đã đặt/người khác giữ.
     Task<Result> HoldSeatAsync(Guid showtimeId, Guid seatId, Guid userId, int holdMinutes);
 

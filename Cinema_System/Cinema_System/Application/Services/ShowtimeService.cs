@@ -119,48 +119,8 @@ public class ShowtimeService : IShowtimeService
             include: q => q.Include(s => s.SeatType),
             orderBy: q => q.OrderBy(s => s.RowNumber).ThenBy(s => s.SeatNumber));
 
-        // ── Tính giá vé cho suất chiếu này ──
-        var st = showtime.StartTime;
-        bool Active(string? status) => status == "Active";
-        bool Effective(DateTime from, DateTime? to) => from <= st && (to == null || to >= st);
-
-        // Giá gốc: ưu tiên cấu hình theo phim, không có thì lấy cấu hình chung (movie_id = null).
-        var baseConfigs = (await _unitOfWork.PriceBaseConfigs.GetAllAsync(
-            predicate: p => p.Status == "Active" && p.EffectiveFrom <= st && (p.EffectiveTo == null || p.EffectiveTo >= st)))
-            .ToList();
-        var basePrice = baseConfigs.Where(p => p.MovieId == showtime.MovieId).OrderByDescending(p => p.EffectiveFrom)
-                            .Select(p => (decimal?)p.BasePrice).FirstOrDefault()
-                        ?? baseConfigs.Where(p => p.MovieId == null).OrderByDescending(p => p.EffectiveFrom)
-                            .Select(p => (decimal?)p.BasePrice).FirstOrDefault()
-                        ?? 0m;
-
-        // Phụ thu loại phòng.
-        var roomTypeId = showtime.Room.RoomTypeId;
-        var roomSurcharge = (await _unitOfWork.PriceRoomTypeConfigs.GetAllAsync(
-            predicate: p => p.RoomTypeId == roomTypeId))
-            .Where(p => Active(p.Status) && Effective(p.EffectiveFrom, p.EffectiveTo))
-            .OrderByDescending(p => p.EffectiveFrom).Select(p => p.TypeSurcharge).FirstOrDefault();
-
-        // Phụ thu khung giờ: cộng mọi rule active khớp ngày trong tuần và/hoặc khung giờ.
-        var sqlDow = (int)st.DayOfWeek + 1;          // .NET CN=0 -> SQL 1 ... T7=6 -> 7
-        var timeOfDay = TimeOnly.FromDateTime(st);
-        var timeSurcharge = (await _unitOfWork.PriceTimeConfigs.GetAllAsync(
-            predicate: p => p.Status == "Active" && p.EffectiveFrom <= st && (p.EffectiveTo == null || p.EffectiveTo >= st)))
-            .Where(p => (p.DayOfWeek == null || p.DayOfWeek == sqlDow)
-                     && ((p.StartTime == null && p.EndTime == null)
-                         || (p.StartTime != null && p.EndTime != null && timeOfDay >= p.StartTime && timeOfDay <= p.EndTime)))
-            .Sum(p => p.TimeSurcharge);
-
-        // Phụ thu theo loại ghế (map seatTypeId -> surcharge).
-        var seatSurcharges = (await _unitOfWork.PriceSeatConfigs.GetAllAsync(
-            predicate: p => p.Status == "Active" && p.EffectiveFrom <= st && (p.EffectiveTo == null || p.EffectiveTo >= st)))
-            .GroupBy(p => p.SeatTypeId)
-            .ToDictionary(g => g.Key, g => g.OrderByDescending(p => p.EffectiveFrom).First().SeatSurcharge);
-
-        // Giá 1 ghế = base + phụ thu phòng + phụ thu giờ + phụ thu loại ghế.
-        decimal SeatPrice(Guid seatTypeId) =>
-            basePrice + roomSurcharge + timeSurcharge
-            + (seatSurcharges.TryGetValue(seatTypeId, out var s2) ? s2 : 0m);
+        // Hàm tính giá vé theo loại ghế cho suất chiếu này.
+        var seatPrice = await BuildSeatPricerAsync(showtime);
 
         var rows = seats
             .GroupBy(s => s.RowNumber)
@@ -176,7 +136,7 @@ public class ShowtimeService : IShowtimeService
                     SeatNumber = s.SeatNumber,
                     RowLabel = RowLabel(s.RowNumber),
                     SeatTypeName = s.SeatType?.Name ?? string.Empty,
-                    Price = SeatPrice(s.SeatTypeId),
+                    Price = seatPrice(s.SeatTypeId),
                     State = s.Status == "Broken" ? "Broken"
                           : bookedSeatIds.Contains(s.Id) ? "Booked"
                           : heldSeatIds.Contains(s.Id) ? "Held"
@@ -282,6 +242,112 @@ public class ShowtimeService : IShowtimeService
             _unitOfWork.SeatHolds.Update(h);
         }
         await _unitOfWork.SaveChangesAsync();
+    }
+
+    // Lấy dữ liệu trang chọn đồ ăn: ghế user đang giữ + danh sách món + thời gian giữ còn lại.
+    public async Task<FoodOrderViewModel?> GetFoodOrderAsync(Guid showtimeId, Guid userId)
+    {
+        var now = DateTime.Now;
+
+        // Ghế user đang giữ cho suất này; không còn ghế nào -> coi như hết phiên đặt.
+        var holds = (await _unitOfWork.SeatHolds.GetAllAsync(
+            predicate: h => h.ShowtimeId == showtimeId && h.UserId == userId
+                && h.Status == "Holding" && h.ExpiresAt > now)).ToList();
+        if (holds.Count == 0) return null;
+
+        var showtime = (await _unitOfWork.Showtimes.GetAllAsync(
+            predicate: s => s.Id == showtimeId,
+            include: q => q.Include(s => s.Movie).Include(s => s.Room).ThenInclude(r => r.Cinema)))
+            .FirstOrDefault();
+        if (showtime is null) return null;
+
+        var seatPrice = await BuildSeatPricerAsync(showtime);
+
+        // Thông tin các ghế đang giữ (nhãn + giá).
+        var heldSeatIds = holds.Select(h => h.SeatId).ToList();
+        var seats = await _unitOfWork.Seats.GetAllAsync(
+            predicate: s => heldSeatIds.Contains(s.Id),
+            include: q => q.Include(s => s.SeatType),
+            orderBy: q => q.OrderBy(s => s.RowNumber).ThenBy(s => s.SeatNumber));
+        var seatItems = seats.Select(s => new SelectedSeatItem
+        {
+            Label = RowLabel(s.RowNumber) + s.SeatNumber,
+            Price = seatPrice(s.SeatTypeId)
+        }).ToList();
+
+        // Danh sách món còn bán.
+        var foods = await _unitOfWork.FoodBeverages.GetAllAsync(
+            predicate: f => f.StockStatus == "In Stock",
+            orderBy: q => q.OrderBy(f => f.Name));
+        var foodItems = foods.Select(f => new FoodBeverageDTO
+        {
+            Id = f.Id,
+            Name = f.Name,
+            Description = f.Description,
+            ImageUrl = f.ImageUrl,
+            Price = f.Price,
+            StockStatus = f.StockStatus
+        }).ToList();
+
+        // Thời gian giữ còn lại = tới hold sắp hết hạn sớm nhất.
+        var secondsLeft = (int)Math.Max(0, (holds.Min(h => h.ExpiresAt) - now).TotalSeconds);
+
+        return new FoodOrderViewModel
+        {
+            ShowtimeId = showtimeId,
+            MovieTitle = showtime.Movie.Title,
+            RoomName = showtime.Room.Name,
+            CinemaName = showtime.Room.Cinema?.Name ?? string.Empty,
+            StartTime = showtime.StartTime,
+            Seats = seatItems,
+            SeatTotal = seatItems.Sum(x => x.Price),
+            HoldSecondsLeft = secondsLeft,
+            FoodItems = foodItems
+        };
+    }
+
+    // Tạo hàm tính giá vé theo loại ghế cho 1 suất chiếu (base + phụ thu phòng/giờ/ghế).
+    private async Task<Func<Guid, decimal>> BuildSeatPricerAsync(Showtime showtime)
+    {
+        var st = showtime.StartTime;
+        bool Active(string? s) => s == "Active";
+        bool Effective(DateTime from, DateTime? to) => from <= st && (to == null || to >= st);
+
+        // Giá gốc: ưu tiên cấu hình theo phim, không có thì lấy cấu hình chung (movie_id = null).
+        var baseConfigs = (await _unitOfWork.PriceBaseConfigs.GetAllAsync(
+            predicate: p => p.Status == "Active" && p.EffectiveFrom <= st && (p.EffectiveTo == null || p.EffectiveTo >= st)))
+            .ToList();
+        var basePrice = baseConfigs.Where(p => p.MovieId == showtime.MovieId).OrderByDescending(p => p.EffectiveFrom)
+                            .Select(p => (decimal?)p.BasePrice).FirstOrDefault()
+                        ?? baseConfigs.Where(p => p.MovieId == null).OrderByDescending(p => p.EffectiveFrom)
+                            .Select(p => (decimal?)p.BasePrice).FirstOrDefault()
+                        ?? 0m;
+
+        // Phụ thu loại phòng.
+        var roomTypeId = showtime.Room.RoomTypeId;
+        var roomSurcharge = (await _unitOfWork.PriceRoomTypeConfigs.GetAllAsync(
+            predicate: p => p.RoomTypeId == roomTypeId))
+            .Where(p => Active(p.Status) && Effective(p.EffectiveFrom, p.EffectiveTo))
+            .OrderByDescending(p => p.EffectiveFrom).Select(p => p.TypeSurcharge).FirstOrDefault();
+
+        // Phụ thu khung giờ: cộng mọi rule active khớp ngày trong tuần và/hoặc khung giờ.
+        var sqlDow = (int)st.DayOfWeek + 1;          // .NET CN=0 -> SQL 1 ... T7=6 -> 7
+        var timeOfDay = TimeOnly.FromDateTime(st);
+        var timeSurcharge = (await _unitOfWork.PriceTimeConfigs.GetAllAsync(
+            predicate: p => p.Status == "Active" && p.EffectiveFrom <= st && (p.EffectiveTo == null || p.EffectiveTo >= st)))
+            .Where(p => (p.DayOfWeek == null || p.DayOfWeek == sqlDow)
+                     && ((p.StartTime == null && p.EndTime == null)
+                         || (p.StartTime != null && p.EndTime != null && timeOfDay >= p.StartTime && timeOfDay <= p.EndTime)))
+            .Sum(p => p.TimeSurcharge);
+
+        // Phụ thu theo loại ghế (map seatTypeId -> surcharge).
+        var seatSurcharges = (await _unitOfWork.PriceSeatConfigs.GetAllAsync(
+            predicate: p => p.Status == "Active" && p.EffectiveFrom <= st && (p.EffectiveTo == null || p.EffectiveTo >= st)))
+            .GroupBy(p => p.SeatTypeId)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(p => p.EffectiveFrom).First().SeatSurcharge);
+
+        return seatTypeId => basePrice + roomSurcharge + timeSurcharge
+            + (seatSurcharges.TryGetValue(seatTypeId, out var s2) ? s2 : 0m);
     }
 
     // Đổi số hàng (1,2,3...) thành nhãn chữ (A,B,C...).
