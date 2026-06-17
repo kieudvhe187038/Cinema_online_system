@@ -21,14 +21,24 @@ public class BookingService : IBookingService
     public async Task<BookingListViewModel> GetBookingsAsync(
         string? search, string? bookingType, string? paymentStatus, int page, int pageSize)
     {
-        // Lọc theo loại đơn / trạng thái ngay tại DB (dịch được sang SQL) để không
-        // phải tải toàn bộ bảng Bookings về bộ nhớ — tránh timeout khi dữ liệu lớn.
+        // Toàn bộ lọc + phân trang được đẩy xuống SQL (Skip/Take) nên mỗi lần chỉ
+        // tải đúng 1 trang — tránh kéo cả bảng Bookings về bộ nhớ gây timeout.
         var typeFilter = string.IsNullOrEmpty(bookingType) ? null : bookingType;
         var statusFilter = string.IsNullOrEmpty(paymentStatus) ? null : paymentStatus;
+        var keyword = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
 
-        var bookings = (await _unitOfWork.Bookings.GetAllAsync(
-            predicate: b => (typeFilter == null || b.BookingType == typeFilter)
-                            && (statusFilter == null || b.PaymentStatus == statusFilter),
+        // SQL Server dùng collation không phân biệt hoa thường nên Contains dịch
+        // được sang LIKE. Không dùng StringComparison vì không dịch sang SQL.
+        var (rows, totalCount) = await _unitOfWork.Bookings.GetPagedAsync(
+            page, pageSize,
+            predicate: b =>
+                (typeFilter == null || b.BookingType == typeFilter)
+                && (statusFilter == null || b.PaymentStatus == statusFilter)
+                && (keyword == null
+                    || (b.QrCode != null && b.QrCode.Contains(keyword))
+                    || (b.User != null && b.User.FullName.Contains(keyword))
+                    || (b.User != null && b.User.Phone != null && b.User.Phone.Contains(keyword))
+                    || (b.Staff != null && b.Staff.FullName.Contains(keyword))),
             include: q => q
                 .Include(b => b.Showtime).ThenInclude(s => s.Movie)
                 .Include(b => b.Showtime).ThenInclude(s => s.Room)
@@ -36,27 +46,13 @@ public class BookingService : IBookingService
                 .Include(b => b.Staff)
                 .Include(b => b.Tickets)
                 .AsSplitQuery(),
-            orderBy: q => q.OrderByDescending(b => b.CreatedAt))).ToList();
+            orderBy: q => q.OrderByDescending(b => b.CreatedAt));
 
-        // Tìm kiếm tự do (mã/tên/SĐT) xử lý trên bộ nhớ vì so khớp không phân biệt hoa
-        // thường trên nhiều cột điều hướng không dịch trực tiếp sang SQL được.
-        var keyword = search?.Trim();
-        var filtered = bookings.Where(b =>
-            string.IsNullOrEmpty(keyword)
-                || (b.QrCode != null && b.QrCode.Contains(keyword, StringComparison.OrdinalIgnoreCase))
-                || (b.User != null && b.User.FullName.Contains(keyword, StringComparison.OrdinalIgnoreCase))
-                || (b.User != null && b.User.Phone != null && b.User.Phone.Contains(keyword, StringComparison.OrdinalIgnoreCase))
-                || (b.Staff != null && b.Staff.FullName.Contains(keyword, StringComparison.OrdinalIgnoreCase)))
-            .ToList();
-
-        var totalCount = filtered.Count;
         var totalPages = totalCount == 0 ? 1 : (int)Math.Ceiling(totalCount / (double)pageSize);
         if (page < 1) page = 1;
         if (page > totalPages) page = totalPages;
 
-        var items = filtered
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+        var items = rows
             .Select(b => new BookingListItemDTO
             {
                 Id = b.Id,
