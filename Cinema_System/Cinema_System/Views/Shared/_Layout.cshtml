@@ -53,7 +53,7 @@
                 </div>
                 <div class="flex items-center gap-3">
                     <form asp-controller="Movies" asp-action="Search" method="get" class="hidden relative lg:block">
-                        <input id="movie-search-input" type="text" name="find" maxlength="30" value="@(ViewData["SearchKeyword"] ?? string.Empty)" placeholder="Tìm kiếm phim" class="w-72 rounded-full border border-slate-200 bg-slate-100 py-2 pl-4 pr-11 text-sm text-slate-800 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                        <input id="movie-search-input" type="text" name="find" maxlength="30" pattern="^[\p{L}\p{N}\s]+$" title="Từ khóa tìm kiếm tối đa 30 ký tự, không chứa ký tự đặc biệt." value="@(ViewData["SearchKeyword"] ?? string.Empty)" placeholder="Tìm kiếm phim" class="w-72 rounded-full border border-slate-200 bg-slate-100 py-2 pl-4 pr-11 text-sm text-slate-800 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
                         <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500" aria-label="Tìm kiếm">
                             <span class="material-symbols-outlined">search</span>
                         </button>
@@ -205,6 +205,23 @@
             });
             document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape') closeMenu();
+            });
+        })();
+
+        (function () {
+            const searchInput = document.getElementById('movie-search-input');
+            if (!searchInput) return;
+
+            searchInput.addEventListener('input', function () {
+                let value = this.value;
+                if (value.length > 30) {
+                    value = value.slice(0, 30);
+                }
+                const cleaned = value.replace(/[^\p{L}\p{N}\s]+/gu, '');
+                if (cleaned !== value) {
+                    value = cleaned;
+                }
+                this.value = value;
             });
         })();
     </script>

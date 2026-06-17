@@ -29,31 +29,35 @@ namespace Cinema_System.Controllers.Public
             return View(moviesPageViewModel);
         }
 
-        // Kiểm tra query tìm kiếm hợp lệ: không rỗng, tối đa 30 ký tự, chỉ chữ/số/khoảng trắng
-        private bool IsValidSearchQuery(string searchQuery)
+        private static readonly System.Text.RegularExpressions.Regex SearchQueryRegex = new("^[\\p{L}\\p{N}\\s]+$", System.Text.RegularExpressions.RegexOptions.Compiled | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+
+        // Kiểm tra query tìm kiếm hợp lệ: không rỗng, tối đa 30 ký tự, chỉ chữ/số/khoảng trắng, hỗ trợ tiếng Việt.
+        private bool IsValidSearchQuery(string? searchQuery)
         {
             if (string.IsNullOrWhiteSpace(searchQuery))
             {
                 return false;
             }
 
-            if (searchQuery.Trim().Length > 30)
+            var trimmed = searchQuery.Trim();
+            if (trimmed.Length > 30)
             {
                 return false;
             }
 
-            return System.Text.RegularExpressions.Regex.IsMatch(searchQuery.Trim(), @"^[\p{L}\p{N}\s]+$");
+            return SearchQueryRegex.IsMatch(trimmed);
         }
 
         // Xử lý tìm kiếm phim theo tham số query string
-        public async Task<IActionResult> Search([FromQuery(Name = "find")] string searchQuery, int page = 1)
+        public async Task<IActionResult> Search([FromQuery(Name = "find")] string? searchQuery, int page = 1)
         {
             if (!IsValidSearchQuery(searchQuery))
             {
+                TempData["SearchError"] = "Từ khóa tìm kiếm chỉ được tối đa 30 ký tự và không chứa ký tự đặc biệt.";
                 return RedirectToAction("Index");
             }
 
-            var keyword = searchQuery.Trim();
+            var keyword = searchQuery!.Trim();
             var pagedMovies = await _movieService.SearchMoviesAsync(keyword, page, MoviePaging.DefaultPageSize);
             var moviesPageViewModel = BuildViewModel(pagedMovies, selectedTab: "search", searchKeyword: keyword);
             ViewData["SearchKeyword"] = keyword;
