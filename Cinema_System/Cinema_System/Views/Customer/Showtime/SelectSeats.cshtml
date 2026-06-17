@@ -83,8 +83,8 @@
                             if (seat.Selectable)
                             {
                                 <button type="button" class="seat @SeatClass(seat.State)"
-                                        data-seat-id="@seat.Id" data-label="@seat.Label"
-                                        title="@seat.Label · @seat.SeatTypeName">@seat.SeatNumber</button>
+                                        data-seat-id="@seat.Id" data-label="@seat.Label" data-price="@seat.Price"
+                                        title="@seat.Label · @seat.SeatTypeName · @seat.Price.ToString("N0") ₫">@seat.SeatNumber</button>
                             }
                             else
                             {
@@ -109,14 +109,26 @@
 
         <!-- Tóm tắt lựa chọn -->
         <div class="h-fit rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-28">
+            @Html.AntiForgeryToken()
             <h2 class="font-heading text-lg font-bold text-tertiary">Ghế đã chọn</h2>
             <p class="mt-1 text-xs text-slate-400">Tối đa 6 ghế mỗi lượt đặt.</p>
             <div id="selected-empty" class="mt-3 text-sm text-slate-400">Chưa chọn ghế nào.</div>
             <div id="selected-list" class="mt-3 hidden flex-wrap gap-2"></div>
             <p id="seat-limit-msg" class="mt-3 hidden text-xs font-medium text-red-600">Bạn chỉ được chọn tối đa 6 ghế.</p>
+            <p id="seat-error-msg" class="mt-3 hidden text-xs font-medium text-red-600"></p>
+
+            <!-- Đồng hồ giữ ghế: đếm ngược cho cả quy trình chọn ghế + đồ ăn + thanh toán -->
+            <div id="hold-timer" class="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                Thời gian còn lại: <span id="hold-countdown" class="font-bold">10:00</span>. Hết giờ sẽ tự quay về trang chủ.
+            </div>
+
             <div class="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-sm">
                 <span class="text-slate-500">Số ghế</span>
                 <span class="font-bold text-slate-800"><span id="selected-count">0</span> / 6</span>
+            </div>
+            <div class="mt-2 flex items-center justify-between text-sm">
+                <span class="text-slate-500">Tạm tính</span>
+                <span id="selected-total" class="font-bold text-primary">0 ₫</span>
             </div>
             <button id="continue-btn" type="button" disabled
                     class="mt-4 w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-white transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-slate-300">
@@ -129,24 +141,68 @@
 @section Scripts {
     <script>
         (function () {
-            const MAX_SEATS = 6;                  // số ghế tối đa mỗi lượt đặt
-            const selected = new Map();           // seatId -> label
+            const MAX_SEATS = 6;                   // số ghế tối đa mỗi lượt đặt
+            const SESSION_SECONDS = 10 * 60;       // 10 phút cho cả quy trình (chọn ghế + đồ ăn + thanh toán)
+            const showtimeId = '@Model.ShowtimeId';
+            const homeUrl = '@Url.Action("Index", "Home")';
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const urls = {
+                hold: '@Url.Action("HoldSeat", "Showtime")',
+                release: '@Url.Action("ReleaseSeat", "Showtime")',
+                releaseAll: '@Url.Action("ReleaseAll", "Showtime")'
+            };
+
+            const selected = new Map();            // seatId -> { label, price }
             const listEl = document.getElementById('selected-list');
             const emptyEl = document.getElementById('selected-empty');
             const countEl = document.getElementById('selected-count');
+            const totalEl = document.getElementById('selected-total');
             const continueBtn = document.getElementById('continue-btn');
             const limitMsg = document.getElementById('seat-limit-msg');
-            let limitTimer = null;
+            const errorMsg = document.getElementById('seat-error-msg');
+            const countdownEl = document.getElementById('hold-countdown');
+            const limitRef = { t: null }, errRef = { t: null };
 
-            // Hiện cảnh báo vượt giới hạn trong vài giây.
-            function flashLimit() {
-                limitMsg.classList.remove('hidden');
-                clearTimeout(limitTimer);
-                limitTimer = setTimeout(() => limitMsg.classList.add('hidden'), 2500);
+            // Gửi POST kèm antiforgery token (dạng form-data).
+            function post(url, data) {
+                const fd = new FormData();
+                fd.append('__RequestVerificationToken', token);
+                fd.append('showtimeId', showtimeId);
+                for (const k in data) fd.append(k, data[k]);
+                return fetch(url, { method: 'POST', body: fd }).then(r => r.json());
             }
 
+            function flash(el, ref, msg) {
+                if (msg) el.textContent = msg;
+                el.classList.remove('hidden');
+                clearTimeout(ref.t);
+                ref.t = setTimeout(() => el.classList.add('hidden'), 2800);
+            }
+
+            const vnd = n => n.toLocaleString('vi-VN') + ' ₫';
+            function fmt(s) {
+                const m = Math.floor(s / 60), ss = s % 60;
+                return m + ':' + (ss < 10 ? '0' : '') + ss;
+            }
+
+            // ── Đồng hồ đếm ngược: chạy ngay khi vào trang, KHÔNG reset khi chọn ghế ──
+            let countdown = SESSION_SECONDS;
+            countdownEl.textContent = fmt(countdown);
+            const tick = setInterval(() => {
+                countdown--;
+                countdownEl.textContent = fmt(Math.max(0, countdown));
+                if (countdown <= 0) {
+                    clearInterval(tick);
+                    // Rời trang sẽ kích hoạt pagehide -> tự giải phóng ghế đang giữ.
+                    window.location.href = homeUrl;
+                }
+            }, 1000);
+
             function render() {
+                let total = 0;
+                selected.forEach(v => total += v.price);
                 countEl.textContent = selected.size;
+                totalEl.textContent = vnd(total);
                 continueBtn.disabled = selected.size === 0;
                 if (selected.size === 0) {
                     emptyEl.classList.remove('hidden');
@@ -157,30 +213,63 @@
                 emptyEl.classList.add('hidden');
                 listEl.classList.remove('hidden');
                 listEl.classList.add('flex');
-                listEl.innerHTML = [...selected.values()].sort()
-                    .map(l => `<span class="rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">${l}</span>`)
+                listEl.innerHTML = [...selected.values()].sort((a, b) => a.label.localeCompare(b.label))
+                    .map(v => `<span class="rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">${v.label} · ${vnd(v.price)}</span>`)
                     .join('');
+            }
+
+            // Đánh dấu ghế thành "đang giữ bởi người khác" khi giữ thất bại.
+            function markTaken(btn) {
+                btn.classList.remove('seat-available', 'is-selected');
+                btn.classList.add('seat-held');
+                btn.dataset.taken = '1';
             }
 
             document.querySelectorAll('.seat-available[data-seat-id]').forEach(btn => {
                 btn.addEventListener('click', () => {
+                    if (btn.dataset.taken === '1') return;
                     const id = btn.dataset.seatId;
+                    const label = btn.dataset.label;
+                    const price = parseFloat(btn.dataset.price) || 0;
+
                     if (selected.has(id)) {
+                        // Bỏ chọn -> bỏ giữ ghế (không ảnh hưởng đồng hồ).
                         selected.delete(id);
                         btn.classList.remove('is-selected');
-                    } else {
-                        if (selected.size >= MAX_SEATS) { flashLimit(); return; }
-                        selected.set(id, btn.dataset.label);
-                        btn.classList.add('is-selected');
+                        render();
+                        post(urls.release, { seatId: id }).catch(() => {});
+                        return;
                     }
-                    render();
+
+                    if (selected.size >= MAX_SEATS) { flash(limitMsg, limitRef); return; }
+
+                    // Chọn -> giữ ghế ở server trước, thành công mới đánh dấu chọn.
+                    post(urls.hold, { seatId: id }).then(res => {
+                        if (res.ok) {
+                            selected.set(id, { label, price });
+                            btn.classList.add('is-selected');
+                            render();
+                        } else {
+                            markTaken(btn);
+                            flash(errorMsg, errRef, res.message || 'Không giữ được ghế.');
+                        }
+                    }).catch(() => flash(errorMsg, errRef, 'Lỗi kết nối, thử lại.'));
                 });
+            });
+
+            // Rời trang -> bỏ giữ toàn bộ ghế (dùng sendBeacon để gửi được khi đóng tab).
+            window.addEventListener('pagehide', () => {
+                if (selected.size === 0) return;
+                const fd = new FormData();
+                fd.append('__RequestVerificationToken', token);
+                fd.append('showtimeId', showtimeId);
+                navigator.sendBeacon(urls.releaseAll, fd);
             });
 
             continueBtn.addEventListener('click', () => {
                 if (selected.size === 0) return;
-                // TODO: chuyển sang trang đặt vé/thanh toán khi luồng booking hoàn thiện.
-                alert('Ghế đã chọn: ' + [...selected.values()].sort().join(', '));
+                // TODO: chuyển sang trang chọn đồ ăn + thanh toán khi luồng booking hoàn thiện.
+                alert('Ghế đã chọn: ' + [...selected.values()].map(v => v.label).sort().join(', '));
             });
         })();
     </script>

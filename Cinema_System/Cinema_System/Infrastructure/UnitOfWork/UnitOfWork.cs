@@ -19,6 +19,8 @@ public class UnitOfWork : IUnitOfWork
     private IGenericRepository<SeatType>? _seatTypes;
     private IGenericRepository<Seat>? _seats;
     private IGenericRepository<PriceSeatConfig>? _priceSeatConfigs;
+    private IGenericRepository<PriceBaseConfig>? _priceBaseConfigs;
+    private IGenericRepository<PriceTimeConfig>? _priceTimeConfigs;
     private IGenericRepository<RoomType>? _roomTypes;
     private IGenericRepository<Room>? _rooms;
     private IGenericRepository<Showtime>? _showtimes;
@@ -54,6 +56,12 @@ public class UnitOfWork : IUnitOfWork
 
     public IGenericRepository<PriceSeatConfig> PriceSeatConfigs =>
         _priceSeatConfigs ??= new GenericRepository<PriceSeatConfig>(_context);
+
+    public IGenericRepository<PriceBaseConfig> PriceBaseConfigs =>
+        _priceBaseConfigs ??= new GenericRepository<PriceBaseConfig>(_context);
+
+    public IGenericRepository<PriceTimeConfig> PriceTimeConfigs =>
+        _priceTimeConfigs ??= new GenericRepository<PriceTimeConfig>(_context);
 
     public IGenericRepository<RoomType> RoomTypes =>
         _roomTypes ??= new GenericRepository<RoomType>(_context);

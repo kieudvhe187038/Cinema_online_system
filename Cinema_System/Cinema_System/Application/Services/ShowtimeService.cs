@@ -1,6 +1,8 @@
+using Cinema_System.Application.Common;
 using Cinema_System.Application.DTOs;
 using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
+using Cinema_System.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Cinema_System.Application.Services;
@@ -87,7 +89,7 @@ public class ShowtimeService : IShowtimeService
     }
 
     // Lấy sơ đồ ghế cho 1 suất chiếu, đánh dấu trạng thái từng ghế.
-    public async Task<SeatSelectionViewModel?> GetSeatSelectionAsync(Guid showtimeId)
+    public async Task<SeatSelectionViewModel?> GetSeatSelectionAsync(Guid showtimeId, Guid? currentUserId = null)
     {
         // Thông tin suất chiếu kèm phim & phòng/rạp.
         var showtimeList = await _unitOfWork.Showtimes.GetAllAsync(
@@ -104,9 +106,11 @@ public class ShowtimeService : IShowtimeService
             predicate: t => t.ShowtimeId == showtimeId && t.Status != "Cancelled");
         var bookedSeatIds = bookedTickets.Select(t => t.SeatId).ToHashSet();
 
+        // Ghế đang được giữ bởi NGƯỜI KHÁC (hold còn hiệu lực). Hold của chính user hiện tại không tính.
         var now = DateTime.Now;
         var activeHolds = await _unitOfWork.SeatHolds.GetAllAsync(
-            predicate: h => h.ShowtimeId == showtimeId && h.ExpiresAt > now);
+            predicate: h => h.ShowtimeId == showtimeId && h.ExpiresAt > now
+                && h.Status == "Holding" && h.UserId != currentUserId);
         var heldSeatIds = activeHolds.Select(h => h.SeatId).ToHashSet();
 
         // Toàn bộ ghế của phòng, sắp theo hàng rồi số ghế.
@@ -114,6 +118,49 @@ public class ShowtimeService : IShowtimeService
             predicate: s => s.RoomId == showtime.RoomId,
             include: q => q.Include(s => s.SeatType),
             orderBy: q => q.OrderBy(s => s.RowNumber).ThenBy(s => s.SeatNumber));
+
+        // ── Tính giá vé cho suất chiếu này ──
+        var st = showtime.StartTime;
+        bool Active(string? status) => status == "Active";
+        bool Effective(DateTime from, DateTime? to) => from <= st && (to == null || to >= st);
+
+        // Giá gốc: ưu tiên cấu hình theo phim, không có thì lấy cấu hình chung (movie_id = null).
+        var baseConfigs = (await _unitOfWork.PriceBaseConfigs.GetAllAsync(
+            predicate: p => p.Status == "Active" && p.EffectiveFrom <= st && (p.EffectiveTo == null || p.EffectiveTo >= st)))
+            .ToList();
+        var basePrice = baseConfigs.Where(p => p.MovieId == showtime.MovieId).OrderByDescending(p => p.EffectiveFrom)
+                            .Select(p => (decimal?)p.BasePrice).FirstOrDefault()
+                        ?? baseConfigs.Where(p => p.MovieId == null).OrderByDescending(p => p.EffectiveFrom)
+                            .Select(p => (decimal?)p.BasePrice).FirstOrDefault()
+                        ?? 0m;
+
+        // Phụ thu loại phòng.
+        var roomTypeId = showtime.Room.RoomTypeId;
+        var roomSurcharge = (await _unitOfWork.PriceRoomTypeConfigs.GetAllAsync(
+            predicate: p => p.RoomTypeId == roomTypeId))
+            .Where(p => Active(p.Status) && Effective(p.EffectiveFrom, p.EffectiveTo))
+            .OrderByDescending(p => p.EffectiveFrom).Select(p => p.TypeSurcharge).FirstOrDefault();
+
+        // Phụ thu khung giờ: cộng mọi rule active khớp ngày trong tuần và/hoặc khung giờ.
+        var sqlDow = (int)st.DayOfWeek + 1;          // .NET CN=0 -> SQL 1 ... T7=6 -> 7
+        var timeOfDay = TimeOnly.FromDateTime(st);
+        var timeSurcharge = (await _unitOfWork.PriceTimeConfigs.GetAllAsync(
+            predicate: p => p.Status == "Active" && p.EffectiveFrom <= st && (p.EffectiveTo == null || p.EffectiveTo >= st)))
+            .Where(p => (p.DayOfWeek == null || p.DayOfWeek == sqlDow)
+                     && ((p.StartTime == null && p.EndTime == null)
+                         || (p.StartTime != null && p.EndTime != null && timeOfDay >= p.StartTime && timeOfDay <= p.EndTime)))
+            .Sum(p => p.TimeSurcharge);
+
+        // Phụ thu theo loại ghế (map seatTypeId -> surcharge).
+        var seatSurcharges = (await _unitOfWork.PriceSeatConfigs.GetAllAsync(
+            predicate: p => p.Status == "Active" && p.EffectiveFrom <= st && (p.EffectiveTo == null || p.EffectiveTo >= st)))
+            .GroupBy(p => p.SeatTypeId)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(p => p.EffectiveFrom).First().SeatSurcharge);
+
+        // Giá 1 ghế = base + phụ thu phòng + phụ thu giờ + phụ thu loại ghế.
+        decimal SeatPrice(Guid seatTypeId) =>
+            basePrice + roomSurcharge + timeSurcharge
+            + (seatSurcharges.TryGetValue(seatTypeId, out var s2) ? s2 : 0m);
 
         var rows = seats
             .GroupBy(s => s.RowNumber)
@@ -129,6 +176,7 @@ public class ShowtimeService : IShowtimeService
                     SeatNumber = s.SeatNumber,
                     RowLabel = RowLabel(s.RowNumber),
                     SeatTypeName = s.SeatType?.Name ?? string.Empty,
+                    Price = SeatPrice(s.SeatTypeId),
                     State = s.Status == "Broken" ? "Broken"
                           : bookedSeatIds.Contains(s.Id) ? "Booked"
                           : heldSeatIds.Contains(s.Id) ? "Held"
@@ -149,6 +197,91 @@ public class ShowtimeService : IShowtimeService
             EndTime = showtime.EndTime,
             Rows = rows
         };
+    }
+
+    // Giữ 1 ghế cho user trong holdMinutes phút (tạo mới hoặc gia hạn nếu đã giữ).
+    public async Task<Result> HoldSeatAsync(Guid showtimeId, Guid seatId, Guid userId, int holdMinutes)
+    {
+        var now = DateTime.Now;
+
+        // Ghế đã có vé (chưa hủy) -> không giữ được.
+        var booked = await _unitOfWork.Tickets.ExistsAsync(
+            t => t.ShowtimeId == showtimeId && t.SeatId == seatId && t.Status != "Cancelled");
+        if (booked) return Result.Failure("Ghế đã được đặt.");
+
+        // Các hold còn hiệu lực của ghế này.
+        var holds = (await _unitOfWork.SeatHolds.GetAllAsync(
+            predicate: h => h.ShowtimeId == showtimeId && h.SeatId == seatId
+                && h.Status == "Holding" && h.ExpiresAt > now)).ToList();
+
+        // Người khác đang giữ -> không giữ được.
+        if (holds.Any(h => h.UserId != userId))
+            return Result.Failure("Ghế đang được người khác giữ.");
+
+        var mine = holds.FirstOrDefault(h => h.UserId == userId);
+        if (mine != null)
+        {
+            mine.ExpiresAt = now.AddMinutes(holdMinutes);   // gia hạn
+            _unitOfWork.SeatHolds.Update(mine);
+        }
+        else
+        {
+            await _unitOfWork.SeatHolds.AddAsync(new SeatHold
+            {
+                Id = Guid.NewGuid(),
+                ShowtimeId = showtimeId,
+                SeatId = seatId,
+                UserId = userId,
+                HeldAt = now,
+                ExpiresAt = now.AddMinutes(holdMinutes),
+                Status = "Holding"
+            });
+        }
+
+        await _unitOfWork.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    // Bỏ giữ 1 ghế của user.
+    public async Task ReleaseSeatAsync(Guid showtimeId, Guid seatId, Guid userId)
+    {
+        var holds = await _unitOfWork.SeatHolds.GetAllAsync(
+            predicate: h => h.ShowtimeId == showtimeId && h.SeatId == seatId
+                && h.UserId == userId && h.Status == "Holding");
+        foreach (var h in holds)
+        {
+            h.Status = "Released";
+            _unitOfWork.SeatHolds.Update(h);
+        }
+        await _unitOfWork.SaveChangesAsync();
+    }
+
+    // Bỏ giữ toàn bộ ghế user đang giữ trong suất (gọi khi rời trang).
+    public async Task ReleaseAllAsync(Guid showtimeId, Guid userId)
+    {
+        var holds = await _unitOfWork.SeatHolds.GetAllAsync(
+            predicate: h => h.ShowtimeId == showtimeId && h.UserId == userId && h.Status == "Holding");
+        foreach (var h in holds)
+        {
+            h.Status = "Released";
+            _unitOfWork.SeatHolds.Update(h);
+        }
+        await _unitOfWork.SaveChangesAsync();
+    }
+
+    // Gia hạn thời gian giữ cho toàn bộ ghế user đang giữ (heartbeat khi còn ở trang).
+    public async Task ExtendHoldsAsync(Guid showtimeId, Guid userId, int holdMinutes)
+    {
+        var now = DateTime.Now;
+        var holds = await _unitOfWork.SeatHolds.GetAllAsync(
+            predicate: h => h.ShowtimeId == showtimeId && h.UserId == userId
+                && h.Status == "Holding" && h.ExpiresAt > now);
+        foreach (var h in holds)
+        {
+            h.ExpiresAt = now.AddMinutes(holdMinutes);
+            _unitOfWork.SeatHolds.Update(h);
+        }
+        await _unitOfWork.SaveChangesAsync();
     }
 
     // Đổi số hàng (1,2,3...) thành nhãn chữ (A,B,C...).

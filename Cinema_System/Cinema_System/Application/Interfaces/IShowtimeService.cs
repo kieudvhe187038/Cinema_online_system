@@ -1,3 +1,4 @@
+using Cinema_System.Application.Common;
 using Cinema_System.Application.ViewModels;
 
 namespace Cinema_System.Application.Interfaces;
@@ -9,5 +10,18 @@ public interface IShowtimeService
     Task<ShowtimePageViewModel> GetShowtimePageAsync(Guid? movieId, Guid? roomId, DateOnly? date);
 
     // Lấy sơ đồ ghế của 1 suất chiếu kèm trạng thái (trống/đã đặt/đang giữ/hỏng); null nếu không tìm thấy suất.
-    Task<SeatSelectionViewModel?> GetSeatSelectionAsync(Guid showtimeId);
+    // currentUserId: ghế do chính user này đang giữ sẽ không bị tính là "đang giữ" (để họ chọn lại được).
+    Task<SeatSelectionViewModel?> GetSeatSelectionAsync(Guid showtimeId, Guid? currentUserId = null);
+
+    // Giữ 1 ghế cho user trong holdMinutes phút (tạo mới hoặc gia hạn); fail nếu ghế đã đặt/người khác giữ.
+    Task<Result> HoldSeatAsync(Guid showtimeId, Guid seatId, Guid userId, int holdMinutes);
+
+    // Bỏ giữ 1 ghế của user (đánh dấu Released).
+    Task ReleaseSeatAsync(Guid showtimeId, Guid seatId, Guid userId);
+
+    // Bỏ giữ toàn bộ ghế user đang giữ trong suất (gọi khi rời trang).
+    Task ReleaseAllAsync(Guid showtimeId, Guid userId);
+
+    // Gia hạn thời gian giữ cho toàn bộ ghế user đang giữ (heartbeat khi còn ở trang).
+    Task ExtendHoldsAsync(Guid showtimeId, Guid userId, int holdMinutes);
 }

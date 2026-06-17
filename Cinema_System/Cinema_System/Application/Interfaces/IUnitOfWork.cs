@@ -19,6 +19,10 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<PriceSeatConfig> PriceSeatConfigs { get; }
 
+    IGenericRepository<PriceBaseConfig> PriceBaseConfigs { get; }
+
+    IGenericRepository<PriceTimeConfig> PriceTimeConfigs { get; }
+
     IGenericRepository<RoomType> RoomTypes { get; }
 
     IGenericRepository<Room> Rooms { get; }
