@@ -31,7 +31,7 @@ public interface IMovieService
     // Tạo phim mới.
     Task<Result> CreateAsync(MovieFormViewModel model);
     // Cập nhật phim.
-    Task<Result> UpdateAsync(MovieFormViewModel model);
+    Task<Result> UpdateAsync(MovieFormViewModel model); 
     // Đổi trạng thái chiếu/ngừng chiếu.
     Task<Result> ToggleStatusAsync(Guid id);
 }

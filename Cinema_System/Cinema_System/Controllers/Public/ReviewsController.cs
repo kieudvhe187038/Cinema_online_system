@@ -4,102 +4,113 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
-namespace Cinema_System.Controllers.Public;
-
-[Route("reviews")]
-public class ReviewsController : Controller
+namespace Cinema_System.Controllers.Public
 {
-    private readonly IReviewService _reviewService;
-    private readonly IMovieService _movieService;
-
-    public ReviewsController(IReviewService reviewService, IMovieService movieService)
+    /// <summary>
+    /// Tầng Presentation module Đánh giá: nhận request -> gọi Service -> trả View.
+    /// Quản lý danh sách đánh giá phim, form tạo đánh giá mới, kiểm tra quyền đánh giá.
+    /// </summary>
+    public class ReviewsController : Controller
     {
-        _reviewService = reviewService;
-        _movieService = movieService;
-    }
+        private readonly IReviewService _reviewService;
+        private readonly IMovieService _movieService;
 
-    // Trang danh sách đánh giá của một phim
-    [HttpGet("")]
-    public async Task<IActionResult> Index(Guid? movieId, int page = 1)
-    {
-        if (movieId.HasValue)
+        public ReviewsController(IReviewService reviewService, IMovieService movieService)
         {
-            var movie = await _movieService.GetMovieByIdAsync(movieId.Value);
+            _reviewService = reviewService;
+            _movieService = movieService;
+        }
+
+        /// <summary>
+        /// Trang danh sách đánh giá phim (có thể lọc theo movieId hoặc xem tất cả đánh giá mới nhất).
+        /// Không bắt buộc đăng nhập - khán giả có thể xem đánh giá của người khác.
+        /// </summary>
+        public async Task<IActionResult> Index(Guid? movieId, int page = 1)
+        {
+            if (movieId.HasValue)
+            {
+                var movie = await _movieService.GetMovieByIdAsync(movieId.Value);
+                if (movie == null)
+                    return NotFound();
+
+                var reviews = await _reviewService.GetMovieReviewsAsync(movieId.Value, page, 10);
+                ViewData["MovieId"] = movieId.Value;
+                ViewData["MovieTitle"] = movie.Title;
+                return View(reviews);
+            }
+
+            // Nếu không có movieId -> trả về danh sách đánh giá mới nhất (cho mọi phim)
+            var recent = await _reviewService.GetRecentReviewsAsync(page, 10);
+            ViewData["MovieId"] = null;
+            ViewData["MovieTitle"] = "Đánh giá của khán giả";
+            return View(recent);
+        }
+
+        /// <summary>
+        /// Trang form viết đánh giá phim (GET).
+        /// Bắt buộc đăng nhập + kiểm tra user đã xem phim + chưa đánh giá trước đó.
+        /// </summary>
+        [Authorize]
+        public async Task<IActionResult> Create(Guid movieId)
+        {
+            var movie = await _movieService.GetMovieByIdAsync(movieId);
             if (movie == null)
                 return NotFound();
 
-            var reviews = await _reviewService.GetMovieReviewsAsync(movieId.Value, page, 10);
-            ViewData["MovieId"] = movieId.Value;
+            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "");
+
+            // Kiểm tra user đã xem phim này chưa
+            var hasWatched = await _reviewService.HasUserWatchedMovieAsync(userId, movieId);
+            if (!hasWatched)
+            {
+                TempData["Error"] = "Bạn chỉ có thể đánh giá những phim mà bạn đã xem.";
+                return RedirectToAction("Details", "Movies", new { id = movieId });
+            }
+
+            // Kiểm tra user đã đánh giá phim này chưa
+            var hasReviewed = await _reviewService.HasUserReviewedMovieAsync(userId, movieId);
+            if (hasReviewed)
+            {
+                TempData["Error"] = "Bạn đã đánh giá phim này rồi.";
+                return RedirectToAction("Details", "Movies", new { id = movieId });
+            }
+
+            ViewData["MovieId"] = movieId;
             ViewData["MovieTitle"] = movie.Title;
-            return View(reviews);
+            ViewData["MovieSlug"] = movie.Slug;
+
+            return View();
         }
 
-        // Nếu không có movieId -> trả về danh sách đánh giá mới nhất (cho mọi phim)
-        var recent = await _reviewService.GetRecentReviewsAsync(page, 10);
-        ViewData["MovieId"] = null;
-        ViewData["MovieTitle"] = "Đánh giá của khán giả";
-        return View(recent);
-    }
-
-    // Trang form đánh giá phim (GET)
-    [Authorize]
-    [HttpGet("create/{movieId}")]
-    public async Task<IActionResult> Create(Guid movieId)
-    {
-        var movie = await _movieService.GetMovieByIdAsync(movieId);
-        if (movie == null)
-            return NotFound();
-
-        var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "");
-        
-        // Kiểm tra user đã xem phim này chưa
-        var hasWatched = await _reviewService.HasUserWatchedMovieAsync(userId, movieId);
-        if (!hasWatched)
+        /// <summary>
+        /// Xử lý gửi đánh giá phim (POST).
+        /// Bắt buộc đăng nhập, validate dữ liệu, lưu đánh giá, redirect về chi tiết phim.
+        /// </summary>
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> Create(CreateReviewDTO reviewDTO)
         {
-            TempData["Error"] = "Bạn chỉ có thể đánh giá những phim mà bạn đã xem.";
-            return RedirectToAction("Details", "Movies", new { id = movieId });
-        }
+            if (!ModelState.IsValid)
+            {
+                TempData["Error"] = "Dữ liệu không hợp lệ.";
+                return RedirectToAction("Create", new { movieId = reviewDTO.MovieId });
+            }
 
-        // Kiểm tra user đã đánh giá phim này chưa
-        var hasReviewed = await _reviewService.HasUserReviewedMovieAsync(userId, movieId);
-        if (hasReviewed)
-        {
-            TempData["Error"] = "Bạn đã đánh giá phim này rồi.";
-            return RedirectToAction("Details", "Movies", new { id = movieId });
-        }
+            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "");
 
-        ViewData["MovieId"] = movieId;
-        ViewData["MovieTitle"] = movie.Title;
-        ViewData["MovieSlug"] = movie.Slug;
+            try
+            {
+                await _reviewService.CreateReviewAsync(userId, reviewDTO);
+                TempData["Success"] = "Cảm ơn bạn! Đánh giá của bạn đã được gửi. Chúng tôi sẽ duyệt và hiển thị trong thời gian sớm nhất.";
 
-        return View();
-    }
-
-    // Xử lý gửi đánh giá phim (POST)
-    [Authorize]
-    [HttpPost("create")]
-    public async Task<IActionResult> Create(CreateReviewDTO reviewDTO)
-    {
-        if (!ModelState.IsValid)
-        {
-            TempData["Error"] = "Dữ liệu không hợp lệ.";
-            return RedirectToAction("Create", new { movieId = reviewDTO.MovieId });
-        }
-
-        var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "");
-
-        try
-        {
-            await _reviewService.CreateReviewAsync(userId, reviewDTO);
-            TempData["Success"] = "Cảm ơn bạn! Đánh giá của bạn đã được gửi. Chúng tôi sẽ duyệt và hiển thị trong thời gian sớm nhất.";
-
-            var movie = await _movieService.GetMovieByIdAsync(reviewDTO.MovieId);
-            return RedirectToAction("Details", "Movies", new { id = movie?.Slug ?? reviewDTO.MovieId.ToString() });
-        }
-        catch (Exception)
-        {
-            TempData["Error"] = "Có lỗi xảy ra. Vui lòng thử lại sau.";
-            return RedirectToAction("Create", new { movieId = reviewDTO.MovieId });
+                var movie = await _movieService.GetMovieByIdAsync(reviewDTO.MovieId);
+                return RedirectToAction("Details", "Movies", new { id = movie?.Slug ?? reviewDTO.MovieId.ToString() });
+            }
+            catch (Exception)
+            {
+                TempData["Error"] = "Có lỗi xảy ra. Vui lòng thử lại sau.";
+                return RedirectToAction("Create", new { movieId = reviewDTO.MovieId });
+            }
         }
     }
 }
