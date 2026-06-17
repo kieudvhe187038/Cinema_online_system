@@ -9,6 +9,9 @@ public class SeatDTO
     public string RowLabel { get; set; } = string.Empty;   // A, B, C...
     public string SeatTypeName { get; set; } = string.Empty;
 
+    // Giá vé của ghế này cho suất chiếu (đã gồm base + phụ thu ghế/phòng/giờ).
+    public decimal Price { get; set; }
+
     // Available = trống (chọn được) | Booked = đã đặt | Held = đang giữ | Broken = hỏng.
     public string State { get; set; } = "Available";
     public bool Selectable => State == "Available";
