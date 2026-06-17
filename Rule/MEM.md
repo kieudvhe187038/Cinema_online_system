@@ -127,6 +127,16 @@ Nhật ký thay đổi mã nguồn / CSDL / quyết định kỹ thuật của d
   - Cập nhật `Rule/code.md` mục 1 (Solution Layout) + mục 8 (quy ước role-folder).
   - Build OK (0/0).
 
+### [2026-06-17] Đồng bộ phông chữ toàn bộ view (By: vkieu)
+- **What changed:** Chuẩn hoá **bộ trọng số (weights)** của Google Fonts về một bộ chung cho mọi layout/view: `Plus Jakarta Sans 400;500;600;700;800` + `Be Vietnam Pro 300;400;500;600;700` (đúng bộ `_Layout`/`_ManagerLayout` đang dùng). Sửa link font ở `_AuthLayout` (thêm BVP 300), `_CineStarLayout` (mở rộng cả 2, link dùng `@@` do Razor), và 3 view Profile tự nạp font: `ChangePassword.cshtml`, `Edit.cshtml`, `PointHistory.cshtml`.
+- **Why:** Cả app vốn đã dùng chung 2 typeface (PJS heading + BVP body) nhưng mỗi nơi nạp một dải weight khác nhau → cùng độ đậm chữ render lệch nhau (vd trang dùng `_CineStarLayout` thiếu BVP 300/700 nên bị giả đậm/giả nhạt).
+- **Impact/Notes for Team:** Khi thêm layout/trang tự nạp font, dùng đúng link chuẩn này. KHÔNG đổi tên token `fontFamily` trong từng layout (`heading`/`head`/`headline-md`...) — chúng là hệ token riêng, nhiều class phụ thuộc; chỉ typeface + weights được đồng bộ. 3 view Profile (Edit/PointHistory/ChangePassword) vẫn tự nạp Tailwind CDN + config trong body dù kế thừa `_Layout` (cấu hình màu trùng `_Layout` nên vô hại) — redundancy này để dọn sau, không thuộc phạm vi lần này. Build pass 0/0.
+
+### [2026-06-17] Đồng bộ validate + nút hiện/ẩn cho Đổi mật khẩu (By: vkieu)
+- **What changed:** (1) `ChangePasswordViewModel.NewPassword` đổi từ `StringLength(100, MinimumLength=6)` (không regex) → **`StringLength(72, MinimumLength=6)` + regex `^[!-~]+$`** cho khớp chuẩn dự án (đăng ký/đặt lại mật khẩu). (2) `Views/Customer/Profile/ChangePassword.cshtml`: thêm **nút hiện/ẩn mật khẩu** cho cả 3 ô (icon con mắt **SVG inline** vì trang Profile dùng Tailwind CDN, KHÔNG nạp font Material Symbols như các trang Auth) + script `.toggle-pw`; thêm `minlength/maxlength/pattern[!-~]{6,72}`/`title`/`autocomplete` HTML5 cho ô mật khẩu mới.
+- **Why:** Validate đổi mật khẩu lỏng hơn phần còn lại của hệ thống — cho >72 ký tự (BCrypt cắt 72 byte) và không chặn tiếng Việt/khoảng trắng/emoji. Form chưa có hiện/ẩn mật khẩu như form đăng ký.
+- **Impact/Notes for Team:** Trang Profile (Customer) tự nạp Tailwind CDN riêng + không có Material Symbols → dùng SVG cho icon, đừng copy `material-symbols-outlined` từ form Auth sang đây. Logic Controller/Service đổi mật khẩu giữ nguyên (verify mật khẩu cũ, chặn trùng cũ, hash BCrypt). Build pass 0/0.
+
 ### [2026-06-17] Bỏ bảng Password_Reset_Tokens + thêm trạng thái phim "Special" (By: vkieu)
 - **What changed:**
   - **DB — gỡ `Password_Reset_Tokens`:** Xóa `CREATE TABLE [Password_Reset_Tokens]`, FK `FK_PasswordReset_Users`, dòng comment (5) và phần seed/đếm bản ghi trong `SQL/CinemaWebDB_v2.sql` + `SQL/CinemaWebDB_SeedData_Large.sql`. Xóa entity `Domain/Entities/PasswordResetToken.cs`, bỏ navigation `User.PasswordResetTokens`, bỏ `DbSet<PasswordResetToken>` + cấu hình `modelBuilder.Entity<PasswordResetToken>` trong `CinemaWebDbContext`. Bỏ dòng entity trong `Rule/DOMAIN.md`.

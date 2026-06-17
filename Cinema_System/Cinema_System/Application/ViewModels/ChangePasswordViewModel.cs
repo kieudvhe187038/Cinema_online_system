@@ -11,7 +11,8 @@ public class ChangePasswordViewModel
     public string OldPassword { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Vui lòng nhập mật khẩu mới")]
-    [StringLength(100, MinimumLength = 6, ErrorMessage = "Mật khẩu mới tối thiểu 6 ký tự")]
+    [StringLength(72, MinimumLength = 6, ErrorMessage = "Mật khẩu phải từ 6 đến 72 ký tự.")]
+    [RegularExpression(@"^[!-~]+$", ErrorMessage = "Mật khẩu chỉ gồm chữ, số và ký tự đặc biệt (không dấu tiếng Việt, không khoảng trắng hay emoji).")]
     [DataType(DataType.Password)]
     [Display(Name = "Mật khẩu mới")]
     public string NewPassword { get; set; } = string.Empty;
