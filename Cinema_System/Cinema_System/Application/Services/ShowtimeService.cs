@@ -84,4 +84,76 @@ public class ShowtimeService : IShowtimeService
             Showtimes = showtimeDtos
         };
     }
+
+    // Lấy sơ đồ ghế cho 1 suất chiếu, đánh dấu trạng thái từng ghế.
+    public async Task<SeatSelectionViewModel?> GetSeatSelectionAsync(Guid showtimeId)
+    {
+        // Thông tin suất chiếu kèm phim & phòng/rạp.
+        var showtimeList = await _unitOfWork.Showtimes.GetAllAsync(
+            predicate: s => s.Id == showtimeId,
+            include: q => q
+                .Include(s => s.Movie)
+                .Include(s => s.Room).ThenInclude(r => r.Cinema));
+        var showtime = showtimeList.FirstOrDefault();
+        if (showtime is null)
+            return null;
+
+        // Ghế đã đặt (có vé chưa hủy) và ghế đang được giữ (chưa hết hạn) của suất này.
+        var bookedTickets = await _unitOfWork.Tickets.GetAllAsync(
+            predicate: t => t.ShowtimeId == showtimeId && t.Status != "Cancelled");
+        var bookedSeatIds = bookedTickets.Select(t => t.SeatId).ToHashSet();
+
+        var now = DateTime.Now;
+        var activeHolds = await _unitOfWork.SeatHolds.GetAllAsync(
+            predicate: h => h.ShowtimeId == showtimeId && h.ExpiresAt > now);
+        var heldSeatIds = activeHolds.Select(h => h.SeatId).ToHashSet();
+
+        // Toàn bộ ghế của phòng, sắp theo hàng rồi số ghế.
+        var seats = await _unitOfWork.Seats.GetAllAsync(
+            predicate: s => s.RoomId == showtime.RoomId,
+            include: q => q.Include(s => s.SeatType),
+            orderBy: q => q.OrderBy(s => s.RowNumber).ThenBy(s => s.SeatNumber));
+
+        var rows = seats
+            .GroupBy(s => s.RowNumber)
+            .OrderBy(g => g.Key)
+            .Select(g => new SeatRowViewModel
+            {
+                RowNumber = g.Key,
+                RowLabel = RowLabel(g.Key),
+                Seats = g.OrderBy(s => s.SeatNumber).Select(s => new SeatDTO
+                {
+                    Id = s.Id,
+                    RowNumber = s.RowNumber,
+                    SeatNumber = s.SeatNumber,
+                    RowLabel = RowLabel(s.RowNumber),
+                    SeatTypeName = s.SeatType?.Name ?? string.Empty,
+                    State = s.Status == "Broken" ? "Broken"
+                          : bookedSeatIds.Contains(s.Id) ? "Booked"
+                          : heldSeatIds.Contains(s.Id) ? "Held"
+                          : "Available"
+                }).ToList()
+            })
+            .ToList();
+
+        return new SeatSelectionViewModel
+        {
+            ShowtimeId = showtime.Id,
+            MovieTitle = showtime.Movie.Title,
+            MoviePosterUrl = showtime.Movie.PosterUrl,
+            AgeRating = showtime.Movie.AgeRating,
+            RoomName = showtime.Room.Name,
+            CinemaName = showtime.Room.Cinema?.Name ?? string.Empty,
+            StartTime = showtime.StartTime,
+            EndTime = showtime.EndTime,
+            Rows = rows
+        };
+    }
+
+    // Đổi số hàng (1,2,3...) thành nhãn chữ (A,B,C...).
+    private static string RowLabel(int rowNumber)
+    {
+        if (rowNumber < 1) return rowNumber.ToString();
+        return ((char)('A' + (rowNumber - 1) % 26)).ToString();
+    }
 }

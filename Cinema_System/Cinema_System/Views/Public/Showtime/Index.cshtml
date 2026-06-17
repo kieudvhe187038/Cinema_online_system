@@ -111,7 +111,8 @@
                         <div class="mt-4 flex flex-wrap gap-3">
                             @foreach (var st in group.OrderBy(s => s.StartTime))
                             {
-                                <div class="rounded-xl border border-slate-200 px-4 py-2.5 transition hover:border-primary hover:shadow-sm">
+                                <a href="@Url.Action("SelectSeats", "Showtime", new { id = st.Id })"
+                                   class="block rounded-xl border border-slate-200 px-4 py-2.5 transition hover:border-primary hover:bg-primary/5 hover:shadow-sm">
                                     <div class="text-base font-bold text-slate-900">
                                         @st.StartTime.ToString("HH:mm") <span class="text-slate-400">–</span> @st.EndTime.ToString("HH:mm")
                                     </div>
@@ -123,7 +124,7 @@
                                     {
                                         <div class="text-[.7rem] text-slate-400">@st.CinemaName</div>
                                     }
-                                </div>
+                                </a>
                             }
                         </div>
                     </div>

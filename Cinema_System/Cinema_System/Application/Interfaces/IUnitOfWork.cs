@@ -27,6 +27,10 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<Cinema> Cinemas { get; }
 
+    IGenericRepository<Ticket> Tickets { get; }
+
+    IGenericRepository<SeatHold> SeatHolds { get; }
+
     IGenericRepository<PriceRoomTypeConfig> PriceRoomTypeConfigs { get; }
 
     IGenericRepository<Movie> Movies { get; }
