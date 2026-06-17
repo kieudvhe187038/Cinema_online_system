@@ -66,6 +66,7 @@
         <div class="flex flex-col gap-1.5">
             <label class="text-xs font-bold uppercase tracking-wide text-slate-500">Ngày</label>
             <input type="date" name="date" value="@Model.SelectedDate.ToString("yyyy-MM-dd")"
+                   min="@today.ToString("yyyy-MM-dd")"
                    class="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
         </div>
         <div class="flex items-end gap-2">

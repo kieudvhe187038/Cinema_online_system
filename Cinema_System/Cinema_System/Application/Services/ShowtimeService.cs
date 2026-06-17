@@ -18,14 +18,21 @@ public class ShowtimeService : IShowtimeService
     // Lấy dữ liệu trang lịch chiếu: lọc theo phim/phòng/ngày + tùy chọn dropdown.
     public async Task<ShowtimePageViewModel> GetShowtimePageAsync(Guid? movieId, Guid? roomId, DateOnly? date)
     {
-        var selectedDate = date ?? DateOnly.FromDateTime(DateTime.Today);
-        var dayStart = selectedDate.ToDateTime(TimeOnly.MinValue);
-        var dayEnd = dayStart.AddDays(1);
+        var now = DateTime.Now;
+        var today = DateOnly.FromDateTime(now);
 
-        // Suất chiếu trong ngày đã chọn, lọc thêm theo phim/phòng nếu có.
+        // Chỉ cho xem lịch từ hiện tại đến tương lai: ép ngày đã chọn về hôm nay nếu nằm trong quá khứ.
+        var selectedDate = date ?? today;
+        if (selectedDate < today) selectedDate = today;
+
+        var dayEnd = selectedDate.ToDateTime(TimeOnly.MinValue).AddDays(1);
+        // Mốc bắt đầu: nếu là hôm nay thì chỉ lấy suất từ thời điểm hiện tại trở đi (bỏ suất đã qua trong ngày).
+        var lowerBound = selectedDate == today ? now : selectedDate.ToDateTime(TimeOnly.MinValue);
+
+        // Suất chiếu trong ngày đã chọn (từ hiện tại trở đi), lọc thêm theo phim/phòng nếu có.
         var showtimes = await _unitOfWork.Showtimes.GetAllAsync(
             predicate: s =>
-                s.StartTime >= dayStart && s.StartTime < dayEnd &&
+                s.StartTime >= lowerBound && s.StartTime < dayEnd &&
                 (movieId == null || s.MovieId == movieId) &&
                 (roomId == null || s.RoomId == roomId) &&
                 s.Status != "Cancelled",
@@ -70,9 +77,9 @@ public class ShowtimeService : IShowtimeService
                 Id = r.Id,
                 Name = r.Cinema != null ? $"{r.Name} — {r.Cinema.Name}" : r.Name
             }).ToList(),
-            // Thanh chọn ngày: 14 ngày kể từ hôm nay.
+            // Thanh chọn ngày: 14 ngày kể từ hôm nay (không có ngày quá khứ).
             AvailableDates = Enumerable.Range(0, 14)
-                .Select(i => DateOnly.FromDateTime(DateTime.Today).AddDays(i))
+                .Select(i => today.AddDays(i))
                 .ToList(),
             Showtimes = showtimeDtos
         };
