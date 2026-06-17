@@ -35,6 +35,12 @@ namespace Cinema_System.Controllers.Public
             return View();
         }
 
+        public IActionResult Info()
+        {
+            ViewData["Title"] = "Thông tin rạp";
+            return View();
+        }
+
         // Trang lỗi dùng để hiển thị thông tin request khi có ngoại lệ.
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]  
         public IActionResult Error()

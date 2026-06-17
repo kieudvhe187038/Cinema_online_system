@@ -48,6 +48,7 @@
                         <a class="text-sm font-semibold transition hover:text-primary text-slate-700" href="#">Giá Vé</a>
                         <a class="text-sm font-semibold transition hover:text-primary text-slate-700" href="#">Khuyến Mãi</a>
                         <a class="text-sm font-semibold transition hover:text-primary text-slate-700" href="#">Tin Điện Ảnh</a>
+                        <a class="text-sm font-semibold transition hover:text-primary @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" && ViewContext.RouteData.Values["action"]?.ToString() == "Info" ? "text-primary border-b-2 border-primary pb-1" : "text-slate-700")" asp-area="" asp-controller="Home" asp-action="Info">Thông tin rạp</a>
                     </nav>
                 </div>
                 <div class="flex items-center gap-3">
@@ -154,7 +155,7 @@
             <div>
                 <h4 class="mb-4 text-sm font-semibold uppercase tracking-[0.16em] text-slate-900">Về Chúng Tôi</h4>
                 <ul class="space-y-3 text-sm text-slate-600">
-                    <li><a class="transition hover:text-primary" href="#">Giới thiệu CineStar</a></li>
+                    <li><a class="transition hover:text-primary" asp-area="" asp-controller="Home" asp-action="Info">Giới thiệu CineStar</a></li>
                     <li><a class="transition hover:text-primary" href="#">Tuyển dụng</a></li>
                     <li><a class="transition hover:text-primary" href="#">Chính sách bảo mật</a></li>
                     <li><a class="transition hover:text-primary" href="#">Điều khoản sử dụng</a></li>
