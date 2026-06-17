@@ -10,11 +10,10 @@
 ### Người dùng & Phân quyền
 - `User` — tài khoản người dùng.
 - `Role` — vai trò (Admin, Staff, Member...).
-- `PasswordResetToken` — token đặt lại mật khẩu.
 - `RewardPointHistory` — lịch sử tích/đổi điểm thành viên.
 
 ### Phim & Lịch chiếu
-- `Movie` — phim (Title, Slug, Status: "Now Showing"/"Coming Soon"...).
+- `Movie` — phim (Title, Slug, Status: "Now Showing"/"Coming Soon"/"Special"/"Stopped").
 - `Genre` — thể loại (quan hệ n-n với `Movie`).
 - `Showtime` — suất chiếu (gắn `Movie` + `Room`).
 - `ShowtimeIncident` — sự cố suất chiếu.

@@ -6,18 +6,11 @@ public static class MovieStatus
     public const string NowShowing = "Now Showing";
     public const string ComingSoon = "Coming Soon";
 
+    // Phim có suất chiếu đặc biệt (sự kiện, công chiếu sớm...).
+    public const string Special = "Special";
+
     // So sánh "đã ngừng chiếu" không phân biệt hoa thường (data có thể là "Stopped").
     public const string StoppedLower = "stopped";
-}
-
-/// <summary>Trạng thái suất chiếu đặc biệt.</summary>
-public static class ShowtimeStatus
-{
-    public const string Special = "Special";
-    public const string SpecialScreening = "Special Screening";
-
-    // Từ khóa tiếng Việt nhận diện suất chiếu đặc biệt.
-    public const string SpecialKeyword = "Đặc";
 }
 
 /// <summary>Cấu hình độ tuổi.</summary>

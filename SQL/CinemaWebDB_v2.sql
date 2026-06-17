@@ -9,7 +9,7 @@
    (4) Các cột nullable + UNIQUE (phone, qr_code, transaction_ref) -> chuyển sang
        FILTERED UNIQUE INDEX (vì UNIQUE constraint của SQL Server chỉ cho 1 NULL).
    (5) Bổ sung CHECK còn thiếu: Promotions (usage_limit, max_discount, % range),
-       Payments (cash/change), Password_Reset_Tokens (expiry).
+       Payments (cash/change).
    (6) [Seat_Holds]: index chống 2 lệnh giữ ghế đang active trùng nhau.
    (7) Đồng bộ kiểu dữ liệu tiền tệ về DECIMAL(18,2).
    ===================================================================================== */
@@ -67,18 +67,6 @@ CREATE TABLE [Users] (
   CONSTRAINT [CK_Users_points] CHECK ([reward_points] >= 0),
   CONSTRAINT [CK_Users_Dob] CHECK ([date_of_birth] <= CAST(GETDATE() AS DATE)),
   CONSTRAINT [CK_Users_status] CHECK ([status] IN ('Active', 'Locked'))
-);
-
-CREATE TABLE [Password_Reset_Tokens] (
-  [id] UNIQUEIDENTIFIER CONSTRAINT [DF_PRT_id] DEFAULT NEWID(),
-  [user_id] UNIQUEIDENTIFIER NOT NULL,
-  [token_hash] VARCHAR(255) NOT NULL,
-  [expiry_at] DATETIME NOT NULL,
-  [is_used] BIT CONSTRAINT [DF_PRT_used] DEFAULT 0,
-  [created_at] DATETIME CONSTRAINT [DF_PRT_created] DEFAULT GETDATE(),
-
-  CONSTRAINT [PK_Password_Reset_Tokens] PRIMARY KEY ([id]),
-  CONSTRAINT [CK_PRT_expiry] CHECK ([expiry_at] > [created_at])
 );
 
 -- =====================================================================================
@@ -184,7 +172,7 @@ CREATE TABLE [Movies] (
   CONSTRAINT [PK_Movies] PRIMARY KEY ([id]),
   CONSTRAINT [UK_Movies_slug] UNIQUE ([slug]),
   CONSTRAINT [CK_Movies_duration] CHECK ([duration_minutes] > 0),
-  CONSTRAINT [CK_Movies_status] CHECK ([status] IN ('Now Showing', 'Coming Soon', 'Stopped'))
+  CONSTRAINT [CK_Movies_status] CHECK ([status] IN ('Now Showing', 'Coming Soon', 'Special', 'Stopped'))
 );
 
 CREATE TABLE [Movie_Genres] (
@@ -531,7 +519,6 @@ GO
 
 -- Nhóm Người dùng & Bảo mật
 ALTER TABLE [Users] ADD CONSTRAINT [FK_Users_Roles] FOREIGN KEY ([role_id]) REFERENCES [Roles] ([id]);
-ALTER TABLE [Password_Reset_Tokens] ADD CONSTRAINT [FK_PasswordReset_Users] FOREIGN KEY ([user_id]) REFERENCES [Users] ([id]);
 
 -- Nhóm Rạp, Phòng chiếu & Ghế ngồi
 ALTER TABLE [Rooms] ADD CONSTRAINT [FK_Rooms_Cinemas] FOREIGN KEY ([cinema_id]) REFERENCES [Cinemas] ([id]);
