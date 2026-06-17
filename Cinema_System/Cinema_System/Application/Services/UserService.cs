@@ -1,10 +1,8 @@
-using System.Linq.Expressions;
 using Cinema_System.Application.Common;
 using Cinema_System.Application.DTOs;
 using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
 using Cinema_System.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace Cinema_System.Application.Services;
 
@@ -23,18 +21,9 @@ public class UserService : IUserService
     public async Task<UserListViewModel> GetUsersAsync(
         string? search, Guid? roleId, string? status, int page, int pageSize)
     {
-        Expression<Func<User, bool>> predicate = u =>
-            (search == null || u.FullName.Contains(search) || u.Email.Contains(search)
-                || (u.Phone != null && u.Phone.Contains(search)))
-            && (roleId == null || u.RoleId == roleId)
-            && (status == null || u.Status == status);
-
-        // Phân trang tại SQL (Skip/Take) — chỉ tải đúng 1 trang, tránh kéo cả bảng.
-        var (rows, totalCount) = await _unitOfWork.Users.GetPagedAsync(
-            page, pageSize,
-            predicate,
-            include: q => q.Include(u => u.Role),
-            orderBy: q => q.OrderByDescending(u => u.CreatedAt));
+        // Lọc + phân trang tại SQL (Skip/Take) — chỉ tải đúng 1 trang, tránh kéo cả bảng.
+        var (rows, totalCount) = await _unitOfWork.Users.GetPagedWithRoleAsync(
+            search, roleId, status, page, pageSize);
 
         var totalPages = totalCount == 0 ? 1 : (int)Math.Ceiling(totalCount / (double)pageSize);
         if (page < 1) page = 1;
@@ -60,9 +49,7 @@ public class UserService : IUserService
 
     public async Task<UserDTO?> GetUserByIdAsync(Guid id)
     {
-        var user = await _unitOfWork.Users.FirstOrDefaultAsync(
-            u => u.Id == id,
-            include: q => q.Include(u => u.Role));
+        var user = await _unitOfWork.Users.GetByIdWithRoleAsync(id);
 
         return user is null ? null : MapToDTO(user);
     }

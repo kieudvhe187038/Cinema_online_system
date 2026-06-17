@@ -3,13 +3,11 @@ using Cinema_System.Application.DTOs;
 using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
 using Cinema_System.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace Cinema_System.Application.Services;
 
 public class CounterBookingService : ICounterBookingService
 {
-    private const string StatusScheduled = "Scheduled";
     private const string StatusActive = "Active";
     private const string SeatAvailable = "Available";
     private const string HoldHolding = "Holding";
@@ -38,9 +36,7 @@ public class CounterBookingService : ICounterBookingService
         var staff = await _staffContext.GetCurrentStaffAsync();
         var now = DateTime.Now;
 
-        var showtimes = await _unitOfWork.Showtimes.GetAllAsync(
-            s => s.StartTime >= now && s.Status == StatusScheduled,
-            include: q => q.Include(s => s.Movie));
+        var showtimes = await _unitOfWork.Showtimes.GetUpcomingWithMovieAsync(now);
 
         var movies = showtimes
             .Where(s => s.Movie != null)
@@ -85,12 +81,7 @@ public class CounterBookingService : ICounterBookingService
     public async Task<IEnumerable<ShowtimeOptionDTO>> GetShowtimesAsync(Guid movieId)
     {
         var now = DateTime.Now;
-        var showtimes = (await _unitOfWork.Showtimes.GetAllAsync(
-            s => s.MovieId == movieId && s.StartTime >= now && s.Status == StatusScheduled,
-            include: q => q
-                .Include(s => s.Room).ThenInclude(r => r.RoomType)
-                .Include(s => s.Room).ThenInclude(r => r.Cinema),
-            orderBy: q => q.OrderBy(s => s.StartTime))).ToList();
+        var showtimes = await _unitOfWork.Showtimes.GetUpcomingByMovieAsync(movieId, now);
 
         var result = new List<ShowtimeOptionDTO>();
         foreach (var s in showtimes)
@@ -116,17 +107,10 @@ public class CounterBookingService : ICounterBookingService
 
     public async Task<SeatMapDTO?> GetSeatMapAsync(Guid showtimeId)
     {
-        var showtime = await _unitOfWork.Showtimes.FirstOrDefaultAsync(
-            s => s.Id == showtimeId,
-            include: q => q
-                .Include(s => s.Room).ThenInclude(r => r.RoomType)
-                .Include(s => s.Movie));
+        var showtime = await _unitOfWork.Showtimes.GetWithRoomAndMovieAsync(showtimeId);
         if (showtime is null) return null;
 
-        var seats = (await _unitOfWork.Seats.GetAllAsync(
-            s => s.RoomId == showtime.RoomId,
-            include: q => q.Include(s => s.SeatType),
-            orderBy: q => q.OrderBy(s => s.RowNumber).ThenBy(s => s.SeatNumber))).ToList();
+        var seats = await _unitOfWork.Seats.GetByRoomWithTypeAsync(showtime.RoomId);
 
         var occupied = await GetOccupiedSeatIdsAsync(showtimeId);
         var pricing = await _pricing.GetPricingAsync(showtime);
@@ -169,16 +153,12 @@ public class CounterBookingService : ICounterBookingService
         if (request.SeatIds is null || request.SeatIds.Count == 0)
             return Result<Guid>.Failure("Vui lòng chọn ít nhất một ghế.");
 
-        var showtime = await _unitOfWork.Showtimes.FirstOrDefaultAsync(
-            s => s.Id == request.ShowtimeId,
-            include: q => q.Include(s => s.Room).ThenInclude(r => r.RoomType).Include(s => s.Movie));
+        var showtime = await _unitOfWork.Showtimes.GetWithRoomAndMovieAsync(request.ShowtimeId);
         if (showtime is null)
             return Result<Guid>.Failure("Không tìm thấy suất chiếu.");
 
         var seatIds = request.SeatIds.Distinct().ToList();
-        var seats = (await _unitOfWork.Seats.GetAllAsync(
-            s => seatIds.Contains(s.Id),
-            include: q => q.Include(s => s.SeatType))).ToList();
+        var seats = await _unitOfWork.Seats.GetByIdsWithTypeAsync(seatIds);
 
         if (seats.Count != seatIds.Count)
             return Result<Guid>.Failure("Một số ghế không hợp lệ.");
@@ -261,8 +241,7 @@ public class CounterBookingService : ICounterBookingService
             customer = await _unitOfWork.Users.GetByIdAsync(customerId);
         else if (!string.IsNullOrWhiteSpace(request.CustomerPhone))
         {
-            var phone = request.CustomerPhone.Trim();
-            customer = await _unitOfWork.Users.FirstOrDefaultAsync(u => u.Phone == phone);
+            customer = await _unitOfWork.Users.GetByPhoneAsync(request.CustomerPhone.Trim());
         }
 
         // --- Thanh toán tại quầy ---
@@ -336,15 +315,10 @@ public class CounterBookingService : ICounterBookingService
         foreach (var bf in bookingFoods) await _unitOfWork.BookingFoods.AddAsync(bf);
         await _unitOfWork.Payments.AddAsync(payment);
 
-        try
-        {
-            await _unitOfWork.SaveChangesAsync();
-        }
-        catch (DbUpdateException)
-        {
-            // Backstop của unique index UX_Tickets_Showtime_Seat khi có người đặt cùng lúc.
+        // TrySaveChangesAsync trả về false khi vi phạm unique index (UX_Tickets_Showtime_Seat)
+        // — backstop chống đặt trùng ghế khi có đơn khác chốt cùng lúc.
+        if (!await _unitOfWork.TrySaveChangesAsync())
             return Result<Guid>.Failure("Một số ghế vừa được đặt bởi đơn khác. Vui lòng chọn lại ghế.");
-        }
 
         return Result<Guid>.Success(bookingId);
     }

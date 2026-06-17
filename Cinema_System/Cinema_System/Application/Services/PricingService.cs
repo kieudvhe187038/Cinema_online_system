@@ -1,6 +1,5 @@
 using Cinema_System.Application.Interfaces;
 using Cinema_System.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace Cinema_System.Application.Services;
 
@@ -25,9 +24,7 @@ public class PricingService : IPricingService
         var when = showtime.StartTime;
 
         // Phòng + loại phòng của suất chiếu
-        var room = await _unitOfWork.Rooms.FirstOrDefaultAsync(
-            r => r.Id == showtime.RoomId,
-            include: q => q.Include(r => r.RoomType));
+        var room = await _unitOfWork.Rooms.GetByIdWithRoomTypeAsync(showtime.RoomId);
 
         // --- Giá cơ bản theo phim (ưu tiên cấu hình theo phim, sau đó cấu hình chung) ---
         var baseConfigs = await _unitOfWork.PriceBaseConfigs.GetAllAsync(
