@@ -559,7 +559,9 @@ public class ShowtimeService : IShowtimeService
     {
         var booking = (await _unitOfWork.Bookings.GetAllAsync(
             predicate: b => b.Id == bookingId && b.UserId == userId,
-            include: q => q.Include(b => b.Showtime).ThenInclude(s => s.Movie))).FirstOrDefault();
+            include: q => q
+                .Include(b => b.Showtime).ThenInclude(s => s.Movie)
+                .Include(b => b.Showtime).ThenInclude(s => s.Room).ThenInclude(r => r.Cinema))).FirstOrDefault();
         if (booking is null) return null;
 
         var tickets = await _unitOfWork.Tickets.GetAllAsync(
@@ -588,7 +590,10 @@ public class ShowtimeService : IShowtimeService
         return new PaymentSuccessViewModel
         {
             BookingId = bookingId,
+            BookingCode = booking.QrCode ?? bookingId.ToString("N")[..8].ToUpper(),
             MovieTitle = booking.Showtime.Movie.Title,
+            RoomName = booking.Showtime.Room.Name,
+            CinemaName = booking.Showtime.Room.Cinema?.Name ?? string.Empty,
             StartTime = booking.Showtime.StartTime,
             SeatLabels = seatLabels,
             FoodLines = foodLines,
