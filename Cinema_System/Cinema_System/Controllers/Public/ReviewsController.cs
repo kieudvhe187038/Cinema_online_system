@@ -33,14 +33,14 @@ namespace Cinema_System.Controllers.Public
                 if (movie == null)
                     return NotFound();
 
-                var reviews = await _reviewService.GetMovieReviewsAsync(movieId.Value, page, 9);
+                var reviews = await _reviewService.GetMovieReviewsAsync(movieId.Value, page, 12);
                 ViewData["MovieId"] = movieId.Value;
                 ViewData["MovieTitle"] = movie.Title;
                 return View(reviews);
             }
 
             // Nếu không có movieId -> trả về danh sách đánh giá mới nhất (cho mọi phim)
-            var recent = await _reviewService.GetRecentReviewsAsync(page, 9);
+            var recent = await _reviewService.GetRecentReviewsAsync(page, 12);
             ViewData["MovieId"] = null;
             ViewData["MovieTitle"] = "Đánh giá của khán giả";
             return View(recent);
