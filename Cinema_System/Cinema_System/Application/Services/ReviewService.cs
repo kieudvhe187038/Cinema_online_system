@@ -17,7 +17,7 @@ public class ReviewService : IReviewService
         _mapper = mapper;
     }
 
-    public async Task<PagedResult<ReviewDTO>> GetMovieReviewsAsync(Guid movieId, int page = 1, int pageSize = 10)
+        public async Task<PagedResult<ReviewDTO>> GetMovieReviewsAsync(Guid movieId, int page = 1, int pageSize = 10)
     {
         var reviews = await _unitOfWork.Reviews
             .GetAllAsync(
@@ -33,8 +33,9 @@ public class ReviewService : IReviewService
         {
             Items = _mapper.Map<List<ReviewDTO>>(reviewList),
             CurrentPage = page,
-            TotalPages = (int)Math.Ceiling((double)total / pageSize),
-            PageSize = pageSize
+            TotalPages = total == 0 ? 1 : (int)Math.Ceiling((double)total / pageSize),
+            PageSize = pageSize,
+            TotalCount = total
         };
     }
 
@@ -101,7 +102,7 @@ public class ReviewService : IReviewService
         return review != null ? _mapper.Map<ReviewDTO>(review) : null;
     }
 
-    public async Task<PagedResult<ReviewDTO>> GetRecentReviewsAsync(int page = 1, int pageSize = 10)
+        public async Task<PagedResult<ReviewDTO>> GetRecentReviewsAsync(int page = 1, int pageSize = 10)
     {
         var reviews = await _unitOfWork.Reviews
             .GetAllAsync(
@@ -117,8 +118,9 @@ public class ReviewService : IReviewService
         {
             Items = _mapper.Map<List<ReviewDTO>>(list),
             CurrentPage = page,
-            TotalPages = (int)Math.Ceiling((double)total / pageSize),
-            PageSize = pageSize
+            TotalPages = total == 0 ? 1 : (int)Math.Ceiling((double)total / pageSize),
+            PageSize = pageSize,
+            TotalCount = total
         };
     }
 
