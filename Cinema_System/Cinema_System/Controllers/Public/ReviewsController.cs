@@ -53,33 +53,41 @@ namespace Cinema_System.Controllers.Public
         [Authorize]
         public async Task<IActionResult> Create(Guid movieId)
         {
-            var movie = await _movieService.GetMovieByIdAsync(movieId);
-            if (movie == null)
-                return NotFound();
-
-            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "");
-
-            // Kiểm tra user đã xem phim này chưa
-            var hasWatched = await _reviewService.HasUserWatchedMovieAsync(userId, movieId);
-            if (!hasWatched)
+            try
             {
-                TempData["Error"] = "Bạn chỉ có thể đánh giá những phim mà bạn đã xem.";
+                var movie = await _movieService.GetMovieByIdAsync(movieId);
+                if (movie == null)
+                    return NotFound();
+
+                var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "");
+
+                // Kiểm tra user đã xem phim này chưa
+                var hasWatched = await _reviewService.HasUserWatchedMovieAsync(userId, movieId);
+                if (!hasWatched)
+                {
+                    TempData["Error"] = "Bạn chưa xem phim này nên chưa được đánh giá. Vui lòng đặt vé xem phim trước.";
+                    return RedirectToAction("Details", "Movies", new { id = movieId });
+                }
+
+                // Kiểm tra user đã đánh giá phim này chưa
+                var hasReviewed = await _reviewService.HasUserReviewedMovieAsync(userId, movieId);
+                if (hasReviewed)
+                {
+                    TempData["Error"] = "Bạn đã đánh giá phim này rồi.";
+                    return RedirectToAction("Details", "Movies", new { id = movieId });
+                }
+
+                var model = new CreateReviewDTO { MovieId = movieId };
+                ViewData["MovieTitle"] = movie.Title;
+                ViewData["MovieSlug"] = movie.Slug;
+
+                return View(model);
+            }
+            catch (Exception)
+            {
+                TempData["Error"] = "Có lỗi xảy ra. Vui lòng thử lại sau.";
                 return RedirectToAction("Details", "Movies", new { id = movieId });
             }
-
-            // Kiểm tra user đã đánh giá phim này chưa
-            var hasReviewed = await _reviewService.HasUserReviewedMovieAsync(userId, movieId);
-            if (hasReviewed)
-            {
-                TempData["Error"] = "Bạn đã đánh giá phim này rồi.";
-                return RedirectToAction("Details", "Movies", new { id = movieId });
-            }
-
-            ViewData["MovieId"] = movieId;
-            ViewData["MovieTitle"] = movie.Title;
-            ViewData["MovieSlug"] = movie.Slug;
-
-            return View();
         }
 
         /// <summary>
@@ -92,11 +100,20 @@ namespace Cinema_System.Controllers.Public
         {
             if (!ModelState.IsValid)
             {
+                var movie = await _movieService.GetMovieByIdAsync(reviewDTO.MovieId);
+                if (movie != null)
+                {
+                    ViewData["MovieId"] = reviewDTO.MovieId;
+                    ViewData["MovieTitle"] = movie.Title;
+                    ViewData["MovieSlug"] = movie.Slug;
+                    return View(reviewDTO);
+                }
+
                 TempData["Error"] = "Dữ liệu không hợp lệ.";
-                return RedirectToAction("Create", new { movieId = reviewDTO.MovieId });
+                return RedirectToAction("Index", "Movies");
             }
 
-            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "");
+            var userId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "");
 
             try
             {
@@ -106,10 +123,22 @@ namespace Cinema_System.Controllers.Public
                 var movie = await _movieService.GetMovieByIdAsync(reviewDTO.MovieId);
                 return RedirectToAction("Details", "Movies", new { id = movie?.Slug ?? reviewDTO.MovieId.ToString() });
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                TempData["Error"] = "Có lỗi xảy ra. Vui lòng thử lại sau.";
-                return RedirectToAction("Create", new { movieId = reviewDTO.MovieId });
+                var movie = await _movieService.GetMovieByIdAsync(reviewDTO.MovieId);
+                if (movie != null)
+                {
+                    ViewData["MovieId"] = reviewDTO.MovieId;
+                    ViewData["MovieTitle"] = movie.Title;
+                    ViewData["MovieSlug"] = movie.Slug;
+                }
+                
+                // Log chi tiết lỗi để debugging
+                System.Diagnostics.Debug.WriteLine($"[ReviewCreate] Error: {ex.GetType().Name} - {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[ReviewCreate] InnerException: {ex.InnerException?.Message}");
+                
+                TempData["Error"] = $"Có lỗi xảy ra: {ex.Message}";
+                return View(reviewDTO);
             }
         }
     }

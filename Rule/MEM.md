@@ -1,4 +1,17 @@
-﻿### [2026-06-18] Cải thiện UI trang Đánh giá và Chi tiết phim (By: copilot)
+﻿### [2026-06-18] Kiểm tra quyền xem phim trước khi đánh giá (By: copilot)
+- **What changed:** 
+  1. Controllers/Public/ReviewsController.cs: Thêm try-catch block trong action Create (GET) để handle exception tốt hơn; cập nhật error message từ "Bạn chỉ có thể đánh giá những phim mà bạn đã xem." → "Bạn chưa xem phim này nên chưa được đánh giá. Vui lòng đặt vé xem phim trước."
+  2. Views/Public/Movies/Details.cshtml: Thêm section hiển thị TempData["Error"] và TempData["Success"] messages dạng alert box (red cho error, green cho success) ngay sau nút "Quay lại"
+  3. SQL: Tạo user test `testcustomer@gmail.com` (password: Admin@123, role: CUSTOMER)
+  4. SQL: Tạo test booking + ticket cho testcustomer user để có thể test chức năng viết đánh giá
+- **Why:** User yêu cầu: chỉ user đã xem phim (có ticket) mới được viết đánh giá; nếu chưa xem sẽ thông báo. Cần test user mới để verify functionality.
+- **Impact/Notes for Team:** 
+  - `HasUserWatchedMovieAsync` kiểm tra xem user có ticket nào cho phim đó không bằng cách: lấy tất cả completed bookings → loop through → check tickets với Showtime.MovieId matching
+  - TempData messages hiển thị khi redirect từ Create action
+  - Test user testcustomer@gmail.com đã có booking + ticket cho một phim để có thể test review flow
+  - Nếu user chưa xem phim, click "Viết đánh giá" → redirect về Movie Details → show error message
+
+### [2026-06-18] Cải thiện UI trang Đánh giá và Chi tiết phim (By: copilot)
 - **What changed:** 
   1. Controllers/Public/ReviewsController.cs: Giảm pagesize từ 10 xuống 9 items/trang cho cả 2 method (GetMovieReviewsAsync và GetRecentReviewsAsync)
   2. Views/Public/Reviews/Index.cshtml: Bỏ nút "Đăng nhập" cho user chưa authenticate; cải thiện UI với gradient background, hiệu ứng hover nâng cao, shadow tốt hơn, pagination button cải tiến

@@ -21,6 +21,33 @@
             </a>
         </div>
 
+        <!-- TempData Messages -->
+        @if (TempData["Error"] != null)
+        {
+            <div class="mb-6 rounded-2xl bg-red-50 border-l-4 border-red-500 p-4 shadow-sm">
+                <div class="flex items-start gap-3">
+                    <span class="material-symbols-outlined text-red-500 text-[24px] flex-shrink-0">error</span>
+                    <div>
+                        <p class="text-sm font-semibold text-red-900">Thông báo</p>
+                        <p class="text-sm text-red-700 mt-1">@TempData["Error"]</p>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (TempData["Success"] != null)
+        {
+            <div class="mb-6 rounded-2xl bg-green-50 border-l-4 border-green-500 p-4 shadow-sm">
+                <div class="flex items-start gap-3">
+                    <span class="material-symbols-outlined text-green-500 text-[24px] flex-shrink-0">check_circle</span>
+                    <div>
+                        <p class="text-sm font-semibold text-green-900">Thành công</p>
+                        <p class="text-sm text-green-700 mt-1">@TempData["Success"]</p>
+                    </div>
+                </div>
+            </div>
+        }
+
         <div class="overflow-hidden rounded-[2.5rem] bg-white shadow-[0_40px_120px_-40px_rgba(15,23,42,0.35)]">
             <div class="grid grid-cols-1 gap-8 lg:grid-cols-[2.3fr_1fr]">
                 <div class="relative overflow-hidden bg-gradient-to-br from-slate-950 to-slate-900">

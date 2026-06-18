@@ -42,13 +42,7 @@
                             Xem phim
                         </a>
                     }
-                    @if (User.Identity?.IsAuthenticated ?? false)
-                    {
-                        <a href="@Url.Action("Create", "Reviews", new { movieId = movieId })" class="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-primary to-primary-dark px-6 py-3 text-sm font-semibold text-white shadow-xl shadow-primary/20 transition hover:shadow-2xl hover:scale-[1.02]">
-                            <span class="material-symbols-outlined">edit</span>
-                            Viết đánh giá
-                        </a>
-                    }
+                    @* Nút 'Viết đánh giá' đã bị gỡ theo yêu cầu. *@
                 </div>
             </div>
         </section>
