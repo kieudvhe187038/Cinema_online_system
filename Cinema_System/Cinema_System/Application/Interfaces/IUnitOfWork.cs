@@ -39,6 +39,8 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<Payment> Payments { get; }
 
+    IGenericRepository<Vat> Vats { get; }
+
     IGenericRepository<PriceRoomTypeConfig> PriceRoomTypeConfigs { get; }
 
     IGenericRepository<Movie> Movies { get; }

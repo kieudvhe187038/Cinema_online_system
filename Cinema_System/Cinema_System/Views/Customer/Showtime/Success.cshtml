@@ -45,6 +45,21 @@
                 <span class="font-semibold text-slate-800">@Model.PaymentMethod</span>
             </div>
             <div class="flex justify-between border-t border-slate-200 pt-3">
+                <span class="text-slate-500">Tạm tính</span>
+                <span class="font-semibold text-slate-800">@Model.Subtotal.ToString("N0") ₫</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-slate-500">VAT (@((Model.VatRate * 100).ToString("0.#"))%)</span>
+                <span class="font-semibold text-slate-800">@Model.VatAmount.ToString("N0") ₫</span>
+            </div>
+            @if (Model.DiscountAmount > 0)
+            {
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Giảm bằng điểm (@Model.PointsUsed đ)</span>
+                    <span class="font-semibold text-emerald-600">-@Model.DiscountAmount.ToString("N0") ₫</span>
+                </div>
+            }
+            <div class="flex justify-between border-t border-slate-200 pt-3">
                 <span class="font-semibold text-slate-700">Tổng cộng</span>
                 <span class="text-lg font-bold text-primary">@Model.GrandTotal.ToString("N0") ₫</span>
             </div>

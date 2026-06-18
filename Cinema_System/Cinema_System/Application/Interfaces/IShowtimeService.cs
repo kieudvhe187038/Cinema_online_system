@@ -21,8 +21,8 @@ public interface IShowtimeService
     Task<PaymentViewModel?> GetPaymentAsync(Guid showtimeId, Guid userId, List<Guid> foodIds, List<int> foodQtys);
 
     // Xác nhận đặt vé (thanh toán giả): tạo Booking/Tickets/Foods/Payment, chuyển hold sang Converted,
-    // cộng điểm thưởng theo tỷ lệ config. Trả về bookingId + số điểm cộng.
-    Task<BookingConfirmResult> ConfirmBookingAsync(Guid showtimeId, Guid userId, string method, List<Guid> foodIds, List<int> foodQtys);
+    // dùng pointsUsed điểm để giảm giá (trừ điểm), rồi cộng điểm mới theo tỷ lệ config.
+    Task<BookingConfirmResult> ConfirmBookingAsync(Guid showtimeId, Guid userId, string method, List<Guid> foodIds, List<int> foodQtys, int pointsUsed);
 
     // Lấy dữ liệu trang đặt vé thành công của 1 booking (chỉ cho đúng chủ booking).
     Task<PaymentSuccessViewModel?> GetBookingSuccessAsync(Guid bookingId, Guid userId);

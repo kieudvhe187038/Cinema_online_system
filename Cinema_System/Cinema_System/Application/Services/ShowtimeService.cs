@@ -12,6 +12,9 @@ public class ShowtimeService : IShowtimeService
 {
     private readonly IUnitOfWork _unitOfWork;
 
+    // Giá trị quy đổi 1 điểm thưởng khi dùng để giảm giá (₫).
+    private const int PointValueVnd = 100;
+
     // Nhận UnitOfWork qua DI để truy cập các repository (Showtimes, Seats, Tickets...).
     public ShowtimeService(IUnitOfWork unitOfWork)
     {
@@ -419,6 +422,20 @@ public class ShowtimeService : IShowtimeService
         return 0m;
     }
 
+    // Lấy VAT áp dụng: ưu tiên default_vat_id trong config, nếu không có thì lấy VAT đang Active.
+    private async Task<(Guid? VatId, decimal Rate)> GetVatAsync()
+    {
+        var cfg = (await _unitOfWork.SystemConfigs.GetAllAsync(
+            predicate: c => c.ConfigKey == "default_vat_id")).FirstOrDefault();
+
+        Vat? vat = null;
+        if (cfg?.ConfigValue != null && Guid.TryParse(cfg.ConfigValue, out var vid))
+            vat = (await _unitOfWork.Vats.GetAllAsync(predicate: v => v.Id == vid)).FirstOrDefault();
+        vat ??= (await _unitOfWork.Vats.GetAllAsync(predicate: v => v.Status == "Active")).FirstOrDefault();
+
+        return (vat?.Id, vat?.VatRate ?? 0m);
+    }
+
     // Lấy dữ liệu trang thanh toán.
     public async Task<PaymentViewModel?> GetPaymentAsync(Guid showtimeId, Guid userId, List<Guid> foodIds, List<int> foodQtys)
     {
@@ -428,6 +445,17 @@ public class ShowtimeService : IShowtimeService
         var foodLines = await BuildFoodLinesAsync(foodIds, foodQtys);
         var seatTotal = ctx.Seats.Sum(s => s.Price);
         var foodTotal = foodLines.Sum(l => l.LineTotal);
+
+        // Tạm tính (vé + đồ ăn) -> áp VAT lên tạm tính -> tổng trước giảm.
+        var subtotal = seatTotal + foodTotal;
+        var (_, vatRate) = await GetVatAsync();
+        var vatAmount = Math.Round(subtotal * vatRate, 0, MidpointRounding.AwayFromZero);
+        var grandTotal = subtotal + vatAmount;
+
+        // Điểm thưởng có thể dùng: không vượt số điểm đang có và không làm tổng âm.
+        var user = await _unitOfWork.Users.GetByIdAsync(userId);
+        var availablePoints = user?.RewardPoints ?? 0;
+        var maxUsablePoints = Math.Min(availablePoints, (int)(grandTotal / PointValueVnd));
 
         return new PaymentViewModel
         {
@@ -440,13 +468,19 @@ public class ShowtimeService : IShowtimeService
             SeatTotal = seatTotal,
             FoodLines = foodLines,
             FoodTotal = foodTotal,
-            GrandTotal = seatTotal + foodTotal,
+            Subtotal = subtotal,
+            VatRate = vatRate,
+            VatAmount = vatAmount,
+            GrandTotal = grandTotal,
+            AvailablePoints = availablePoints,
+            PointValueVnd = PointValueVnd,
+            MaxUsablePoints = maxUsablePoints,
             HoldSecondsLeft = ctx.SecondsLeft
         };
     }
 
-    // Xác nhận đặt vé (thanh toán giả) + cộng điểm thưởng.
-    public async Task<BookingConfirmResult> ConfirmBookingAsync(Guid showtimeId, Guid userId, string method, List<Guid> foodIds, List<int> foodQtys)
+    // Xác nhận đặt vé (thanh toán giả) + dùng/cộng điểm thưởng.
+    public async Task<BookingConfirmResult> ConfirmBookingAsync(Guid showtimeId, Guid userId, string method, List<Guid> foodIds, List<int> foodQtys, int pointsUsed)
     {
         var ctx = await LoadHeldContextAsync(showtimeId, userId);
         if (ctx is null) return BookingConfirmResult.Fail("Hết thời gian giữ ghế, vui lòng đặt lại.");
@@ -461,7 +495,19 @@ public class ShowtimeService : IShowtimeService
         var now = DateTime.Now;
         var seatTotal = ctx.Seats.Sum(s => s.Price);
         var foodTotal = foodLines.Sum(l => l.LineTotal);
-        var grand = seatTotal + foodTotal;
+
+        // Tạm tính (vé + đồ ăn) -> áp VAT -> tổng trước giảm.
+        var subtotal = seatTotal + foodTotal;
+        var (vatId, vatRate) = await GetVatAsync();
+        var vatAmount = Math.Round(subtotal * vatRate, 0, MidpointRounding.AwayFromZero);
+        var grossTotal = subtotal + vatAmount;
+
+        // Dùng điểm để giảm giá: kẹp số điểm trong [0, số điểm đang có] và không làm tổng âm.
+        var user = await _unitOfWork.Users.GetByIdAsync(userId);
+        var availablePoints = user?.RewardPoints ?? 0;
+        var usePoints = Math.Max(0, Math.Min(pointsUsed, Math.Min(availablePoints, (int)(grossTotal / PointValueVnd))));
+        var discount = (decimal)usePoints * PointValueVnd;
+        var grand = grossTotal - discount;
 
         var bookingId = Guid.NewGuid();
         await _unitOfWork.Bookings.AddAsync(new Booking
@@ -469,9 +515,10 @@ public class ShowtimeService : IShowtimeService
             Id = bookingId,
             UserId = userId,
             ShowtimeId = showtimeId,
-            TotalAmount = grand,
-            DiscountAmount = 0,
-            VatAmount = 0,
+            TotalAmount = subtotal,
+            DiscountAmount = discount,
+            VatId = vatId,
+            VatAmount = vatAmount,
             FinalAmount = grand,
             PaymentStatus = "Paid",
             BookingType = "Online",
@@ -527,7 +574,22 @@ public class ShowtimeService : IShowtimeService
             _unitOfWork.SeatHolds.Update(h);
         }
 
-        // Cộng điểm thưởng (booking CONFIRMED): điểm = tổng tiền × tỷ lệ config.
+        // Trừ điểm đã dùng để giảm giá (nếu có).
+        if (usePoints > 0)
+        {
+            await _unitOfWork.RewardPointHistories.AddAsync(new RewardPointHistory
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                BookingId = bookingId,
+                PointsChanged = -usePoints,
+                ActionType = "Redeemed",
+                Description = "Dùng điểm giảm giá khi đặt vé",
+                CreatedAt = now
+            });
+        }
+
+        // Cộng điểm thưởng (booking CONFIRMED): điểm = số tiền thực trả × tỷ lệ config.
         var rate = await GetRewardRateAsync();
         var points = (int)Math.Floor(grand * rate);
         if (points > 0)
@@ -542,12 +604,13 @@ public class ShowtimeService : IShowtimeService
                 Description = "Cộng điểm khi đặt vé",
                 CreatedAt = now
             });
-            var user = await _unitOfWork.Users.GetByIdAsync(userId);
-            if (user != null)
-            {
-                user.RewardPoints = (user.RewardPoints ?? 0) + points;
-                _unitOfWork.Users.Update(user);
-            }
+        }
+
+        // Cập nhật số dư điểm: trừ điểm đã dùng + cộng điểm mới (1 lần ghi).
+        if (user != null && (usePoints > 0 || points > 0))
+        {
+            user.RewardPoints = (user.RewardPoints ?? 0) - usePoints + points;
+            _unitOfWork.Users.Update(user);
         }
 
         await _unitOfWork.SaveChangesAsync();
@@ -587,6 +650,12 @@ public class ShowtimeService : IShowtimeService
             predicate: r => r.BookingId == bookingId && r.ActionType == "Earned")).Sum(r => r.PointsChanged);
         var user = await _unitOfWork.Users.GetByIdAsync(userId);
 
+        var subtotal = booking.TotalAmount;
+        var vatAmount = booking.VatAmount ?? 0m;
+        var vatRate = subtotal > 0 ? Math.Round(vatAmount / subtotal, 2) : 0m;
+        var discount = booking.DiscountAmount ?? 0m;
+        var pointsUsed = (int)(discount / PointValueVnd);
+
         return new PaymentSuccessViewModel
         {
             BookingId = bookingId,
@@ -597,6 +666,11 @@ public class ShowtimeService : IShowtimeService
             StartTime = booking.Showtime.StartTime,
             SeatLabels = seatLabels,
             FoodLines = foodLines,
+            Subtotal = subtotal,
+            VatRate = vatRate,
+            VatAmount = vatAmount,
+            PointsUsed = pointsUsed,
+            DiscountAmount = discount,
             GrandTotal = booking.FinalAmount,
             PaymentMethod = payment?.PaymentMethod ?? string.Empty,
             PointsEarned = pointsEarned,
