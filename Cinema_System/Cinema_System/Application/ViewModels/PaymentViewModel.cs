@@ -16,7 +16,19 @@ public class PaymentViewModel
     public List<FoodLineItem> FoodLines { get; set; } = new();
     public decimal FoodTotal { get; set; }
 
+    // Tạm tính (vé + đồ ăn) trước thuế.
+    public decimal Subtotal { get; set; }
+    // Thuế VAT: tỷ lệ (vd 0.08) và số tiền thuế trên Subtotal.
+    public decimal VatRate { get; set; }
+    public decimal VatAmount { get; set; }
+    // Tổng trước giảm = Subtotal + VatAmount.
     public decimal GrandTotal { get; set; }
+
+    // Điểm thưởng để giảm giá: số điểm đang có, giá trị 1 điểm (₫), và số điểm tối đa được dùng cho đơn này.
+    public int AvailablePoints { get; set; }
+    public int PointValueVnd { get; set; }
+    public int MaxUsablePoints { get; set; }
+
     public int HoldSecondsLeft { get; set; }
 }
 
@@ -41,6 +53,11 @@ public class PaymentSuccessViewModel
     public DateTime StartTime { get; set; }
     public List<string> SeatLabels { get; set; } = new();
     public List<FoodLineItem> FoodLines { get; set; } = new();
+    public decimal Subtotal { get; set; }
+    public decimal VatRate { get; set; }
+    public decimal VatAmount { get; set; }
+    public int PointsUsed { get; set; }
+    public decimal DiscountAmount { get; set; }
     public decimal GrandTotal { get; set; }
     public string PaymentMethod { get; set; } = string.Empty;
     public int PointsEarned { get; set; }

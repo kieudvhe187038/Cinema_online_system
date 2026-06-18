@@ -13,7 +13,6 @@ namespace Cinema_System.Controllers.Public
         // Thời gian giữ ghế (phút) khi khách chọn ghế.
         private const int HoldMinutes = 10;
 
-        // Nhận IShowtimeService qua DI để truy vấn lịch chiếu & sơ đồ ghế.
         public ShowtimeController(IShowtimeService showtimeService)
         {
             _showtimeService = showtimeService;
@@ -60,16 +59,19 @@ namespace Cinema_System.Controllers.Public
             return View(vm);
         }
 
-        // Xác nhận thanh toán (giả lập) -> tạo booking + cộng điểm, rồi sang trang thành công.
+        // Xác nhận thanh toán (giả lập) -> tạo booking, dùng/cộng điểm, rồi sang trang thành công.
         [HttpPost]
         [Authorize(Roles = "CUSTOMER,STAFF")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Confirm(Guid id, string method, List<Guid> fbId, List<int> qty)
+        public async Task<IActionResult> Confirm(Guid id, string method, List<Guid> fbId, List<int> qty, int pointsUsed = 0)
         {
             var allowed = new[] { "VNPay", "MoMo" };
             if (string.IsNullOrEmpty(method) || !allowed.Contains(method)) method = "VNPay";
+            fbId ??= new();
+            qty ??= new();
+            if (pointsUsed < 0) pointsUsed = 0;
 
-            var result = await _showtimeService.ConfirmBookingAsync(id, CurrentUserId, method, fbId ?? new(), qty ?? new());
+            var result = await _showtimeService.ConfirmBookingAsync(id, CurrentUserId, method, fbId, qty, pointsUsed);
             if (!result.Succeeded)
             {
                 TempData["Error"] = result.Error;
