@@ -46,6 +46,7 @@ builder.Services.AddScoped<IRegistrationService, RegistrationService>();
 builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 builder.Services.AddScoped<IMovieService, MovieService>();
 builder.Services.AddScoped<IFoodBeverageService, FoodBeverageService>();
+builder.Services.AddScoped<IPromotionService, PromotionService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 // Module quản trị của taido (quản lý người dùng, tỉ lệ điểm, loại phòng/ghế).
 builder.Services.AddScoped<IUserService, UserService>();

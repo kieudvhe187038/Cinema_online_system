@@ -1,0 +1,122 @@
+@*
+    Modal xác nhận dùng chung (thay cho confirm() mặc định của trình duyệt).
+    Cách dùng:
+    1) Khai báo trên form/link:  data-confirm="Nội dung" [data-confirm-title="..."]
+       [data-confirm-type="danger|warning|info"] [data-confirm-ok="Nhãn nút đồng ý"]
+       → tự chặn submit/điều hướng và hiện modal; bấm đồng ý mới thực thi.
+    2) Gọi bằng JS:  confirmPopup({ title, message, type, okText }).then(ok => { if (ok) ... });
+*@
+<div id="confirmModal" class="fixed inset-0 z-[200] hidden items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-[2px] opacity-0 transition-opacity duration-150" data-confirm-backdrop></div>
+    <div id="confirmBox"
+         class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 scale-95 opacity-0 transition-all duration-150">
+        <div class="flex items-start gap-4">
+            <div id="confirmIcon" class="w-12 h-12 rounded-full flex items-center justify-center shrink-0 bg-amber-100 text-amber-600">
+                <span class="material-symbols-outlined" id="confirmIconGlyph" style="font-size:26px">warning</span>
+            </div>
+            <div class="flex-1 pt-0.5">
+                <h3 id="confirmTitle" class="font-head text-lg font-bold text-[#191c1d] mb-1.5">Xác nhận</h3>
+                <p id="confirmMessage" class="text-sm text-gray-600 leading-relaxed whitespace-pre-line"></p>
+            </div>
+        </div>
+        <div class="flex justify-end gap-3 mt-6">
+            <button type="button" data-confirm-cancel
+                    class="px-4 py-2.5 rounded-lg text-sm font-semibold bg-gray-100 hover:bg-gray-200 text-[#191c1d] transition-colors">
+                Hủy
+            </button>
+            <button type="button" id="confirmOk"
+                    class="px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors bg-primary hover:bg-primary-dark">
+                Xác nhận
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const modal = document.getElementById('confirmModal');
+        const box = document.getElementById('confirmBox');
+        const backdrop = modal.querySelector('[data-confirm-backdrop]');
+        const iconWrap = document.getElementById('confirmIcon');
+        const iconGlyph = document.getElementById('confirmIconGlyph');
+        const titleEl = document.getElementById('confirmTitle');
+        const msgEl = document.getElementById('confirmMessage');
+        const okBtn = document.getElementById('confirmOk');
+        const cancelEls = modal.querySelectorAll('[data-confirm-cancel], [data-confirm-backdrop]');
+
+        // Bảng màu/icon theo loại cảnh báo.
+        const themes = {
+            danger:  { icon: 'delete',  wrap: 'bg-red-100 text-red-600',     ok: 'bg-red-600 hover:bg-red-700' },
+            warning: { icon: 'warning', wrap: 'bg-amber-100 text-amber-600', ok: 'bg-primary hover:bg-primary-dark' },
+            info:    { icon: 'info',    wrap: 'bg-blue-100 text-blue-600',   ok: 'bg-secondary hover:bg-secondary-dark' }
+        };
+
+        let resolver = null;
+
+        function open() {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            requestAnimationFrame(() => {
+                backdrop.classList.remove('opacity-0');
+                box.classList.remove('scale-95', 'opacity-0');
+            });
+            document.body.style.overflow = 'hidden';
+        }
+
+        function close(result) {
+            backdrop.classList.add('opacity-0');
+            box.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                document.body.style.overflow = '';
+            }, 150);
+            const r = resolver; resolver = null;
+            if (r) r(result);
+        }
+
+        // API toàn cục: trả Promise<boolean>.
+        window.confirmPopup = function (opts) {
+            opts = opts || {};
+            const theme = themes[opts.type] || themes.warning;
+            iconWrap.className = 'w-12 h-12 rounded-full flex items-center justify-center shrink-0 ' + theme.wrap;
+            iconGlyph.textContent = theme.icon;
+            okBtn.className = 'px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors ' + theme.ok;
+            okBtn.textContent = opts.okText || 'Xác nhận';
+            titleEl.textContent = opts.title || 'Xác nhận';
+            msgEl.textContent = opts.message || '';
+            open();
+            okBtn.focus();
+            return new Promise(resolve => { resolver = resolve; });
+        };
+
+        okBtn.addEventListener('click', () => close(true));
+        cancelEls.forEach(el => el.addEventListener('click', () => close(false)));
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape' && modal.classList.contains('flex')) close(false);
+        });
+
+        // Tự đấu nối cho mọi form/link có data-confirm.
+        document.querySelectorAll('[data-confirm]').forEach(el => {
+            const opts = {
+                message: el.getAttribute('data-confirm'),
+                title: el.getAttribute('data-confirm-title') || 'Xác nhận',
+                type: el.getAttribute('data-confirm-type') || 'warning',
+                okText: el.getAttribute('data-confirm-ok') || 'Xác nhận'
+            };
+
+            if (el.tagName === 'FORM') {
+                el.addEventListener('submit', e => {
+                    e.preventDefault();
+                    // el.submit() bỏ qua listener nên không lặp lại modal.
+                    confirmPopup(opts).then(ok => { if (ok) el.submit(); });
+                });
+            } else if (el.tagName === 'A') {
+                el.addEventListener('click', e => {
+                    e.preventDefault();
+                    confirmPopup(opts).then(ok => { if (ok) window.location.href = el.href; });
+                });
+            }
+        });
+    })();
+</script>

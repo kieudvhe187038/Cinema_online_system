@@ -74,6 +74,11 @@
             <span class="material-symbols-outlined">restaurant</span>
             <span>Đồ Ăn &amp; Thức Uống</span>
         </a>
+        <a class="@navBase @(ctrl == "ManagerPromotion" ? navActive : navIdle)"
+           asp-controller="ManagerPromotion" asp-action="Index">
+            <span class="material-symbols-outlined">sell</span>
+            <span>Khuyến Mãi</span>
+        </a>
         <a class="@navBase @navIdle" href="#">
             <span class="material-symbols-outlined">settings</span>
             <span>Cài Đặt</span>
