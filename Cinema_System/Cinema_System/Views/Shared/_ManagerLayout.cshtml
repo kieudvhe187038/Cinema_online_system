@@ -79,6 +79,11 @@
             <span class="material-symbols-outlined">sell</span>
             <span>Khuyến Mãi</span>
         </a>
+        <a class="@navBase @(ctrl == "ManagerPrice" ? navActive : navIdle)"
+           asp-controller="ManagerPrice" asp-action="Index">
+            <span class="material-symbols-outlined">payments</span>
+            <span>Quản Lý Giá</span>
+        </a>
         <a class="@navBase @navIdle" href="#">
             <span class="material-symbols-outlined">settings</span>
             <span>Cài Đặt</span>

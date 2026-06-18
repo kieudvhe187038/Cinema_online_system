@@ -22,6 +22,8 @@ public class UnitOfWork : IUnitOfWork
     private IGenericRepository<RoomType>? _roomTypes;
     private IGenericRepository<Room>? _rooms;
     private IGenericRepository<PriceRoomTypeConfig>? _priceRoomTypeConfigs;
+    private IGenericRepository<PriceBaseConfig>? _priceBaseConfigs;
+    private IGenericRepository<PriceTimeConfig>? _priceTimeConfigs;
     private IGenericRepository<Movie>? _movies;
     private IGenericRepository<Genre>? _genres;
     private IGenericRepository<RewardPointHistory>? _rewardPointHistories;
@@ -62,6 +64,12 @@ public class UnitOfWork : IUnitOfWork
     public IGenericRepository<PriceRoomTypeConfig> PriceRoomTypeConfigs =>
         _priceRoomTypeConfigs ??= new GenericRepository<PriceRoomTypeConfig>(_context);
 
+    public IGenericRepository<PriceBaseConfig> PriceBaseConfigs =>
+        _priceBaseConfigs ??= new GenericRepository<PriceBaseConfig>(_context);
+
+    public IGenericRepository<PriceTimeConfig> PriceTimeConfigs =>
+        _priceTimeConfigs ??= new GenericRepository<PriceTimeConfig>(_context);
+
     public IGenericRepository<Movie> Movies =>
         _movies ??= new GenericRepository<Movie>(_context);
 
@@ -87,6 +95,12 @@ public class UnitOfWork : IUnitOfWork
     public async Task<int> SaveChangesAsync()
     {
         return await _context.SaveChangesAsync();
+    }
+
+    // Gỡ theo dõi toàn bộ entity đang tracked (xem IUnitOfWork.ClearTracking).
+    public void ClearTracking()
+    {
+        _context.ChangeTracker.Clear();
     }
 
     public void Dispose()
