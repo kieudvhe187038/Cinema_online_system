@@ -481,7 +481,7 @@ CREATE TABLE [Price_Time_Configs] (
 
   CONSTRAINT [PK_Price_Time_Configs] PRIMARY KEY ([id]),
   CONSTRAINT [CK_PTime_day] CHECK ([day_of_week] BETWEEN 1 AND 7),   -- 1: Chủ Nhật -> 7: Thứ Bảy
-  CONSTRAINT [CK_PTime_clock] CHECK ([end_time] > [start_time]),
+  CONSTRAINT [CK_PTime_clock] CHECK ([end_time] <> [start_time]),    -- end < start = khung giờ qua đêm (sang ngày hôm sau)
   CONSTRAINT [CK_PTime_charge] CHECK ([time_surcharge] >= 0),
   CONSTRAINT [CK_PTime_priority] CHECK ([priority] >= 0),
   CONSTRAINT [CK_PTime_time] CHECK ([effective_to] IS NULL OR [effective_to] > [effective_from]),
