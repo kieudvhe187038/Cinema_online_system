@@ -69,6 +69,13 @@
     {
         <div class="ct-alert warn">Chưa có tài khoản nhân viên (role Staff) đang hoạt động — không thể tạo đơn. Vui lòng tạo nhân viên trước.</div>
     }
+    @if (!Model.Movies.Any())
+    {
+        <div class="ct-alert warn">
+            Hiện chưa có phim nào có suất chiếu sắp tới (trạng thái <strong>Scheduled</strong>) để bán vé.
+            Vui lòng tạo/lên lịch suất chiếu trong tương lai trước khi đặt vé tại quầy.
+        </div>
+    }
 
     <div class="ct-grid">
         <div>
