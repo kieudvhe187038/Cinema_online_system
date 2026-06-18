@@ -30,6 +30,7 @@ public class UnitOfWork : IUnitOfWork
     private IGenericRepository<Review>? _reviews;
     private IGenericRepository<Booking>? _bookings;
     private IGenericRepository<Ticket>? _tickets;
+    private IGenericRepository<SeatHold>? _seatHolds;
     private IGenericRepository<Showtime>? _showtimes;
 
     public UnitOfWork(CinemaWebDbContext context)
@@ -87,6 +88,9 @@ public class UnitOfWork : IUnitOfWork
 
     public IGenericRepository<Ticket> Tickets =>
         _tickets ??= new GenericRepository<Ticket>(_context);
+
+    public IGenericRepository<SeatHold> SeatHolds =>
+        _seatHolds ??= new GenericRepository<SeatHold>(_context);
 
     public IGenericRepository<Showtime> Showtimes =>
         _showtimes ??= new GenericRepository<Showtime>(_context);

@@ -60,7 +60,8 @@
             <span class="material-symbols-outlined">movie</span>
             <span>Quản Lý Phim</span>
         </a>
-        <a class="@navBase @navIdle" href="#">
+        <a class="@navBase @(ctrl == "Showtime" ? navActive : navIdle)"
+           asp-controller="Showtime" asp-action="Calendar">
             <span class="material-symbols-outlined">schedule</span>
             <span>Suất Chiếu</span>
         </a>

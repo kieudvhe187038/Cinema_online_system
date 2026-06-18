@@ -41,6 +41,8 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<Ticket> Tickets { get; }
 
+    IGenericRepository<SeatHold> SeatHolds { get; }
+
     IGenericRepository<Showtime> Showtimes { get; }
 
     Task<int> SaveChangesAsync();
