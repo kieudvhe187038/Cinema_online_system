@@ -13,7 +13,7 @@ namespace Cinema_System.Controllers.Public
     public class ReviewsController : Controller
     {
         private readonly IReviewService _reviewService;
-        private readonly IMovieService _movieService;
+        private readonly IMovieService _movieService; 
 
         public ReviewsController(IReviewService reviewService, IMovieService movieService)
         {

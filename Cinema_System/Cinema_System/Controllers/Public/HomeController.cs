@@ -24,7 +24,7 @@ namespace Cinema_System.Controllers.Public
             {
                 NowShowingMovies = await _movieService.GetNowShowingMoviesAsync(),
                 ComingSoonMovies = await _movieService.GetComingSoonMoviesAsync(),
-                SpecialMovies = await _movieService.GetSpecialMoviesAsync()
+                SpecialMovies = await _movieService.GetSpecialMoviesAsync() 
             };
 
             return View(homeViewModel);

@@ -59,7 +59,7 @@ namespace Cinema_System.Controllers.Public
             {
                 TempData["SearchError"] = "Từ khóa tìm kiếm chỉ được tối đa 30 ký tự và không chứa ký tự đặc biệt.";
                 return RedirectToAction("Index");
-            }
+            } 
 
             var keyword = searchQuery!.Trim();
             var pagedMovies = await _movieService.SearchMoviesAsync(keyword, page, MoviePaging.DefaultPageSize);
