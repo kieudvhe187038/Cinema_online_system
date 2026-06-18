@@ -34,7 +34,10 @@ public class FoodLineItem
 public class PaymentSuccessViewModel
 {
     public Guid BookingId { get; set; }
+    public string BookingCode { get; set; } = string.Empty;   // mã đơn để tạo QR quét vé
     public string MovieTitle { get; set; } = string.Empty;
+    public string RoomName { get; set; } = string.Empty;
+    public string CinemaName { get; set; } = string.Empty;
     public DateTime StartTime { get; set; }
     public List<string> SeatLabels { get; set; } = new();
     public List<FoodLineItem> FoodLines { get; set; } = new();
