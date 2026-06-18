@@ -17,6 +17,16 @@ public interface IShowtimeService
     // Trả null nếu user không còn giữ ghế nào (hết giờ giữ) -> caller điều hướng lại.
     Task<FoodOrderViewModel?> GetFoodOrderAsync(Guid showtimeId, Guid userId);
 
+    // Lấy dữ liệu trang thanh toán: ghế đang giữ + đồ ăn đã chọn + tổng tiền. Null nếu hết giờ giữ.
+    Task<PaymentViewModel?> GetPaymentAsync(Guid showtimeId, Guid userId, List<Guid> foodIds, List<int> foodQtys);
+
+    // Xác nhận đặt vé (thanh toán giả): tạo Booking/Tickets/Foods/Payment, chuyển hold sang Converted,
+    // cộng điểm thưởng theo tỷ lệ config. Trả về bookingId + số điểm cộng.
+    Task<BookingConfirmResult> ConfirmBookingAsync(Guid showtimeId, Guid userId, string method, List<Guid> foodIds, List<int> foodQtys);
+
+    // Lấy dữ liệu trang đặt vé thành công của 1 booking (chỉ cho đúng chủ booking).
+    Task<PaymentSuccessViewModel?> GetBookingSuccessAsync(Guid bookingId, Guid userId);
+
     // Giữ 1 ghế cho user trong holdMinutes phút (tạo mới hoặc gia hạn); fail nếu ghế đã đặt/người khác giữ.
     Task<Result> HoldSeatAsync(Guid showtimeId, Guid seatId, Guid userId, int holdMinutes);
 

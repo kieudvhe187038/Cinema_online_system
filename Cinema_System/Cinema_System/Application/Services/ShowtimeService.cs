@@ -350,6 +350,255 @@ public class ShowtimeService : IShowtimeService
             + (seatSurcharges.TryGetValue(seatTypeId, out var s2) ? s2 : 0m);
     }
 
+    // Ghế đang giữ kèm giá, dùng cho trang thanh toán/xác nhận.
+    private sealed record HeldSeat(Guid SeatId, string Label, decimal Price);
+    private sealed record HeldContext(Showtime Showtime, List<HeldSeat> Seats, int SecondsLeft);
+
+    // Tải ghế user đang giữ (kèm giá) + suất chiếu + thời gian giữ còn lại. Null nếu hết giữ.
+    private async Task<HeldContext?> LoadHeldContextAsync(Guid showtimeId, Guid userId)
+    {
+        var now = DateTime.Now;
+        var holds = (await _unitOfWork.SeatHolds.GetAllAsync(
+            predicate: h => h.ShowtimeId == showtimeId && h.UserId == userId
+                && h.Status == "Holding" && h.ExpiresAt > now)).ToList();
+        if (holds.Count == 0) return null;
+
+        var showtime = (await _unitOfWork.Showtimes.GetAllAsync(
+            predicate: s => s.Id == showtimeId,
+            include: q => q.Include(s => s.Movie).Include(s => s.Room).ThenInclude(r => r.Cinema)))
+            .FirstOrDefault();
+        if (showtime is null) return null;
+
+        var seatPrice = await BuildSeatPricerAsync(showtime);
+        var heldSeatIds = holds.Select(h => h.SeatId).ToList();
+        var seats = await _unitOfWork.Seats.GetAllAsync(
+            predicate: s => heldSeatIds.Contains(s.Id),
+            include: q => q.Include(s => s.SeatType),
+            orderBy: q => q.OrderBy(s => s.RowNumber).ThenBy(s => s.SeatNumber));
+        var heldSeats = seats.Select(s => new HeldSeat(s.Id, RowLabel(s.RowNumber) + s.SeatNumber, seatPrice(s.SeatTypeId))).ToList();
+        var secondsLeft = (int)Math.Max(0, (holds.Min(h => h.ExpiresAt) - now).TotalSeconds);
+        return new HeldContext(showtime, heldSeats, secondsLeft);
+    }
+
+    // Dựng các dòng đồ ăn từ danh sách id + số lượng (gộp trùng, bỏ qua qty <= 0 / món không tồn tại).
+    private async Task<List<FoodLineItem>> BuildFoodLinesAsync(List<Guid> foodIds, List<int> foodQtys)
+    {
+        var qtyById = new Dictionary<Guid, int>();
+        if (foodIds != null)
+        {
+            for (int i = 0; i < foodIds.Count; i++)
+            {
+                var qty = (foodQtys != null && i < foodQtys.Count) ? foodQtys[i] : 0;
+                if (qty <= 0) continue;
+                qtyById[foodIds[i]] = (qtyById.TryGetValue(foodIds[i], out var e) ? e : 0) + qty;
+            }
+        }
+        if (qtyById.Count == 0) return new List<FoodLineItem>();
+
+        var ids = qtyById.Keys.ToList();
+        var foods = (await _unitOfWork.FoodBeverages.GetAllAsync(predicate: f => ids.Contains(f.Id)))
+            .ToDictionary(f => f.Id);
+        return qtyById.Where(kv => foods.ContainsKey(kv.Key))
+            .Select(kv => new FoodLineItem
+            {
+                FbId = kv.Key,
+                Name = foods[kv.Key].Name,
+                Quantity = kv.Value,
+                Price = foods[kv.Key].Price
+            }).ToList();
+    }
+
+    // Tỷ lệ cộng điểm thưởng đọc từ SystemConfig (reward_point_rate).
+    private async Task<decimal> GetRewardRateAsync()
+    {
+        var cfg = (await _unitOfWork.SystemConfigs.GetAllAsync(
+            predicate: c => c.ConfigKey == "reward_point_rate")).FirstOrDefault();
+        if (cfg?.ConfigValue != null && decimal.TryParse(cfg.ConfigValue,
+                System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var r))
+            return r;
+        return 0m;
+    }
+
+    // Lấy dữ liệu trang thanh toán.
+    public async Task<PaymentViewModel?> GetPaymentAsync(Guid showtimeId, Guid userId, List<Guid> foodIds, List<int> foodQtys)
+    {
+        var ctx = await LoadHeldContextAsync(showtimeId, userId);
+        if (ctx is null) return null;
+
+        var foodLines = await BuildFoodLinesAsync(foodIds, foodQtys);
+        var seatTotal = ctx.Seats.Sum(s => s.Price);
+        var foodTotal = foodLines.Sum(l => l.LineTotal);
+
+        return new PaymentViewModel
+        {
+            ShowtimeId = showtimeId,
+            MovieTitle = ctx.Showtime.Movie.Title,
+            RoomName = ctx.Showtime.Room.Name,
+            CinemaName = ctx.Showtime.Room.Cinema?.Name ?? string.Empty,
+            StartTime = ctx.Showtime.StartTime,
+            Seats = ctx.Seats.Select(s => new SelectedSeatItem { Label = s.Label, Price = s.Price }).ToList(),
+            SeatTotal = seatTotal,
+            FoodLines = foodLines,
+            FoodTotal = foodTotal,
+            GrandTotal = seatTotal + foodTotal,
+            HoldSecondsLeft = ctx.SecondsLeft
+        };
+    }
+
+    // Xác nhận đặt vé (thanh toán giả) + cộng điểm thưởng.
+    public async Task<BookingConfirmResult> ConfirmBookingAsync(Guid showtimeId, Guid userId, string method, List<Guid> foodIds, List<int> foodQtys)
+    {
+        var ctx = await LoadHeldContextAsync(showtimeId, userId);
+        if (ctx is null) return BookingConfirmResult.Fail("Hết thời gian giữ ghế, vui lòng đặt lại.");
+
+        // An toàn: chặn nếu có ghế vừa bị người khác đặt thành vé.
+        var seatIds = ctx.Seats.Select(s => s.SeatId).ToList();
+        var alreadyBooked = await _unitOfWork.Tickets.ExistsAsync(
+            t => t.ShowtimeId == showtimeId && seatIds.Contains(t.SeatId) && t.Status != "Cancelled");
+        if (alreadyBooked) return BookingConfirmResult.Fail("Một số ghế vừa được đặt, vui lòng chọn lại.");
+
+        var foodLines = await BuildFoodLinesAsync(foodIds, foodQtys);
+        var now = DateTime.Now;
+        var seatTotal = ctx.Seats.Sum(s => s.Price);
+        var foodTotal = foodLines.Sum(l => l.LineTotal);
+        var grand = seatTotal + foodTotal;
+
+        var bookingId = Guid.NewGuid();
+        await _unitOfWork.Bookings.AddAsync(new Booking
+        {
+            Id = bookingId,
+            UserId = userId,
+            ShowtimeId = showtimeId,
+            TotalAmount = grand,
+            DiscountAmount = 0,
+            VatAmount = 0,
+            FinalAmount = grand,
+            PaymentStatus = "Paid",
+            BookingType = "Online",
+            CreatedAt = now,
+            QrCode = "BK-" + bookingId.ToString("N")[..12].ToUpper()
+        });
+
+        foreach (var s in ctx.Seats)
+        {
+            await _unitOfWork.Tickets.AddAsync(new Ticket
+            {
+                Id = Guid.NewGuid(),
+                BookingId = bookingId,
+                ShowtimeId = showtimeId,
+                SeatId = s.SeatId,
+                PriceAtBooking = s.Price,
+                Status = "Booked",
+                QrCode = "TK-" + Guid.NewGuid().ToString("N")[..12].ToUpper()
+            });
+        }
+
+        foreach (var l in foodLines)
+        {
+            await _unitOfWork.BookingFoods.AddAsync(new BookingFood
+            {
+                Id = Guid.NewGuid(),
+                BookingId = bookingId,
+                FbId = l.FbId,
+                Quantity = l.Quantity,
+                PriceAtBooking = l.Price
+            });
+        }
+
+        // Thanh toán giả -> ghi nhận thành công ngay.
+        await _unitOfWork.Payments.AddAsync(new Payment
+        {
+            Id = Guid.NewGuid(),
+            BookingId = bookingId,
+            PaymentMethod = method,
+            PaymentSource = "Online",
+            Status = "Success",
+            PaidAt = now,
+            Amount = grand,
+            TransactionRef = method.ToUpper() + "-" + now.Ticks
+        });
+
+        // Chuyển ghế đang giữ sang Converted (đã thành vé).
+        var holds = await _unitOfWork.SeatHolds.GetAllAsync(
+            predicate: h => h.ShowtimeId == showtimeId && h.UserId == userId && h.Status == "Holding");
+        foreach (var h in holds)
+        {
+            h.Status = "Converted";
+            _unitOfWork.SeatHolds.Update(h);
+        }
+
+        // Cộng điểm thưởng (booking CONFIRMED): điểm = tổng tiền × tỷ lệ config.
+        var rate = await GetRewardRateAsync();
+        var points = (int)Math.Floor(grand * rate);
+        if (points > 0)
+        {
+            await _unitOfWork.RewardPointHistories.AddAsync(new RewardPointHistory
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                BookingId = bookingId,
+                PointsChanged = points,
+                ActionType = "Earned",
+                Description = "Cộng điểm khi đặt vé",
+                CreatedAt = now
+            });
+            var user = await _unitOfWork.Users.GetByIdAsync(userId);
+            if (user != null)
+            {
+                user.RewardPoints = (user.RewardPoints ?? 0) + points;
+                _unitOfWork.Users.Update(user);
+            }
+        }
+
+        await _unitOfWork.SaveChangesAsync();
+        return BookingConfirmResult.Ok(bookingId, points);
+    }
+
+    // Lấy dữ liệu trang đặt vé thành công (chỉ chủ booking mới xem được).
+    public async Task<PaymentSuccessViewModel?> GetBookingSuccessAsync(Guid bookingId, Guid userId)
+    {
+        var booking = (await _unitOfWork.Bookings.GetAllAsync(
+            predicate: b => b.Id == bookingId && b.UserId == userId,
+            include: q => q.Include(b => b.Showtime).ThenInclude(s => s.Movie))).FirstOrDefault();
+        if (booking is null) return null;
+
+        var tickets = await _unitOfWork.Tickets.GetAllAsync(
+            predicate: t => t.BookingId == bookingId,
+            include: q => q.Include(t => t.Seat));
+        var seatLabels = tickets.OrderBy(t => t.Seat.RowNumber).ThenBy(t => t.Seat.SeatNumber)
+            .Select(t => RowLabel(t.Seat.RowNumber) + t.Seat.SeatNumber).ToList();
+
+        var bfs = (await _unitOfWork.BookingFoods.GetAllAsync(predicate: bf => bf.BookingId == bookingId)).ToList();
+        var fbIds = bfs.Select(bf => bf.FbId).ToList();
+        var foods = (await _unitOfWork.FoodBeverages.GetAllAsync(predicate: f => fbIds.Contains(f.Id)))
+            .ToDictionary(f => f.Id);
+        var foodLines = bfs.Select(bf => new FoodLineItem
+        {
+            FbId = bf.FbId,
+            Name = foods.TryGetValue(bf.FbId, out var f) ? f.Name : "(món)",
+            Quantity = bf.Quantity,
+            Price = bf.PriceAtBooking
+        }).ToList();
+
+        var payment = (await _unitOfWork.Payments.GetAllAsync(predicate: p => p.BookingId == bookingId)).FirstOrDefault();
+        var pointsEarned = (await _unitOfWork.RewardPointHistories.GetAllAsync(
+            predicate: r => r.BookingId == bookingId && r.ActionType == "Earned")).Sum(r => r.PointsChanged);
+        var user = await _unitOfWork.Users.GetByIdAsync(userId);
+
+        return new PaymentSuccessViewModel
+        {
+            BookingId = bookingId,
+            MovieTitle = booking.Showtime.Movie.Title,
+            StartTime = booking.Showtime.StartTime,
+            SeatLabels = seatLabels,
+            FoodLines = foodLines,
+            GrandTotal = booking.FinalAmount,
+            PaymentMethod = payment?.PaymentMethod ?? string.Empty,
+            PointsEarned = pointsEarned,
+            RewardPointsTotal = user?.RewardPoints ?? 0
+        };
+    }
+
     // Đổi số hàng (1,2,3...) thành nhãn chữ (A,B,C...).
     private static string RowLabel(int rowNumber)
     {

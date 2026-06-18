@@ -27,6 +27,8 @@ public class UnitOfWork : IUnitOfWork
     private IGenericRepository<Cinema>? _cinemas;
     private IGenericRepository<Ticket>? _tickets;
     private IGenericRepository<SeatHold>? _seatHolds;
+    private IGenericRepository<Booking>? _bookings;
+    private IGenericRepository<Payment>? _payments;
     private IGenericRepository<PriceRoomTypeConfig>? _priceRoomTypeConfigs;
     private IGenericRepository<Movie>? _movies;
     private IGenericRepository<Genre>? _genres;
@@ -80,6 +82,12 @@ public class UnitOfWork : IUnitOfWork
 
     public IGenericRepository<SeatHold> SeatHolds =>
         _seatHolds ??= new GenericRepository<SeatHold>(_context);
+
+    public IGenericRepository<Booking> Bookings =>
+        _bookings ??= new GenericRepository<Booking>(_context);
+
+    public IGenericRepository<Payment> Payments =>
+        _payments ??= new GenericRepository<Payment>(_context);
 
     public IGenericRepository<PriceRoomTypeConfig> PriceRoomTypeConfigs =>
         _priceRoomTypeConfigs ??= new GenericRepository<PriceRoomTypeConfig>(_context);

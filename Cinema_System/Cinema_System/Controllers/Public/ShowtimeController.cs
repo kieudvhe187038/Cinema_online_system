@@ -49,6 +49,44 @@ namespace Cinema_System.Controllers.Public
             return View(vm);
         }
 
+        // Trang thanh toán (nhận đồ ăn đã chọn từ trang Food qua form POST).
+        [HttpPost]
+        [Authorize(Roles = "CUSTOMER,STAFF")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Payment(Guid id, List<Guid> fbId, List<int> qty)
+        {
+            var vm = await _showtimeService.GetPaymentAsync(id, CurrentUserId, fbId ?? new(), qty ?? new());
+            if (vm is null) return RedirectToAction(nameof(SelectSeats), new { id });
+            return View(vm);
+        }
+
+        // Xác nhận thanh toán (giả lập) -> tạo booking + cộng điểm, rồi sang trang thành công.
+        [HttpPost]
+        [Authorize(Roles = "CUSTOMER,STAFF")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Confirm(Guid id, string method, List<Guid> fbId, List<int> qty)
+        {
+            var allowed = new[] { "VNPay", "MoMo" };
+            if (string.IsNullOrEmpty(method) || !allowed.Contains(method)) method = "VNPay";
+
+            var result = await _showtimeService.ConfirmBookingAsync(id, CurrentUserId, method, fbId ?? new(), qty ?? new());
+            if (!result.Succeeded)
+            {
+                TempData["Error"] = result.Error;
+                return RedirectToAction(nameof(SelectSeats), new { id });
+            }
+            return RedirectToAction(nameof(Success), new { id = result.BookingId });
+        }
+
+        // Trang đặt vé thành công.
+        [Authorize(Roles = "CUSTOMER,STAFF")]
+        public async Task<IActionResult> Success(Guid id)
+        {
+            var vm = await _showtimeService.GetBookingSuccessAsync(id, CurrentUserId);
+            if (vm is null) return NotFound();
+            return View(vm);
+        }
+
         // Giữ 1 ghế trong 10 phút cho user hiện tại.
         [HttpPost]
         [Authorize(Roles = "CUSTOMER,STAFF")]
