@@ -1,0 +1,144 @@
+@using Cinema_System.Application.Common
+@model PromotionFormViewModel
+@{
+    ViewData["Title"] = "Tạo Voucher Mới";
+    Layout = "~/Views/Shared/_ManagerLayout.cshtml";
+
+    const string fieldInput = "w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-sm box-border focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20";
+    const string fieldLabel = "block font-semibold text-gray-700 mb-1.5 text-sm";
+    const string fieldError = "block text-red-700 text-xs mt-1";
+}
+
+<div class="max-w-[720px] mx-auto mb-8">
+    <div class="mb-6">
+        <h1 class="font-head text-2xl font-extrabold text-[#191c1d] mb-0.5">Tạo Voucher Mới</h1>
+        <p class="text-sm text-gray-500">Thiết lập mã giảm giá áp dụng cho vé và bắp nước</p>
+    </div>
+
+    <div class="bg-white rounded-xl border border-[#e8eaed] p-7">
+        <form method="post" action="@Url.Action("Create", "ManagerPromotion")">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-red-700 text-sm mb-4"></div>
+
+            <p class="font-bold text-base text-[#191c1d] mb-4 pb-2 border-b-2 border-gray-100">Thông tin chung</p>
+
+            <div class="mb-4">
+                <label asp-for="Code" class="@fieldLabel">Mã voucher</label>
+                <input asp-for="Code" placeholder="VD: CINESTAR50" class="@fieldInput font-mono tracking-wider uppercase" autocomplete="off" />
+                <span asp-validation-for="Code" class="@fieldError"></span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label asp-for="DiscountType" class="@fieldLabel">Loại giảm giá</label>
+                    <select asp-for="DiscountType" id="discountType" class="@fieldInput">
+                        <option value="@PromotionDiscountType.Percent">Theo phần trăm (%)</option>
+                        <option value="@PromotionDiscountType.FixedAmount">Số tiền cố định (₫)</option>
+                    </select>
+                    <span asp-validation-for="DiscountType" class="@fieldError"></span>
+                </div>
+                <div>
+                    <label asp-for="DiscountAmount" class="@fieldLabel">Giá trị giảm <span id="amountUnit" class="text-primary">(%)</span></label>
+                    <input asp-for="DiscountAmount" id="discountAmount" type="number" min="0" step="0.01" placeholder="VD: 10" class="@fieldInput" />
+                    <span asp-validation-for="DiscountAmount" class="@fieldError"></span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label asp-for="MinOrderValue" class="@fieldLabel">Giá trị đơn tối thiểu (₫)</label>
+                    <input asp-for="MinOrderValue" type="number" min="0" step="1000" placeholder="0 = không yêu cầu" class="@fieldInput" />
+                    <span asp-validation-for="MinOrderValue" class="@fieldError"></span>
+                </div>
+                <div id="maxDiscountWrap">
+                    <label asp-for="MaxDiscountAmount" class="@fieldLabel">Mức giảm tối đa (₫)</label>
+                    <input asp-for="MaxDiscountAmount" type="number" min="0" step="1000" placeholder="Bỏ trống nếu không giới hạn" class="@fieldInput" />
+                    <span asp-validation-for="MaxDiscountAmount" class="@fieldError"></span>
+                    <p class="text-xs text-gray-500 mt-1">Chỉ áp dụng khi giảm theo phần trăm.</p>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label asp-for="ApplicableTarget" class="@fieldLabel">Phạm vi áp dụng</label>
+                <select asp-for="ApplicableTarget" class="@fieldInput">
+                    <option value="@PromotionTarget.All">Toàn bộ đơn hàng</option>
+                    <option value="@PromotionTarget.TicketOnly">Chỉ áp dụng cho vé</option>
+                    <option value="@PromotionTarget.FoodOnly">Chỉ áp dụng cho bắp nước</option>
+                </select>
+                <span asp-validation-for="ApplicableTarget" class="@fieldError"></span>
+            </div>
+
+            <p class="font-bold text-base text-[#191c1d] mb-4 mt-6 pb-2 border-b-2 border-gray-100">Hiệu lực &amp; giới hạn</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label asp-for="ValidFrom" class="@fieldLabel">Hiệu lực từ</label>
+                    <input asp-for="ValidFrom" type="datetime-local" asp-format="{0:yyyy-MM-ddTHH:mm}" class="@fieldInput" />
+                    <span asp-validation-for="ValidFrom" class="@fieldError"></span>
+                </div>
+                <div>
+                    <label asp-for="ValidTo" class="@fieldLabel">Hiệu lực đến</label>
+                    <input asp-for="ValidTo" type="datetime-local" asp-format="{0:yyyy-MM-ddTHH:mm}" class="@fieldInput" />
+                    <span asp-validation-for="ValidTo" class="@fieldError"></span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label asp-for="UsageLimit" class="@fieldLabel">Giới hạn lượt dùng</label>
+                    <input asp-for="UsageLimit" type="number" min="1" step="1" placeholder="Bỏ trống = không giới hạn" class="@fieldInput" />
+                    <span asp-validation-for="UsageLimit" class="@fieldError"></span>
+                </div>
+                <div>
+                    <label asp-for="Status" class="@fieldLabel">Trạng thái</label>
+                    <select asp-for="Status" class="@fieldInput">
+                        <option value="@PromotionStatus.Active">Đang áp dụng</option>
+                        <option value="@PromotionStatus.Disabled">Đã tắt</option>
+                    </select>
+                    <span asp-validation-for="Status" class="@fieldError"></span>
+                </div>
+            </div>
+
+            <div class="flex gap-3 mt-6">
+                <button type="submit" class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-semibold transition-colors">
+                    <span class="material-symbols-outlined" style="font-size:18px">add</span>
+                    Tạo voucher
+                </button>
+                <a class="inline-flex items-center px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-[#191c1d] rounded-lg text-sm font-semibold transition-colors" href="@Url.Action("Index", "ManagerPromotion")">Hủy</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        const typeSelect = document.getElementById('discountType');
+        const amountUnit = document.getElementById('amountUnit');
+        const maxWrap = document.getElementById('maxDiscountWrap');
+        const discountAmount = document.getElementById('discountAmount');
+
+        function syncDiscountType() {
+            const isPercent = typeSelect.value === '@PromotionDiscountType.Percent';
+            amountUnit.textContent = isPercent ? '(%)' : '(₫)';
+            maxWrap.style.display = isPercent ? '' : 'none';
+
+            if (isPercent) {
+                // Phần trăm: cho phép số lẻ, tối đa 100.
+                discountAmount.step = '0.01';
+                discountAmount.max = '100';
+                discountAmount.placeholder = 'VD: 10';
+            } else {
+                // Số tiền cố định: chỉ nhập số nguyên (đồng), bỏ giới hạn 100.
+                discountAmount.step = '1000';
+                discountAmount.removeAttribute('max');
+                discountAmount.placeholder = 'VD: 50000';
+                if (discountAmount.value) {
+                    discountAmount.value = Math.round(parseFloat(discountAmount.value) || 0);
+                }
+            }
+        }
+        typeSelect?.addEventListener('change', syncDiscountType);
+        syncDiscountType();
+    </script>
+}
