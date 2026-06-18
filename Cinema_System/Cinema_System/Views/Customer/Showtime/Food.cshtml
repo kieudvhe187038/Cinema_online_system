@@ -118,6 +118,7 @@
             const showtimeId = '@Model.ShowtimeId';
             const homeUrl = '@Url.Action("Index", "Home")';
             const releaseAllUrl = '@Url.Action("ReleaseAll", "Showtime")';
+            const paymentUrl = '@Url.Action("Payment", "Showtime")';
             const seatTotal = @Model.SeatTotal;
             const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
             let proceeding = false;
@@ -192,13 +193,23 @@
                 navigator.sendBeacon(releaseAllUrl, fd);
             });
 
+            // Sang trang thanh toán: gửi món đã chọn qua form POST (giữ nguyên ghế đang giữ).
             document.getElementById('pay-btn').addEventListener('click', () => {
-                // TODO: chuyển sang trang thanh toán khi luồng booking hoàn thiện.
                 proceeding = true;
-                const lines = [...cart.values()].filter(v => v.qty > 0)
-                    .map(v => `${v.name} × ${v.qty}`).join(', ');
-                alert('Tổng: ' + grandTotalEl.textContent + (lines ? '\nĐồ ăn: ' + lines : ''));
-                proceeding = false;
+                const form = document.createElement('form');
+                form.method = 'post';
+                form.action = paymentUrl;
+                const add = (name, value) => {
+                    const i = document.createElement('input');
+                    i.type = 'hidden'; i.name = name; i.value = value; form.appendChild(i);
+                };
+                add('__RequestVerificationToken', token);
+                add('id', showtimeId);
+                cart.forEach((v, id) => {
+                    if (v.qty > 0) { add('fbId', id); add('qty', v.qty); }
+                });
+                document.body.appendChild(form);
+                form.submit();
             });
         })();
     </script>
