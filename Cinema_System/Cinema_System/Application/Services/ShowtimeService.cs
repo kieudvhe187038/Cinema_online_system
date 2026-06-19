@@ -37,7 +37,13 @@ public class ShowtimeService : IShowtimeService
         var rooms = await _unitOfWork.Rooms.GetAllAsync(orderBy: q => q.OrderBy(r => r.Name));
         var availableRooms = rooms.Select(r => new ItemOptionDTO { Id = r.Id, Name = r.Name }).ToList();
 
-        // Include showtimes that overlap the week range (start < weekEnd && end > weekBegin)
+        // Tự động chọn phòng đầu tiên nếu người dùng chưa chọn phòng cụ thể
+        if (!roomId.HasValue && availableRooms.Any())
+        {
+            roomId = availableRooms.First().Id;
+        }
+
+        // Lấy danh sách các suất chiếu nằm trong khoảng thời gian của tuần hiện tại và thỏa mãn bộ lọc
         var showtimes = await _unitOfWork.Showtimes.GetAllAsync(
             predicate: s =>
                 s.EndTime > weekBegin &&
@@ -50,8 +56,10 @@ public class ShowtimeService : IShowtimeService
 
         var showtimeDtos = new List<ShowtimeDTO>();
         var bookedCount = 0;
+        
         foreach (var showtime in showtimes)
         {
+            // Kiểm tra xem suất chiếu này đã có khách hàng đặt vé/đặt chỗ chưa
             var hasBookings = await _unitOfWork.Bookings.ExistsAsync(b => b.ShowtimeId == showtime.Id) ||
                               await _unitOfWork.Tickets.ExistsAsync(t => t.ShowtimeId == showtime.Id);
             if (hasBookings) bookedCount++;
@@ -151,7 +159,9 @@ public class ShowtimeService : IShowtimeService
         if (!roomExists)
             return Result.Failure("Phòng chiếu không tồn tại.");
 
+        // Kiểm tra xem khoảng thời gian này phòng chiếu đã có lịch nào chưa (bỏ qua các lịch đã hủy)
         var conflict = await _unitOfWork.Showtimes.ExistsAsync(s =>
+            s.Status != "Cancelled" &&
             s.RoomId == model.RoomId &&
             model.StartTime < s.EndTime &&
             model.EndTime > s.StartTime);
@@ -192,18 +202,31 @@ public class ShowtimeService : IShowtimeService
         if (!roomExists)
             return Result.Failure("Phòng chiếu không tồn tại.");
 
+        // Kiểm tra xem suất chiếu đã có vé hoặc lượt đặt chỗ nào chưa
         var hasBookings = await _unitOfWork.Bookings.ExistsAsync(b => b.ShowtimeId == model.Id) ||
                           await _unitOfWork.Tickets.ExistsAsync(t => t.ShowtimeId == model.Id);
-        if (hasBookings)
-            return Result.Failure("Không thể sửa suất chiếu đã có vé hoặc đặt chỗ.");
+                          
+        bool hasCoreChanges = showtime.MovieId != model.MovieId || 
+                              showtime.RoomId != model.RoomId || 
+                              showtime.StartTime != model.StartTime || 
+                              showtime.EndTime != model.EndTime;
 
-        var conflict = await _unitOfWork.Showtimes.ExistsAsync(s =>
-            s.Id != model.Id &&
-            s.RoomId == model.RoomId &&
-            model.StartTime < s.EndTime &&
-            model.EndTime > s.StartTime);
-        if (conflict)
-            return Result.Failure("Phòng đã có suất chiếu trùng thời gian.");
+        // Nếu đã có khách, chỉ cho phép cập nhật trạng thái (Live, Cancelled...) chứ không được sửa phim hay giờ
+        if (hasBookings && hasCoreChanges)
+            return Result.Failure("Không thể thay đổi phim, phòng chiếu hoặc thời gian của suất chiếu đã có vé hoặc đặt chỗ (chỉ được đổi trạng thái).");
+
+        // Nếu có thay đổi về phòng hoặc thời gian, cần check lại xem có bị trùng lịch với suất chiếu khác không
+        if (hasCoreChanges)
+        {
+            var conflict = await _unitOfWork.Showtimes.ExistsAsync(s =>
+                s.Id != model.Id &&
+                s.Status != "Cancelled" &&
+                s.RoomId == model.RoomId &&
+                model.StartTime < s.EndTime &&
+                model.EndTime > s.StartTime);
+            if (conflict)
+                return Result.Failure("Phòng đã có suất chiếu trùng thời gian.");
+        }
 
         showtime.MovieId = model.MovieId;
         showtime.RoomId = model.RoomId;
@@ -227,9 +250,11 @@ public class ShowtimeService : IShowtimeService
         if (showtime is null)
             return Result.Failure("Không tìm thấy suất chiếu.");
 
+        // Chặn xóa nếu suất chiếu có dữ liệu liên quan để đảm bảo tính toàn vẹn của database
         var hasBookings = await _unitOfWork.Bookings.ExistsAsync(b => b.ShowtimeId == id);
         var hasTickets = await _unitOfWork.Tickets.ExistsAsync(t => t.ShowtimeId == id);
         var hasHolds = await _unitOfWork.SeatHolds.ExistsAsync(h => h.ShowtimeId == id);
+        
         if (hasBookings || hasTickets || hasHolds)
             return Result.Failure("Không thể xóa suất chiếu khi đã có vé, đặt chỗ hoặc giữ ghế.");
 

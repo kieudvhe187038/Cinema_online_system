@@ -1,6 +1,6 @@
 @model Cinema_System.Application.ViewModels.ShowtimeCalendarViewModel
 @{
-    ViewData["Title"] = "Quản lý lịch chiếu";
+    ViewData["Title"] = "Quản lý suất chiếu";
     Layout = "~/Views/Shared/_ManagerLayout.cshtml";
 }
 
@@ -36,22 +36,23 @@
     @@media (min-width:1025px){ .mobile-list { display:none !important } }
 </style>
 
+@* Phần tiêu đề trang và nút chức năng thêm mới *@
 <div class="flex flex-col gap-4 mb-6 md:flex-row md:items-center md:justify-between">
     <div class="min-w-0">
-        <h1 class="font-head text-3xl font-extrabold text-[#191c1d] mb-1">Quản lý lịch chiếu</h1>
-        <p class="text-sm text-gray-500">Quản lý lịch chiếu tuần và trạng thái suất chiếu trên hệ thống</p>
+        <h1 class="font-head text-3xl font-extrabold text-[#191c1d] mb-1">Quản lý suất chiếu</h1>
+        <p class="text-sm text-gray-500">Quản lý suất chiếu tuần và trạng thái suất chiếu trên hệ thống</p>
     </div>
     @* Nút thêm suất chiếu *@
     <div class="flex items-center gap-3">
         <a class="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-bold tracking-wide whitespace-nowrap transition-colors"
            href="@Url.Action("Create", "Showtime")">
             <span class="material-symbols-outlined" style="font-size:18px">add_circle</span>
-            THÊM LỊCH CHIẾU
+            THÊM SUẤT CHIẾU
         </a>
     </div>
 </div>
 
-@* Khu vực bộ lọc nằm phía trên lịch chiếu *@
+@* Khu vực form chứa các bộ lọc (phòng chiếu, trạng thái, từ khóa) *@
 <div class="w-full mb-6">
     <div class="mx-auto w-full max-w-[1300px]">
         <div class="bg-white rounded-2xl border border-[#e8eaed] px-5 py-4 shadow-sm">
@@ -59,8 +60,7 @@
                 <div class="flex gap-4 flex-wrap items-end">
                     <div class="flex flex-col gap-1">
                         <label class="text-xs font-bold uppercase tracking-[0.28em] text-gray-500">Phòng chiếu</label>
-                        <select name="roomId" class="h-12 min-w-[180px] rounded-xl border border-gray-300 bg-white px-4 text-sm text-gray-700 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20">
-                            <option value="">Tất cả phòng chiếu</option>
+                        <select name="roomId" onchange="this.form.submit()" class="h-12 min-w-[180px] rounded-xl border border-gray-300 bg-white px-4 text-sm text-gray-700 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20">
                             @foreach (var room in Model.AvailableRooms)
                             {
                                 if (room.Id == Model.SelectedRoomId)
@@ -131,7 +131,7 @@
                             <span class="material-symbols-outlined" style="font-size:18px">filter_list</span>
                             Áp dụng bộ lọc
                         </button>
-                        @if (!string.IsNullOrEmpty(Model.Search) || !string.IsNullOrEmpty(Model.StatusFilter) || Model.SelectedRoomId.HasValue)
+                        @if (!string.IsNullOrEmpty(Model.Search) || !string.IsNullOrEmpty(Model.StatusFilter) || (Model.AvailableRooms.Any() && Model.SelectedRoomId != Model.AvailableRooms.First().Id))
                         {
                             <a class="text-sm font-semibold text-gray-600 hover:text-gray-900" href="@Url.Action("Calendar", "Showtime")">✕ Xóa bộ lọc</a>
                         }
@@ -142,10 +142,11 @@
     </div>
 </div>
 
-    <div class="bg-white rounded-xl border border-[#e8eaed] shadow-sm overflow-hidden mx-auto max-w-[1300px]">
-        <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-            <div>
-                <div class="text-sm text-gray-500">Tuần từ</div>
+@* Khu vực chính hiển thị lịch chiếu tuần dưới dạng timeline lưới *@
+<div class="bg-white rounded-xl border border-[#e8eaed] shadow-sm overflow-hidden mx-auto max-w-[1300px]">
+    <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+        <div>
+            <div class="text-sm text-gray-500">Tuần từ</div>
                 <div class="text-lg font-semibold text-gray-900">@Model.WeekStart.ToString("dd/MM/yyyy")</div>
             </div>
             <div class="flex items-center gap-2">
@@ -208,7 +209,7 @@
                     {
                         <div class="border-l border-gray-200 min-h-[1900px] relative px-2 py-3 bg-white hover:bg-[#f9fafb] transition-colors">
                             <div class="timeline-container relative w-full" style="height:1900px;border:1px solid #e5e7eb;border-radius:8px;background:#fbfcfe;overflow-y:auto;box-shadow:inset 0 1px 3px rgba(0,0,0,0.05)">
-                                @* compute show blocks for this day *@
+                                @* Tính toán và hiển thị các khối suất chiếu cho ngày hiện tại *@
                                 @{
                                     // Timeline layout: 00:00-02:00 hiển thị ở trên, sau đó 08:00-24:00.
                                     var currentDayStart = day.Date;
@@ -246,7 +247,7 @@
                                         }
                                     }
 
-                                    // Assign columns by time slot.
+                                    // Sắp xếp các suất chiếu vào các cột để tránh bị đè lên nhau nếu trùng giờ
                                     var columnEnds = new List<DateTime>();
                                     foreach (var b in blocks.OrderBy(b => b.Start))
                                     {
@@ -356,9 +357,14 @@
 <div id="show-tooltip"></div>
 
 <script>
+    // Xử lý các sự kiện tương tác trên giao diện lịch chiếu (hiển thị thông tin chi tiết và chuyển hướng chỉnh sửa)
     document.addEventListener('DOMContentLoaded', function(){
         const tooltip = document.getElementById('show-tooltip');
+        
+        // Lắng nghe sự kiện cho từng khối suất chiếu trên lịch
         document.querySelectorAll('.show-block').forEach(b => {
+            
+            // Hiển thị tooltip khi di chuột vào khối suất chiếu
             b.addEventListener('mouseenter', function(e){
                 const txt = this.getAttribute('data-tooltip');
                 tooltip.textContent = txt;
@@ -367,7 +373,11 @@
                 tooltip.style.left = (rect.right + 12) + 'px';
                 tooltip.style.top = (rect.top) + 'px';
             });
+            
+            // Ẩn tooltip khi chuột rời khỏi khối suất chiếu
             b.addEventListener('mouseleave', function(){ tooltip.style.display = 'none'; });
+            
+            // Khi nhấn vào một suất chiếu, chuyển sang trang Sửa suất chiếu đó
             b.addEventListener('click', function(){ var u = this.getAttribute('data-edit-url'); if(u) window.location.href = u; });
         });
     });

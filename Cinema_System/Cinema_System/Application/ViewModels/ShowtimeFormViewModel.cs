@@ -33,10 +33,12 @@ public class ShowtimeFormViewModel : IValidatableObject
         if (RoomId == Guid.Empty)
             yield return new ValidationResult("Vui lòng chọn phòng chiếu.", new[] { nameof(RoomId) });
 
+        // Kiểm tra logic thời gian chiếu hợp lệ
         if (StartTime >= EndTime)
             yield return new ValidationResult("Thời gian kết thúc phải lớn hơn thời gian bắt đầu.", new[] { nameof(EndTime) });
 
-        if (StartTime < DateTime.Now)
+        // Chỉ chặn lịch trong quá khứ đối với thao tác Tạo mới (Id = rỗng). Khi Edit thì cho phép sửa lịch cũ.
+        if (Id == Guid.Empty && StartTime < DateTime.Now)
             yield return new ValidationResult("Thời gian bắt đầu phải là hiện tại hoặc tương lai.", new[] { nameof(StartTime) });
     }
 }

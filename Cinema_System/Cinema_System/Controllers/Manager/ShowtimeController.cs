@@ -62,6 +62,7 @@ public class ShowtimeController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(ShowtimeFormViewModel model)
     {
+        // Nạp lại danh sách dropdown để hiển thị lại nếu form bị lỗi
         model.AvailableMovies = await _showtimeService.GetMovieOptionsAsync();
         model.AvailableRooms = await _showtimeService.GetRoomOptionsAsync();
 
@@ -71,6 +72,7 @@ public class ShowtimeController : Controller
         var result = await _showtimeService.CreateAsync(model);
         if (!result.Succeeded)
         {
+            // Hiển thị lỗi từ Service (ví dụ: trùng lịch, phim không tồn tại)
             ModelState.AddModelError(string.Empty, result.Error!);
             return View(model);
         }
@@ -99,6 +101,7 @@ public class ShowtimeController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(ShowtimeFormViewModel model)
     {
+        // Nạp lại danh sách dropdown để hiển thị lại nếu form bị lỗi
         model.AvailableMovies = await _showtimeService.GetMovieOptionsAsync();
         model.AvailableRooms = await _showtimeService.GetRoomOptionsAsync();
 
@@ -108,6 +111,7 @@ public class ShowtimeController : Controller
         var result = await _showtimeService.UpdateAsync(model);
         if (!result.Succeeded)
         {
+            // Hiển thị lỗi từ Service (ví dụ: đã có vé nên không thể đổi giờ)
             ModelState.AddModelError(string.Empty, result.Error!);
             return View(model);
         }

@@ -12,11 +12,15 @@
     const string sectionTitle = "font-bold text-base text-[#191c1d] mb-4 pb-2 border-b-2 border-[#edeeef]";
 }
 
+@* Tiêu đề của trang Tạo suất chiếu mới *@
 <div class="max-w-[760px] mx-auto mb-8">
     <h1 class="font-head text-2xl font-extrabold text-[#191c1d] mb-6">Tạo suất chiếu mới</h1>
 
+    @* Form nhập liệu thông tin suất chiếu *@
     <form method="post" action="@Url.Action("Create", "Showtime")">
         @Html.AntiForgeryToken()
+        
+        @* Card chứa các trường thông tin chính (Phim, Phòng, Giờ, Trạng thái) *@
         <div class="@card">
             <p class="@sectionTitle">Thông tin suất chiếu</p>
             <div asp-validation-summary="ModelOnly" class="text-red-700 text-sm mb-4"></div>
@@ -104,6 +108,7 @@
     </form>
 </div>
 <script>
+    // Tự động đồng bộ giá trị ngày và giờ riêng lẻ vào các input hidden (StartTime, EndTime) để gửi lên Controller
     (function () {
         var form = document.querySelector('form');
         var startDate = document.getElementById('StartDate');
@@ -122,9 +127,12 @@
             }
         }
 
+        // Lắng nghe sự kiện submit để ghép ngày và giờ trước khi nộp form
         if (form) {
             form.addEventListener('submit', syncHidden);
         }
+        
+        // Lắng nghe sự kiện thay đổi của các trường ngày giờ
         [startDate, startTime, endDate, endTime].forEach(function (el) {
             if (el) el.addEventListener('change', syncHidden);
         });
