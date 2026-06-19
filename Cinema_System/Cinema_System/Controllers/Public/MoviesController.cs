@@ -8,6 +8,9 @@ using System.Security.Claims;
 
 namespace Cinema_System.Controllers.Public
 {
+    /// <summary>
+    /// Controller cho phần hiển thị phim và chi tiết phim ngoài trang chủ công khai
+    /// </summary>
     public class MoviesController : Controller
     {
         private readonly IMovieService _movieService;
@@ -19,11 +22,17 @@ namespace Cinema_System.Controllers.Public
             _reviewService = reviewService;
         }
 
-        // Trang danh sách phim theo tab (now, coming, special), lọc theo thể loại/độ tuổi.
+        /// <summary>
+        /// Trang danh sách phim theo tab (đang chiếu, sắp chiếu, suất chiếu đặc biệt)
+        /// Hỗ trợ lọc theo thể loại và độ tuổi phân loại
+        /// </summary>
+        
         public async Task<IActionResult> Index(string tab = "now", int page = 1, string? genre = null, string? ageRating = null)
         {
+            // Lấy danh sách phim đã được phân trang từ service
             var pagedMovies = await _movieService.GetMoviesPageAsync(tab, page, MoviePaging.DefaultPageSize, genre, ageRating);
 
+            // Xây dựng ViewModel cho trang danh sách phim
             var moviesPageViewModel = BuildViewModel(pagedMovies, tab?.ToLower() ?? "now", searchKeyword: string.Empty);
             moviesPageViewModel.SelectedGenre = genre;
             moviesPageViewModel.SelectedAgeRating = ageRating;
@@ -35,7 +44,9 @@ namespace Cinema_System.Controllers.Public
 
         private static readonly System.Text.RegularExpressions.Regex SearchQueryRegex = new("^[\\p{L}\\p{N}\\s]+$", System.Text.RegularExpressions.RegexOptions.Compiled | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
 
-        // Kiểm tra query tìm kiếm hợp lệ: không rỗng, tối đa 30 ký tự, chỉ chữ/số/khoảng trắng, hỗ trợ tiếng Việt.
+        /// <summary>
+        /// Kiểm tra từ khóa tìm kiếm hợp lệ (không rỗng, tối đa 30 ký tự, chỉ chứa chữ, số và khoảng trắng)
+        /// </summary>
         private static bool IsValidSearchQuery(string? searchQuery)
         {
             if (string.IsNullOrWhiteSpace(searchQuery))
@@ -52,7 +63,10 @@ namespace Cinema_System.Controllers.Public
             return SearchQueryRegex.IsMatch(trimmed);
         }
 
-        // Xử lý tìm kiếm phim theo tham số query string
+        /// <summary>
+        /// Xử lý tìm kiếm phim theo từ khóa
+        /// </summary>
+       
         public async Task<IActionResult> Search([FromQuery(Name = "find")] string? searchQuery, int page = 1)
         {
             if (!IsValidSearchQuery(searchQuery))
@@ -62,22 +76,26 @@ namespace Cinema_System.Controllers.Public
             } 
 
             var keyword = searchQuery!.Trim();
+            // Thực hiện tìm kiếm phim có chứa từ khóa
             var pagedMovies = await _movieService.SearchMoviesAsync(keyword, page, MoviePaging.DefaultPageSize);
             var moviesPageViewModel = BuildViewModel(pagedMovies, selectedTab: "search", searchKeyword: keyword);
             ViewData["SearchKeyword"] = keyword;
             return View("Index", moviesPageViewModel);
         }
 
-        // Trang chọn phim để đánh giá (chỉ hiển thị phim user đã xem)
+        /// <summary>
+        /// Trang chọn phim để đánh giá (chỉ hiển thị những phim mà người dùng hiện tại đã mua vé và đã xem)
+        /// </summary>
+        
         [Authorize]
         public async Task<IActionResult> SelectForReview(int page = 1)
         {
             var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "");
             
-            // Lấy tất cả phim mà user đã xem
+            // Lấy toàn bộ danh sách phim để lọc
             var allMovies = await _movieService.GetAllMoviesAsync();
             
-            // Kiểm tra từng phim xem user đã xem chưa
+            // Lọc ra các phim mà người dùng đã xem
             var watchedMovies = new List<MovieDTO>();
             foreach (var movie in allMovies)
             {
@@ -87,7 +105,7 @@ namespace Cinema_System.Controllers.Public
                 }
             }
 
-            // Phân trang
+            // Phân trang thủ công danh sách phim đã xem
             int pageSize = MoviePaging.DefaultPageSize;
             var pagedMovies = new PagedResult<MovieDTO>
             {
@@ -103,7 +121,9 @@ namespace Cinema_System.Controllers.Public
             return View("SelectForReview", viewModel);
         }
 
-        // Map kết quả phân trang (tầng Application) sang ViewModel của giao diện.
+        /// <summary>
+        /// Hàm nội bộ ánh xạ PagedResult từ tầng Service sang View Model
+        /// </summary>
         private static MoviesPageViewModel BuildViewModel(PagedResult<MovieDTO> pagedMovies, string selectedTab, string searchKeyword)
         {
             return new MoviesPageViewModel
@@ -117,15 +137,20 @@ namespace Cinema_System.Controllers.Public
             };
         }
 
-        // Trang chi tiết phim (hỗ trợ slug và guid cũ).
+        /// <summary>
+        /// Trang hiển thị chi tiết phim (hỗ trợ cả định dạng ID kiểu GUID hoặc đường dẫn thân thiện Slug)
+        /// </summary>
+       
         public async Task<IActionResult> Details(string id, int page = 1)
         {
             MovieDTO? movie = null;
+            // Kiểm tra xem ID truyền vào có phải là GUID hợp lệ không
             if (Guid.TryParse(id, out var guidId))
             {
                 movie = await _movieService.GetMovieByIdAsync(guidId);
             }
 
+            // Nếu không phải GUID hoặc không tìm thấy bằng GUID, tìm theo Slug
             if (movie == null)
             {
                 movie = await _movieService.GetMovieBySlugAsync(id);
@@ -134,7 +159,7 @@ namespace Cinema_System.Controllers.Public
             if (movie == null)
                 return NotFound();
 
-            // Tải reviews phân trang, 5 reviews mỗi trang, hiển thị ngay trên trang chi tiết
+            // Tải danh sách đánh giá được phân trang (mặc định 5 đánh giá trên một trang)
             var reviews = await _reviewService.GetMovieReviewsAsync(movie.Id, page, 5);
 
             var vm = new MovieDetailsViewModel
@@ -144,12 +169,16 @@ namespace Cinema_System.Controllers.Public
             };
 
             ViewData["Title"] = movie.Title;
-            // Truyền page hiện tại để view render pagination đúng
+            // Truyền trang hiện tại sang View để xử lý chuyển trang Ajax/URL
             ViewData["CurrentReviewPage"] = page;
             return View("Details", vm);
         }
 
-        // Endpoint cho AJAX load reviews không load lại toàn trang
+        /// <summary>
+        /// Endpoint trả về PartialView danh sách đánh giá cho yêu cầu AJAX
+        /// Giúp tải/chuyển trang đánh giá mà không cần tải lại toàn bộ trang chi tiết phim
+        /// </summary>
+       
         [HttpGet]
         public async Task<IActionResult> LoadReviewsPartial(Guid id, int page = 1)
         {

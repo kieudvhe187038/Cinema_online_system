@@ -29,10 +29,7 @@ public class ShowtimeController : Controller
     /// <summary>
     /// Hiển thị lịch chiếu tuần với các bộ lọc
     /// </summary>
-    /// <param name="roomId">Lọc theo ID phòng chiếu</param>
-    /// <param name="status">Lọc theo trạng thái suất chiếu</param>
-    /// <param name="search">Tìm kiếm theo tên phim hoặc phòng</param>
-    /// <param name="weekStart">Ngày bắt đầu tuần</param>
+    
     [HttpGet("Calendar")]
     public async Task<IActionResult> Calendar(Guid? roomId, string? status, string? search, DateTime? weekStart)
     {
@@ -57,7 +54,7 @@ public class ShowtimeController : Controller
     /// <summary>
     /// Lưu thông tin suất chiếu mới
     /// </summary>
-    /// <param name="model">Dữ liệu suất chiếu cần tạo</param>
+   
     [HttpPost("Create")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(ShowtimeFormViewModel model)
@@ -84,7 +81,7 @@ public class ShowtimeController : Controller
     /// <summary>
     /// Trang chỉnh sửa suất chiếu
     /// </summary>
-    /// <param name="id">ID suất chiếu cần chỉnh sửa</param>
+   
     [HttpGet("Edit/{id}")]
     public async Task<IActionResult> Edit(Guid id)
     {
@@ -96,7 +93,7 @@ public class ShowtimeController : Controller
     /// <summary>
     /// Lưu các thay đổi đằng chỉnh sửa suất chiếu
     /// </summary>
-    /// <param name="model">Dữ liệu suất chiếu đã cập nhật</param>
+    
     [HttpPost("Edit/{id}")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(ShowtimeFormViewModel model)
@@ -123,7 +120,7 @@ public class ShowtimeController : Controller
     /// <summary>
     /// Xóa suất chiếu
     /// </summary>
-    /// <param name="id">ID suất chiếu cần xóa</param>
+    
     [HttpPost("Delete/{id}")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(Guid id)

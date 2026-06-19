@@ -1,4 +1,5 @@
 @using Cinema_System.Application.Common
+@* Model: PagedResult chứa danh sách ReviewDTO và thông tin phân trang (CurrentPage, TotalPages) *@
 @model PagedResult<Cinema_System.Application.DTOs.ReviewDTO>
 
 <div class="mt-8 space-y-4">
@@ -13,6 +14,7 @@
                         <p class="text-lg font-bold text-slate-900">@r.UserName</p>
                         @{
                             var createdAt = r.CreatedAt;
+                            // Nếu không có phần giờ (TimeOfDay == Zero) thì chỉ hiện ngày, ngược lại hiện cả ngày và giờ
                             var createdAtText = createdAt.HasValue
                                 ? (createdAt.Value.TimeOfDay == TimeSpan.Zero
                                     ? createdAt.Value.ToString("dd/MM/yyyy")
@@ -21,6 +23,8 @@
                         }
                         <p class="text-sm text-slate-500">@createdAtText</p>
                     </div>
+                    @* Render 5 ngôi sao: tô vàng những sao <= điểm đánh giá *@
+                    @* Render 5 ngôi sao: tô vàng những sao có index <= điểm đánh giá, còn lại để xám *@
                     <div class="flex items-center gap-0.5 text-yellow-400">
                         @for (int i = 1; i <= 5; i++)
                         {
@@ -41,6 +45,7 @@
     }
     else
     {
+        @* Trạng thái rỗng: hiển thị khi chưa có đánh giá nào *@
         <div class="rounded-2xl border-2 border-dashed border-slate-300 bg-gradient-to-br from-slate-50 to-blue-50 p-10 text-center">
             <p class="text-xl font-bold text-slate-900">Chưa có đánh giá nào</p>
             <p class="mt-2 text-slate-600">Hãy là người đầu tiên chia sẻ cảm nhận.</p>
@@ -48,6 +53,7 @@
     }
 </div>
 
+@* Chỉ hiển thị thanh phân trang khi có nhiều hơn 1 trang *@
 @if (Model.TotalPages > 1)
 {
     <div class="mt-8 flex flex-wrap items-center justify-center gap-2">
@@ -59,6 +65,8 @@
             </button>
         }
         
+        @* Hiển thị số trang dạng sliding window (±2 trang so với trang hiện tại) *@
+        @* Sliding window: chỉ hiển thị trang hiện tại ±2 để tránh tràn giao diện khi có nhiều trang *@
         @for (int i = 1; i <= Model.TotalPages; i++)
         {
             if (i == Model.CurrentPage)
