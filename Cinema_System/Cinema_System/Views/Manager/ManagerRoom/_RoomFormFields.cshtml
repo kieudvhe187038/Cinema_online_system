@@ -1,0 +1,69 @@
+@using Cinema_System.Application.Common
+@model Cinema_System.Application.ViewModels.RoomFormViewModel
+
+@{
+    const string inputCls = "w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20";
+    const string labelCls = "block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5";
+    const string errCls = "text-red-600 text-xs mt-1 block";
+    var dimReadonly = Model.Locked ? "readonly" : null;
+    var dimCls = inputCls + (Model.Locked ? " bg-gray-100 text-gray-500 cursor-not-allowed" : "");
+}
+
+<div asp-validation-summary="ModelOnly" class="text-red-700 text-sm mb-4"></div>
+
+<input type="hidden" asp-for="Id" />
+<input type="hidden" asp-for="Locked" />
+
+<div class="mb-4">
+    <label asp-for="Name" class="@labelCls"></label>
+    <input asp-for="Name" class="@inputCls" placeholder="VD: Phòng 1, Phòng IMAX..." maxlength="100" autocomplete="off" />
+    <span asp-validation-for="Name" class="@errCls"></span>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+    <div>
+        <label asp-for="RoomTypeId" class="@labelCls"></label>
+        <select asp-for="RoomTypeId" class="@inputCls">
+            <option value="">-- Chọn loại phòng --</option>
+            @foreach (var opt in Model.RoomTypeOptions)
+            {
+                if (opt.Id == Model.RoomTypeId)
+                {
+                    <option value="@opt.Id" selected>@opt.Name</option>
+                }
+                else
+                {
+                    <option value="@opt.Id">@opt.Name</option>
+                }
+            }
+        </select>
+        <span asp-validation-for="RoomTypeId" class="@errCls"></span>
+    </div>
+    <div>
+        <label asp-for="Status" class="@labelCls"></label>
+        <select asp-for="Status" class="@inputCls">
+            <option value="@RoomStatus.Active">@RoomStatus.Label(RoomStatus.Active)</option>
+            <option value="@RoomStatus.Maintenance">@RoomStatus.Label(RoomStatus.Maintenance)</option>
+            <option value="@RoomStatus.Inactive">@RoomStatus.Label(RoomStatus.Inactive)</option>
+        </select>
+        <span asp-validation-for="Status" class="@errCls"></span>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div>
+        <label asp-for="TotalRow" class="@labelCls"></label>
+        <input asp-for="TotalRow" type="number" min="1" max="@RoomPolicy.MaxRows" class="@dimCls" readonly="@dimReadonly" />
+        <span asp-validation-for="TotalRow" class="@errCls"></span>
+    </div>
+    <div>
+        <label asp-for="TotalColumns" class="@labelCls"></label>
+        <input asp-for="TotalColumns" type="number" min="1" max="@RoomPolicy.MaxColumns" class="@dimCls" readonly="@dimReadonly" />
+        <span asp-validation-for="TotalColumns" class="@errCls"></span>
+    </div>
+</div>
+
+<p class="text-xs text-gray-500 mt-2 flex items-start gap-1.5">
+    <span class="material-symbols-outlined text-secondary" style="font-size:16px">info</span>
+    Kích thước là khung lưới (hàng × cột). Đổi số hàng/cột sẽ cập nhật lưới bên dưới ngay; bố trí ghế trực tiếp trên lưới rồi bấm <strong>Lưu phòng</strong>.
+</p>

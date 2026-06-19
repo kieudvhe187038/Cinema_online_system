@@ -43,6 +43,12 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<Booking> Bookings { get; }
 
+    IGenericRepository<Cinema> Cinemas { get; }
+
+    IGenericRepository<Showtime> Showtimes { get; }
+
+    IGenericRepository<Ticket> Tickets { get; }
+
     Task<int> SaveChangesAsync();
 
     /// <summary>

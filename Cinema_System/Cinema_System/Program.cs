@@ -54,6 +54,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IPointConfigService, PointConfigService>();
 builder.Services.AddScoped<ISeatTypeService, SeatTypeService>();
 builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
+builder.Services.AddScoped<IRoomService, RoomService>();
 
 // Session lưu thông tin đăng ký tạm thời (chờ xác nhận OTP).
 builder.Services.AddDistributedMemoryCache();
