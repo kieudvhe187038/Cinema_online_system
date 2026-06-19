@@ -1,0 +1,159 @@
+﻿@model Cinema_System.Application.ViewModels.RoomSeatsViewModel
+@{
+    ViewData["Title"] = "Quản lý ghế";
+    Layout = "_StaffLayout";
+}
+
+<div class="mb-5 flex items-center justify-between">
+    <h1 class="font-head text-2xl font-bold text-secondary-dark">Quản lý phòng chiếu</h1>
+    <span class="rounded-full bg-secondary/10 px-3 py-1 text-sm font-semibold text-secondary">@Model.RoomName · @Model.RoomTypeName</span>
+</div>
+
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <!-- Cột trái -->
+    <div class="space-y-6">
+        <div class="rounded-2xl bg-white p-5 shadow-sm">
+            <h2 class="mb-3 font-head font-bold text-secondary-dark">Danh sách phòng</h2>
+            <div class="space-y-2">
+                @foreach (var r in Model.AllRooms)
+                {
+                    <a asp-action="Seats" asp-route-roomId="@r.Id"
+                       class="block rounded-xl border p-3 transition @(r.Id == Model.RoomId ? "border-primary bg-primary/5" : "border-gray-100 hover:bg-gray-50")">
+                        <div class="flex items-center justify-between">
+                            <span class="font-semibold text-secondary-dark">@r.Name</span>
+                            <span class="rounded-full px-2 py-0.5 text-[10px] font-semibold @r.StatusClass">@r.StatusLabel</span>
+                        </div>
+                        <p class="text-xs text-gray-400">@r.RoomTypeName · @r.TotalSeats ghế</p>
+                    </a>
+                }
+            </div>
+        </div>
+
+        <div class="rounded-2xl bg-white p-5 shadow-sm">
+            <h2 class="mb-3 font-head font-bold text-secondary-dark">Thống kê nhanh</h2>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="rounded-xl bg-red-50 p-3 text-center">
+                    <p class="font-head text-2xl font-bold text-red-600">@Model.BrokenCount</p>
+                    <p class="text-xs text-gray-500">Ghế hỏng</p>
+                </div>
+                <div class="rounded-xl bg-green-50 p-3 text-center">
+                    <p class="font-head text-2xl font-bold text-green-600">@Model.AvailableCount</p>
+                    <p class="text-xs text-gray-500">Khả dụng</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cột phải: sơ đồ ghế -->
+    <div class="lg:col-span-2 rounded-2xl bg-white p-6 shadow-sm">
+        <div class="mx-auto mb-8 w-2/3 border-t-4 border-secondary/40 pt-2 text-center text-xs font-semibold uppercase tracking-[0.3em] text-gray-400">Màn hình / Screen</div>
+
+        <div class="space-y-2 overflow-x-auto">
+            @foreach (var row in Model.Seats.GroupBy(s => s.RowNumber).OrderBy(g => g.Key))
+            {
+                <div class="flex items-center justify-center gap-1.5">
+                    <span class="w-5 text-xs font-bold text-gray-400">@row.First().RowLabel</span>
+                    @foreach (var seat in row.OrderBy(s => s.SeatNumber))
+                    {
+                        <button type="button"
+                                data-id="@seat.Id"
+                                data-label="@seat.SeatLabel"
+                                data-broken="@seat.IsBroken.ToString().ToLower()"
+                                data-booked="@seat.HasUpcomingBooking.ToString().ToLower()"
+                                data-count="@seat.UpcomingBookingCount"
+                                title="@seat.SeatLabel - @(seat.IsBroken ? "Hỏng" : seat.SeatTypeName)@(seat.HasUpcomingBooking ? " (đang có khách đặt)" : "")"
+                                class="seat-btn flex h-7 w-7 items-center justify-center rounded text-[10px] font-semibold @seat.CellClass @(seat.HasUpcomingBooking ? "ring-2 ring-amber-400" : "")">
+                            @seat.SeatNumber
+                        </button>
+                    }
+
+                    <span class="w-5 text-xs font-bold text-gray-400">@row.First().RowLabel</span>
+                </div>
+            }
+        </div>
+
+        <div class="mt-6 flex flex-wrap justify-center gap-4 border-t pt-4 text-xs text-gray-500">
+            <span class="flex items-center gap-1"><span class="h-4 w-4 rounded bg-gray-100"></span> Ghế thường</span>
+            <span class="flex items-center gap-1"><span class="h-4 w-4 rounded bg-blue-200"></span> Ghế VIP</span>
+            <span class="flex items-center gap-1"><span class="h-4 w-4 rounded bg-purple-200"></span> Ghế đôi (Sweetbox)</span>
+            <span class="flex items-center gap-1"><span class="h-4 w-4 rounded bg-red-400"></span> Ghế hỏng / khoá</span>
+            <span class="flex items-center gap-1"><span class="h-4 w-4 rounded ring-2 ring-amber-400"></span> Đang có khách đặt</span>
+        </div>
+        <p class="mt-3 text-center text-xs text-gray-400">Bấm vào 1 ghế để đổi trạng thái (mở ⇄ hỏng).</p>
+    </div>
+</div>
+
+<!-- Popup xác nhận khóa/mở ghế -->
+<div id="confirmModal" class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/40 p-4">
+    <div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+        <div class="flex items-start gap-3">
+            <span id="modalIcon" class="material-symbols-outlined text-primary">help</span>
+            <div>
+                <h3 id="modalTitle" class="font-head text-lg font-bold text-secondary-dark">Xác nhận</h3>
+                <p id="modalMsg" class="mt-1 text-sm text-gray-600"></p>
+            </div>
+        </div>
+        <div class="mt-6 flex justify-end gap-3">
+            <button type="button" id="modalCancel" class="rounded-lg px-4 py-2 text-sm font-semibold text-gray-500 hover:bg-gray-100">Hủy</button>
+            <button type="button" id="modalOk" class="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark">Xác nhận</button>
+        </div>
+    </div>
+</div>
+
+<form id="toggleForm" asp-action="ToggleSeat" method="post" class="hidden">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="roomId" value="@Model.RoomId" />
+    <input type="hidden" name="seatId" id="seatIdInput" />
+</form>
+
+@section Scripts {
+    <script>
+        const modal = document.getElementById('confirmModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalMsg = document.getElementById('modalMsg');
+        const modalIcon = document.getElementById('modalIcon');
+        const modalOk = document.getElementById('modalOk');
+        const modalCancel = document.getElementById('modalCancel');
+        let pendingId = null;
+
+        function openModal(title, msg, danger, icon) {
+            modalTitle.textContent = title;
+            modalMsg.textContent = msg;
+            modalIcon.textContent = icon;
+            modalIcon.className = 'material-symbols-outlined ' + (danger ? 'text-red-500' : 'text-primary');
+            modalOk.className = 'rounded-lg px-4 py-2 text-sm font-semibold text-white ' + (danger ? 'bg-red-500 hover:bg-red-600' : 'bg-primary hover:bg-primary-dark');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+        function closeModal() { modal.classList.add('hidden'); modal.classList.remove('flex'); pendingId = null; }
+
+        document.querySelectorAll('.seat-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const isBroken = btn.dataset.broken === 'true';
+                const isBooked = btn.dataset.booked === 'true';
+                const count = btn.dataset.count || '0';
+                const label = btn.dataset.label;
+                pendingId = btn.dataset.id;
+
+                if (isBroken) {
+                    openModal('Mở lại ghế', `Mở lại ghế ${label} cho khách dùng bình thường?`, false, 'lock_open');
+                } else if (isBooked) {
+                    openModal('Ghế đang có khách đặt',
+                        `Ghế ${label} đang có ${count} vé đã thanh toán cho suất sắp tới. Khóa ghế có thể ảnh hưởng vé đã bán. Bạn chắc chắn muốn khóa?`,
+                        true, 'warning');
+                } else {
+                    openModal('Khóa ghế', `Khóa (đánh dấu hỏng) ghế ${label}?`, false, 'lock');
+                }
+            });
+        });
+
+        modalOk.addEventListener('click', () => {
+            if (!pendingId) return;
+            document.getElementById('seatIdInput').value = pendingId;
+            document.getElementById('toggleForm').submit();
+        });
+        modalCancel.addEventListener('click', closeModal);
+        modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+    </script>
+}
