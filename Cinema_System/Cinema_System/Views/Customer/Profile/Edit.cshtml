@@ -28,7 +28,10 @@
 
 <div class="min-h-screen bg-light font-body py-10 px-4">
     <div class="max-w-xl mx-auto rounded-2xl bg-white p-8 shadow-md">
-        <h1 class="mb-6 text-xl font-bold font-heading text-tertiary">✏️ Chỉnh sửa hồ sơ</h1>
+        <h1 class="mb-6 flex items-center gap-2 text-xl font-bold font-heading text-tertiary">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" /></svg>
+            Chỉnh sửa hồ sơ
+        </h1>
 
         <form asp-action="Edit" method="post" enctype="multipart/form-data">
             @Html.AntiForgeryToken()

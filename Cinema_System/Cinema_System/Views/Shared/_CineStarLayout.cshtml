@@ -3,6 +3,7 @@
     // Thông tin người dùng cho sidebar/topbar được trang con truyền vào qua ViewData.
     var userName = ViewData["UserName"] as string ?? "";
     var userRole = ViewData["UserRole"] as string ?? "";
+    var userAvatar = ViewData["UserAvatar"] as string; // ảnh avatar đã upload (null/rỗng = chưa có)
     var heading = ViewData["Heading"] as string ?? "Cài đặt tài khoản";
 
     // Lấy 2 chữ cái cuối của tên cho avatar (vd "Nguyễn Anh Linh" -> "AL")
@@ -14,6 +15,15 @@
         initials = nameParts[0].Substring(0, 1).ToUpper();
     else
         initials = "U";
+
+    // Xác định mục menu đang mở để tô màu (active) đúng trang
+    var curController = ViewContext.RouteData.Values["controller"]?.ToString();
+    var curAction = ViewContext.RouteData.Values["action"]?.ToString();
+    // Trả về class cho 1 mục menu: active = nền cam; thường = chữ xám + hover
+    string NavClass(string controller, string action)
+        => (curController == controller && curAction == action)
+            ? "flex items-center gap-3 rounded-lg bg-primary px-3 py-2.5 font-semibold text-white"
+            : "flex items-center gap-3 rounded-lg px-3 py-2.5 text-gray-600 hover:bg-light";
 }
 <!DOCTYPE html>
 <html lang="vi">
@@ -49,47 +59,69 @@
 <div class="flex min-h-screen">
 
     <!-- ===== SIDEBAR ===== (hidden md:block = ẩn trên màn nhỏ, hiện từ tablet trở lên) -->
-    <aside class="hidden w-64 shrink-0 border-r border-gray-200 bg-white p-5 md:block">
-        <a asp-controller="Home" asp-action="Index" class="mb-8 block text-xl font-extrabold font-heading text-secondary">
-            Cine<span class="text-primary">Star</span>
+    <aside class="hidden w-64 shrink-0 flex-col border-r border-gray-200 bg-white p-5 md:flex">
+        <a asp-controller="Home" asp-action="Index" class="mb-8 block text-xl font-extrabold font-heading text-primary">
+            CineStar
         </a>
 
-        <!-- Thẻ người dùng -->
+        <!-- Thẻ người dùng: có ảnh thì hiện ảnh, chưa có thì hiện chữ viết tắt -->
         <div class="mb-8 flex items-center gap-3">
-            <div class="flex h-11 w-11 items-center justify-center rounded-full bg-primary font-bold text-white">
-                @initials
-            </div>
+            @if (!string.IsNullOrEmpty(userAvatar))
+            {
+                <img src="@userAvatar" alt="avatar" class="h-11 w-11 rounded-full object-cover" />
+            }
+            else
+            {
+                <div class="flex h-11 w-11 items-center justify-center rounded-full bg-primary font-bold text-white">@initials</div>
+            }
             <div>
                 <p class="font-semibold leading-tight">@userName</p>
-                <p class="text-xs text-gray-400">@userRole</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-primary">@userRole</p>
             </div>
         </div>
 
-        <!-- Menu (các trang khác là việc của bạn cùng nhóm -> tạm để #) -->
+        <!-- Menu (icon line SVG, active đổi màu theo trang) -->
         <nav class="space-y-1 text-sm font-medium">
-            <a asp-controller="Profile" asp-action="Index" class="flex items-center gap-3 rounded-lg bg-primary px-3 py-2.5 font-semibold text-white">👤 Hồ sơ cá nhân</a>
-            <a asp-controller="Profile" asp-action="PointHistory" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-gray-600 hover:bg-light">⭐ Lịch sử điểm</a>
-            <a asp-controller="Profile" asp-action="ChangePassword" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-gray-600 hover:bg-light">🔒 Đổi mật khẩu</a>
-            <a href="#" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-gray-600 hover:bg-light">🎟️ Lịch sử đặt vé</a>
-            <a href="#" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-gray-600 hover:bg-light">📱 Vé điện tử</a>
+            <a asp-controller="Profile" asp-action="Index" class="@NavClass("Profile", "Index")">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+                Hồ sơ cá nhân
+            </a>
+            <a asp-controller="Profile" asp-action="PointHistory" class="@NavClass("Profile", "PointHistory")">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
+                Lịch sử điểm
+            </a>
+            <a asp-controller="Booking" asp-action="History" class="@NavClass("Booking", "History")">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z" /></svg>
+                Lịch sử đặt vé
+            </a>
+            <a asp-controller="Profile" asp-action="ChangePassword" class="@NavClass("Profile", "ChangePassword")">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16.5 10.5V6.75a4.5 4.5 0 00-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" /></svg>
+                Đổi mật khẩu
+            </a>
         </nav>
 
-        <!-- Đăng xuất: POST tới LoginController.Logout (dùng chung với header trang chính) -->
-        <form asp-controller="Login" asp-action="Logout" method="post" class="mt-8 border-t border-gray-100 pt-4">
-            <button type="submit" class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-light">🚪 Đăng xuất</button>
+        <!-- Nút đặt vé nổi bật -->
+        <a asp-controller="Home" asp-action="Index"
+           class="mt-6 flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 font-semibold text-white shadow hover:bg-primary-dark transition">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z" /></svg>
+            Đặt vé ngay
+        </a>
+
+        <!-- Đăng xuất: POST tới LoginController.Logout -->
+        <form asp-controller="Login" asp-action="Logout" method="post" class="mt-auto border-t border-gray-100 pt-4">
+            <button type="submit" class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-light">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" /></svg>
+                Đăng xuất
+            </button>
         </form>
     </aside>
 
     <!-- ===== KHU NỘI DUNG ===== -->
     <div class="flex-1">
 
-        <!-- Thanh trên -->
-        <header class="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4">
+        <!-- Thanh trên (chỉ tiêu đề; user đã hiển thị ở sidebar trái) -->
+        <header class="border-b border-gray-200 bg-white px-6 py-4">
             <h1 class="text-xl font-bold font-heading text-tertiary">@heading</h1>
-            <div class="flex items-center gap-4">
-                <span class="text-gray-400">🔔</span>
-                <div class="flex h-9 w-9 items-center justify-center rounded-full bg-tertiary text-sm font-bold text-white">@initials</div>
-            </div>
         </header>
 
         <!-- Nội dung của trang con sẽ đổ vào đây -->
