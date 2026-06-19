@@ -134,6 +134,7 @@ namespace Cinema_System.Controllers.Public
             if (movie == null)
                 return NotFound();
 
+            // Tải reviews phân trang, 5 reviews mỗi trang, hiển thị ngay trên trang chi tiết
             var reviews = await _reviewService.GetMovieReviewsAsync(movie.Id, page, 5);
 
             var vm = new MovieDetailsViewModel
@@ -143,7 +144,17 @@ namespace Cinema_System.Controllers.Public
             };
 
             ViewData["Title"] = movie.Title;
+            // Truyền page hiện tại để view render pagination đúng
+            ViewData["CurrentReviewPage"] = page;
             return View("Details", vm);
+        }
+
+        // Endpoint cho AJAX load reviews không load lại toàn trang
+        [HttpGet]
+        public async Task<IActionResult> LoadReviewsPartial(Guid id, int page = 1)
+        {
+            var reviews = await _reviewService.GetMovieReviewsAsync(id, page, 5);
+            return PartialView("_ReviewList", reviews);
         }
     }
 }
