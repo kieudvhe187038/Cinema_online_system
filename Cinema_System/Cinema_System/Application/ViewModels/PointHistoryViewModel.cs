@@ -19,4 +19,8 @@ public class PointHistoryViewModel
         "Refund_Rollback" => "Hoàn điểm (hủy vé)",
         _ => ActionType
     };
+
+    // Nhãn + màu trạng thái (cho cột TRẠNG THÁI)
+    public string StatusLabel => ActionType == "Refund_Rollback" ? "ĐÃ HOÀN" : "HOÀN THÀNH";
+    public string StatusClass => ActionType == "Refund_Rollback" ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700";
 }

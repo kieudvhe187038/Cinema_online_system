@@ -7,4 +7,7 @@ public class PointHistoryPageViewModel
     public int CurrentPage { get; set; }
     public int TotalPages { get; set; }
     public int TotalItems { get; set; }
+
+    // Tổng điểm hiện có (cho phần hero)
+    public int CurrentPoints { get; set; }
 }
