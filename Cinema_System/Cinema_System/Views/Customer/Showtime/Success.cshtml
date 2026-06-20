@@ -52,6 +52,13 @@
                 <span class="text-slate-500">VAT (@((Model.VatRate * 100).ToString("0.#"))%)</span>
                 <span class="font-semibold text-slate-800">@Model.VatAmount.ToString("N0") ₫</span>
             </div>
+            @if (Model.PromoDiscount > 0)
+            {
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Giảm bằng mã@(string.IsNullOrEmpty(Model.PromoCode) ? "" : $" ({Model.PromoCode})")</span>
+                    <span class="font-semibold text-emerald-600">-@Model.PromoDiscount.ToString("N0") ₫</span>
+                </div>
+            }
             @if (Model.DiscountAmount > 0)
             {
                 <div class="flex justify-between">

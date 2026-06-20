@@ -57,11 +57,24 @@ public class PaymentSuccessViewModel
     public decimal VatRate { get; set; }
     public decimal VatAmount { get; set; }
     public int PointsUsed { get; set; }
-    public decimal DiscountAmount { get; set; }
+    public decimal DiscountAmount { get; set; }          // giảm bằng điểm thưởng
+    public string? PromoCode { get; set; }               // mã giảm giá đã dùng (nếu có)
+    public decimal PromoDiscount { get; set; }           // giảm bằng mã khuyến mãi
     public decimal GrandTotal { get; set; }
     public string PaymentMethod { get; set; } = string.Empty;
     public int PointsEarned { get; set; }
     public int RewardPointsTotal { get; set; }
+}
+
+// Kết quả xem trước khi áp mã giảm giá ở trang thanh toán (gọi qua AJAX).
+public class PromoPreviewResult
+{
+    public bool Ok { get; set; }
+    public string? Message { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public decimal PromoDiscount { get; set; }      // số tiền mã giảm
+    public decimal FinalAmount { get; set; }        // tổng sau khi trừ mã (trước khi trừ điểm)
+    public int MaxUsablePoints { get; set; }        // số điểm tối đa còn dùng được sau khi trừ mã
 }
 
 // Kết quả xử lý xác nhận đặt vé.

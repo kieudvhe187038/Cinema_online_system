@@ -28,7 +28,12 @@
             <p class="mt-1 text-xs text-slate-400">VNPay dùng môi trường sandbox (tiền thử nghiệm); MoMo là mô phỏng.</p>
 
             <label class="mt-4 flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 p-3 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                <input type="radio" name="method" value="VNPay" class="accent-primary" checked />
+                <input type="radio" name="method" value="VietQR" class="accent-primary" checked />
+                <span class="flex h-9 w-14 items-center justify-center rounded bg-emerald-600 text-[10px] font-bold text-white">VietQR</span>
+                <span class="text-sm font-semibold text-slate-700">Chuyển khoản VietQR</span>
+            </label>
+            <label class="mt-3 flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 p-3 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                <input type="radio" name="method" value="VNPay" class="accent-primary" />
                 <span class="flex h-9 w-14 items-center justify-center rounded bg-[#005baa] text-xs font-bold text-white">VNPay</span>
                 <span class="text-sm font-semibold text-slate-700">Ví điện tử VNPay</span>
             </label>
@@ -85,6 +90,24 @@
             <div class="mt-1 flex justify-between text-sm">
                 <span class="text-slate-500">VAT (@((Model.VatRate * 100).ToString("0.#"))%)</span>
                 <span class="font-semibold text-slate-800">@Model.VatAmount.ToString("N0") ₫</span>
+            </div>
+
+            @* Mã giảm giá *@
+            <div class="mt-3 rounded-lg bg-slate-50 px-3 py-2">
+                <div class="text-xs text-slate-500">Mã giảm giá</div>
+                <div class="mt-1.5 flex items-center gap-2">
+                    <input type="text" id="promo-input" placeholder="Nhập mã (vd WELCOME20)"
+                           class="flex-1 rounded border border-slate-300 px-2 py-1 text-sm uppercase focus:border-primary focus:outline-none" />
+                    <button type="button" id="apply-promo" class="rounded bg-primary/10 px-3 py-1 text-xs font-semibold text-primary hover:bg-primary/20">Áp dụng</button>
+                </div>
+                <p id="promo-msg" class="mt-1 hidden text-xs"></p>
+                @* Mã đã áp dụng được gửi kèm khi xác nhận *@
+                <input type="hidden" name="promoCode" id="promo-hidden" value="" />
+            </div>
+
+            <div id="promo-row" class="mt-2 hidden justify-between text-sm">
+                <span class="text-slate-500">Giảm bằng mã</span>
+                <span id="promo-discount-amount" class="font-semibold text-emerald-600">-0 ₫</span>
             </div>
 
             @* Dùng điểm thưởng để giảm giá *@
@@ -146,10 +169,15 @@
                 if (countdown <= 0) { clearInterval(tick); window.location.href = homeUrl; }
             }, 1000);
 
-            // ── Dùng điểm thưởng để giảm giá (xem trước tổng tiền) ──
+            // ── Mã giảm giá + điểm thưởng (xem trước tổng tiền) ──
+            const applyPromoUrl = '@Url.Action("ApplyPromo", "Showtime")';
+            const foodIds = [@Html.Raw(string.Join(",", Model.FoodLines.Select(f => $"'{f.FbId}'")))];
+            const foodQtys = [@string.Join(",", Model.FoodLines.Select(f => f.Quantity))];
+
             const grandTotal = @Model.GrandTotal;
             const pointValue = @Model.PointValueVnd;
-            const maxPoints = @Model.MaxUsablePoints;
+            let maxPoints = @Model.MaxUsablePoints;   // có thể giảm sau khi áp mã
+            let promoDiscount = 0;                    // số tiền mã giảm hiện tại
             const vnd = n => n.toLocaleString('vi-VN') + ' ₫';
             const pointsInput = document.getElementById('points-input');
             const discountRow = document.getElementById('discount-row');
@@ -157,29 +185,81 @@
             const grandDisplay = document.getElementById('grand-display');
             const payAmount = document.getElementById('pay-amount');
 
-            function applyPoints() {
-                let used = parseInt(pointsInput.value, 10) || 0;
+            // Tính lại tổng: trừ mã giảm giá trước, rồi trừ điểm trên phần còn lại.
+            function recompute() {
+                const afterPromo = grandTotal - promoDiscount;
+                let used = parseInt(pointsInput?.value, 10) || 0;
                 used = Math.max(0, Math.min(used, maxPoints));
-                pointsInput.value = used;
-                const discount = used * pointValue;
-                const total = grandTotal - discount;
-                if (discount > 0) {
-                    discountRow.classList.remove('hidden');
-                    discountRow.classList.add('flex');
-                    discountAmount.textContent = '-' + vnd(discount);
+                if (pointsInput) pointsInput.value = used;
+                const pointsDisc = used * pointValue;
+                const total = afterPromo - pointsDisc;
+
+                const promoRow = document.getElementById('promo-row');
+                const promoDiscountAmount = document.getElementById('promo-discount-amount');
+                if (promoDiscount > 0) {
+                    promoRow.classList.remove('hidden'); promoRow.classList.add('flex');
+                    promoDiscountAmount.textContent = '-' + vnd(promoDiscount);
                 } else {
-                    discountRow.classList.add('hidden');
-                    discountRow.classList.remove('flex');
+                    promoRow.classList.add('hidden'); promoRow.classList.remove('flex');
+                }
+
+                if (pointsDisc > 0) {
+                    discountRow.classList.remove('hidden'); discountRow.classList.add('flex');
+                    discountAmount.textContent = '-' + vnd(pointsDisc);
+                } else {
+                    discountRow.classList.add('hidden'); discountRow.classList.remove('flex');
                 }
                 grandDisplay.textContent = vnd(total);
                 payAmount.textContent = vnd(total);
             }
             if (pointsInput) {
-                pointsInput.addEventListener('input', applyPoints);
+                pointsInput.addEventListener('input', recompute);
                 document.getElementById('use-max-points')?.addEventListener('click', () => {
-                    pointsInput.value = maxPoints; applyPoints();
+                    pointsInput.value = maxPoints; recompute();
                 });
             }
+
+            // Áp mã giảm giá qua AJAX.
+            const promoInput = document.getElementById('promo-input');
+            const promoHidden = document.getElementById('promo-hidden');
+            const promoMsg = document.getElementById('promo-msg');
+            document.getElementById('apply-promo').addEventListener('click', async () => {
+                const code = (promoInput.value || '').trim().toUpperCase();
+                promoMsg.classList.remove('hidden');
+                if (!code) {
+                    promoDiscount = 0; promoHidden.value = '';
+                    promoMsg.className = 'mt-1 text-xs text-rose-600';
+                    promoMsg.textContent = 'Vui lòng nhập mã.';
+                    recompute(); return;
+                }
+                const fd = new FormData();
+                fd.append('__RequestVerificationToken', token);
+                fd.append('showtimeId', showtimeId);
+                fd.append('code', code);
+                foodIds.forEach(x => fd.append('fbId', x));
+                foodQtys.forEach(x => fd.append('qty', x));
+                try {
+                    const res = await fetch(applyPromoUrl, { method: 'POST', body: fd });
+                    const data = await res.json();
+                    if (data.ok) {
+                        promoDiscount = data.discount;
+                        promoHidden.value = data.code;
+                        maxPoints = data.maxPoints;
+                        promoMsg.className = 'mt-1 text-xs text-emerald-600';
+                        promoMsg.textContent = data.message;
+                    } else {
+                        promoDiscount = 0; promoHidden.value = '';
+                        maxPoints = @Model.MaxUsablePoints;
+                        promoMsg.className = 'mt-1 text-xs text-rose-600';
+                        promoMsg.textContent = data.message || 'Mã không hợp lệ.';
+                    }
+                } catch {
+                    promoDiscount = 0; promoHidden.value = '';
+                    promoMsg.className = 'mt-1 text-xs text-rose-600';
+                    promoMsg.textContent = 'Không áp dụng được mã, thử lại.';
+                }
+                recompute();
+            });
 
             // Bấm thanh toán / hủy -> rời trang trong luồng, không nhả ghế qua pagehide.
             document.getElementById('pay-form').addEventListener('submit', () => { proceeding = true; });

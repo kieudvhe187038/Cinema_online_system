@@ -1,5 +1,7 @@
 using System.Security.Claims;
+using System.Text.Json;
 using Cinema_System.Application.Interfaces;
+using Cinema_System.Application.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,13 +11,27 @@ namespace Cinema_System.Controllers.Public
     public class ShowtimeController : Controller
     {
         private readonly IShowtimeService _showtimeService;
+        private readonly IVnpayService _vnpay;
+        private readonly IVietQrService _vietqr;
 
         // Thời gian giữ ghế (phút) khi khách chọn ghế.
         private const int HoldMinutes = 10;
 
-        public ShowtimeController(IShowtimeService showtimeService)
+        public ShowtimeController(IShowtimeService showtimeService, IVnpayService vnpay, IVietQrService vietqr)
         {
             _showtimeService = showtimeService;
+            _vnpay = vnpay;
+            _vietqr = vietqr;
+        }
+
+        // Đơn đang chờ thanh toán VNPay, lưu tạm trong Session để khôi phục khi cổng trả về.
+        public class VnpayPendingOrder
+        {
+            public Guid ShowtimeId { get; set; }
+            public List<Guid> FoodIds { get; set; } = new();
+            public List<int> FoodQtys { get; set; } = new();
+            public int PointsUsed { get; set; }
+            public string? PromoCode { get; set; }
         }
 
         // Id user hiện tại (lấy từ claim đăng nhập).
@@ -59,23 +75,117 @@ namespace Cinema_System.Controllers.Public
             return View(vm);
         }
 
-        // Xác nhận thanh toán (giả lập) -> tạo booking, dùng/cộng điểm, rồi sang trang thành công.
+        // Xác nhận thanh toán -> nếu chọn VNPay (đã cấu hình) thì sang cổng VNPay; còn lại thanh toán giả.
         [HttpPost]
         [Authorize(Roles = "CUSTOMER,STAFF")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Confirm(Guid id, string method, List<Guid> fbId, List<int> qty, int pointsUsed = 0)
+        public async Task<IActionResult> Confirm(Guid id, string method, List<Guid> fbId, List<int> qty, int pointsUsed = 0, string? promoCode = null)
         {
-            var allowed = new[] { "VNPay", "MoMo" };
-            if (string.IsNullOrEmpty(method) || !allowed.Contains(method)) method = "VNPay";
+            var allowed = new[] { "VNPay", "MoMo", "VietQR" };
+            if (string.IsNullOrEmpty(method) || !allowed.Contains(method)) method = "VietQR";
             fbId ??= new();
             qty ??= new();
             if (pointsUsed < 0) pointsUsed = 0;
+            promoCode = string.IsNullOrWhiteSpace(promoCode) ? null : promoCode.Trim();
 
-            var result = await _showtimeService.ConfirmBookingAsync(id, CurrentUserId, method, fbId, qty, pointsUsed);
+            // VietQR: hiển thị mã QR chuyển khoản; tạo đơn khi khách bấm "Đã chuyển khoản".
+            if (method == "VietQR" && _vietqr.Enabled)
+            {
+                var pvm = await _showtimeService.GetPaymentAsync(id, CurrentUserId, fbId, qty);
+                if (pvm is null) return RedirectToAction(nameof(SelectSeats), new { id });
+
+                // Trừ mã giảm giá trước, rồi mới trừ điểm trên phần còn lại.
+                var promoDiscount = await ResolvePromoDiscountAsync(id, fbId, qty, promoCode);
+                var afterPromo = pvm.GrandTotal - promoDiscount;
+                var use = Math.Max(0, Math.Min(Math.Min(pointsUsed, pvm.MaxUsablePoints), (int)(afterPromo / pvm.PointValueVnd)));
+                var amount = afterPromo - (decimal)use * pvm.PointValueVnd;
+                var content = "CineStar " + id.ToString("N")[..8].ToUpper();
+
+                return View("VietQr", new VietQrViewModel
+                {
+                    ShowtimeId = id,
+                    MovieTitle = pvm.MovieTitle,
+                    StartTime = pvm.StartTime,
+                    Amount = amount,
+                    QrUrl = _vietqr.BuildQrUrl(amount, content),
+                    TransferContent = content,
+                    BankCode = _vietqr.BankCode,
+                    AccountNo = _vietqr.AccountNo,
+                    AccountName = _vietqr.AccountName,
+                    FoodIds = fbId,
+                    FoodQtys = qty,
+                    PointsUsed = use,
+                    PromoCode = promoCode,
+                    HoldSecondsLeft = pvm.HoldSecondsLeft
+                });
+            }
+
+            // VNPay thật (sandbox): tạo URL thanh toán rồi redirect sang cổng.
+            if (method == "VNPay" && _vnpay.Enabled)
+            {
+                var vm = await _showtimeService.GetPaymentAsync(id, CurrentUserId, fbId, qty);
+                if (vm is null) return RedirectToAction(nameof(SelectSeats), new { id });
+
+                // Trừ mã giảm giá + kẹp điểm dùng vào số tiền cần thanh toán qua cổng.
+                var promoDiscount = await ResolvePromoDiscountAsync(id, fbId, qty, promoCode);
+                var afterPromo = vm.GrandTotal - promoDiscount;
+                var usePoints = Math.Max(0, Math.Min(Math.Min(pointsUsed, vm.MaxUsablePoints), (int)(afterPromo / vm.PointValueVnd)));
+                var amount = afterPromo - (decimal)usePoints * vm.PointValueVnd;
+
+                var txnRef = DateTime.Now.Ticks.ToString();
+                HttpContext.Session.SetString("vnp_" + txnRef,
+                    JsonSerializer.Serialize(new VnpayPendingOrder { ShowtimeId = id, FoodIds = fbId, FoodQtys = qty, PointsUsed = usePoints, PromoCode = promoCode }));
+
+                // Dùng IPv4 (localhost trả về "::1" IPv6 dễ gây lệch khi cổng xử lý).
+                var remoteIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+                var ip = (string.IsNullOrEmpty(remoteIp) || remoteIp.Contains(':')) ? "127.0.0.1" : remoteIp;
+                var returnUrl = Url.Action(nameof(VnpayReturn), "Showtime", null, Request.Scheme)!;
+                // OrderInfo không dấu, không khoảng trắng để tránh mọi khác biệt khi encode.
+                var payUrl = _vnpay.CreatePaymentUrl(amount, txnRef,
+                    $"CineStarBooking{id:N}", ip, returnUrl);
+                return Redirect(payUrl);
+            }
+
+            // Thanh toán giả (MoMo hoặc VNPay chưa cấu hình): tạo booking ngay.
+            var result = await _showtimeService.ConfirmBookingAsync(id, CurrentUserId, method, fbId, qty, pointsUsed, promoCode);
             if (!result.Succeeded)
             {
                 TempData["Error"] = result.Error;
                 return RedirectToAction(nameof(SelectSeats), new { id });
+            }
+            return RedirectToAction(nameof(Success), new { id = result.BookingId });
+        }
+
+        // VNPay redirect người dùng về đây sau khi thanh toán: verify chữ ký rồi tạo booking + cộng điểm.
+        [Authorize(Roles = "CUSTOMER,STAFF")]
+        public async Task<IActionResult> VnpayReturn()
+        {
+            var check = _vnpay.ValidateReturn(Request.Query);
+            var key = "vnp_" + check.TxnRef;
+            var json = HttpContext.Session.GetString(key);
+            HttpContext.Session.Remove(key);
+
+            if (!check.Valid || json is null)
+            {
+                TempData["Error"] = "Xác thực thanh toán VNPay thất bại.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var pending = JsonSerializer.Deserialize<VnpayPendingOrder>(json)!;
+
+            // ResponseCode "00" = thanh toán thành công.
+            if (check.ResponseCode != "00")
+            {
+                TempData["Error"] = "Thanh toán VNPay không thành công hoặc đã bị hủy.";
+                return RedirectToAction(nameof(SelectSeats), new { id = pending.ShowtimeId });
+            }
+
+            var result = await _showtimeService.ConfirmBookingAsync(
+                pending.ShowtimeId, CurrentUserId, "VNPay", pending.FoodIds, pending.FoodQtys, pending.PointsUsed, pending.PromoCode);
+            if (!result.Succeeded)
+            {
+                TempData["Error"] = result.Error;
+                return RedirectToAction(nameof(SelectSeats), new { id = pending.ShowtimeId });
             }
             return RedirectToAction(nameof(Success), new { id = result.BookingId });
         }
@@ -87,6 +197,40 @@ namespace Cinema_System.Controllers.Public
             var vm = await _showtimeService.GetBookingSuccessAsync(id, CurrentUserId);
             if (vm is null) return NotFound();
             return View(vm);
+        }
+
+        // Khách bấm "Đã chuyển khoản" trên trang VietQR -> tạo đơn (xác nhận thủ công).
+        [HttpPost]
+        [Authorize(Roles = "CUSTOMER,STAFF")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> VietQrPaid(Guid id, List<Guid> fbId, List<int> qty, int pointsUsed = 0, string? promoCode = null)
+        {
+            var result = await _showtimeService.ConfirmBookingAsync(
+                id, CurrentUserId, "VietQR", fbId ?? new(), qty ?? new(), pointsUsed, promoCode);
+            if (!result.Succeeded)
+            {
+                TempData["Error"] = result.Error;
+                return RedirectToAction(nameof(SelectSeats), new { id });
+            }
+            return RedirectToAction(nameof(Success), new { id = result.BookingId });
+        }
+
+        // Áp mã giảm giá (AJAX): kiểm tra mã + trả về số tiền giảm để cập nhật tổng trên trang thanh toán.
+        [HttpPost]
+        [Authorize(Roles = "CUSTOMER,STAFF")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ApplyPromo(Guid showtimeId, List<Guid> fbId, List<int> qty, string code)
+        {
+            var res = await _showtimeService.PreviewPromoAsync(showtimeId, CurrentUserId, fbId ?? new(), qty ?? new(), code ?? string.Empty);
+            return Json(new { ok = res.Ok, message = res.Message, discount = res.PromoDiscount, maxPoints = res.MaxUsablePoints, code = res.Code });
+        }
+
+        // Tính trước số tiền mã giảm cho luồng VietQR/VNPay (0 nếu mã không hợp lệ).
+        private async Task<decimal> ResolvePromoDiscountAsync(Guid showtimeId, List<Guid> fbId, List<int> qty, string? promoCode)
+        {
+            if (string.IsNullOrWhiteSpace(promoCode)) return 0m;
+            var res = await _showtimeService.PreviewPromoAsync(showtimeId, CurrentUserId, fbId, qty, promoCode);
+            return res.Ok ? res.PromoDiscount : 0m;
         }
 
         // Giữ 1 ghế trong 10 phút cho user hiện tại.

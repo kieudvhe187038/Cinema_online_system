@@ -88,6 +88,7 @@
                 <div class="mb-3.5 col-span-2">
                     <label asp-for="Description" class="@fieldLabel"></label>
                     <textarea asp-for="Description" placeholder="Mô tả nội dung phim" class="@fieldInput min-h-[110px] resize-y"></textarea>
+                    <span asp-validation-for="Description" class="@fieldError"></span>
                 </div>
             </div>
         </div>
