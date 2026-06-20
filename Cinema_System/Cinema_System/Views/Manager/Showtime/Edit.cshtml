@@ -12,11 +12,15 @@
     const string sectionTitle = "font-bold text-base text-[#191c1d] mb-4 pb-2 border-b-2 border-[#edeeef]";
 }
 
+@* Tiêu đề của trang Sửa suất chiếu *@
 <div class="max-w-[760px] mx-auto mb-8">
     <h1 class="font-head text-2xl font-extrabold text-[#191c1d] mb-6">Chỉnh sửa suất chiếu</h1>
 
+    @* Form chỉnh sửa thông tin suất chiếu *@
     <form method="post" action="@Url.Action("Edit", "Showtime", new { id = Model.Id })">
         @Html.AntiForgeryToken()
+        
+        @* Card chứa các trường thông tin chính (Phim, Phòng, Giờ, Trạng thái) *@
         <div class="@card">
             <p class="@sectionTitle">Thông tin suất chiếu</p>
             <div asp-validation-summary="ModelOnly" class="text-red-700 text-sm mb-4"></div>
@@ -97,13 +101,21 @@
             </div>
         </div>
 
-        <div class="flex items-center gap-3">
-            <button id="showtimeSubmit" type="submit" class="px-5 py-2.5 bg-primary text-white rounded-lg font-semibold hover:bg-primary-dark transition-colors">Lưu</button>
-            <a class="px-5 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50" href="@Url.Action("Calendar", "Showtime")">Hủy</a>
-        </div>
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <button id="showtimeSubmit" type="submit" class="px-5 py-2.5 bg-primary text-white rounded-lg font-semibold hover:bg-primary-dark transition-colors">Lưu</button>
+                <a class="px-5 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50" href="@Url.Action("Calendar", "Showtime")">Hủy</a>
+            </div>
     </form>
+
+            <form method="post" action="@Url.Action("Delete", "Showtime", new { id = Model.Id })" onsubmit="return confirm('Bạn có chắc chắn muốn xóa suất chiếu này không?');">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="px-5 py-2.5 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors">Xóa suất chiếu</button>
+            </form>
+        </div>
 </div>
 <script>
+    // Tự động đồng bộ giá trị ngày và giờ riêng lẻ vào các input hidden (StartTime, EndTime) để gửi lên Controller
     (function () {
         var form = document.querySelector('form');
         var startDate = document.getElementById('StartDate');
@@ -122,9 +134,12 @@
             }
         }
 
+        // Lắng nghe sự kiện submit để ghép ngày và giờ trước khi nộp form
         if (form) {
             form.addEventListener('submit', syncHidden);
         }
+
+        // Lắng nghe sự kiện thay đổi của các trường ngày giờ
         [startDate, startTime, endDate, endTime].forEach(function (el) {
             if (el) el.addEventListener('change', syncHidden);
         });

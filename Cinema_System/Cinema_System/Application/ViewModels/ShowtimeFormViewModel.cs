@@ -3,8 +3,13 @@ using Cinema_System.Application.DTOs;
 
 namespace Cinema_System.Application.ViewModels;
 
+/// <summary>
+/// ViewModel dùng chung cho form Tạo mới và Chỉnh sửa suất chiếu.
+/// Implement IValidatableObject để kiểm tra nghiệp vụ phức tạp hơn DataAnnotations thông thường.
+/// </summary>
 public class ShowtimeFormViewModel : IValidatableObject
 {
+    // ID suất chiếu — Guid.Empty nghĩa là đang tạo mới, có giá trị nghĩa là đang chỉnh sửa
     public Guid Id { get; set; }
 
     [Display(Name = "Phim")]
@@ -22,6 +27,7 @@ public class ShowtimeFormViewModel : IValidatableObject
     [Display(Name = "Trạng thái")]
     public string Status { get; set; } = "Scheduled";
 
+    // Danh sách phim và phòng chiếu để populate dropdown trong form (không submit lên server)
     public IEnumerable<ItemOptionDTO> AvailableMovies { get; set; } = new List<ItemOptionDTO>();
     public IEnumerable<ItemOptionDTO> AvailableRooms { get; set; } = new List<ItemOptionDTO>();
 
@@ -33,10 +39,12 @@ public class ShowtimeFormViewModel : IValidatableObject
         if (RoomId == Guid.Empty)
             yield return new ValidationResult("Vui lòng chọn phòng chiếu.", new[] { nameof(RoomId) });
 
+        // Kiểm tra logic thời gian chiếu hợp lệ
         if (StartTime >= EndTime)
             yield return new ValidationResult("Thời gian kết thúc phải lớn hơn thời gian bắt đầu.", new[] { nameof(EndTime) });
 
-        if (StartTime < DateTime.Now)
+        // Chỉ chặn lịch trong quá khứ đối với thao tác Tạo mới (Id = rỗng). Khi Edit thì cho phép sửa lịch cũ.
+        if (Id == Guid.Empty && StartTime < DateTime.Now)
             yield return new ValidationResult("Thời gian bắt đầu phải là hiện tại hoặc tương lai.", new[] { nameof(StartTime) });
     }
 }
