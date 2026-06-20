@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi" class="light">
 <head>
     <meta charset="utf-8" />
@@ -48,7 +48,6 @@
                         <a class="text-sm font-semibold transition hover:text-primary text-slate-700" href="#">Giá Vé</a>
                         <a class="text-sm font-semibold transition hover:text-primary text-slate-700" href="#">Khuyến Mãi</a>
                         <a class="text-sm font-semibold transition hover:text-primary text-slate-700" href="#">Tin Điện Ảnh</a>
-                        <a class="text-sm font-semibold transition hover:text-primary @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reviews" ? "text-primary border-b-2 border-primary pb-1" : "text-slate-700")" asp-area="" asp-controller="Reviews" asp-action="Index">Đánh giá</a>
                         <a class="text-sm font-semibold transition hover:text-primary @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" && ViewContext.RouteData.Values["action"]?.ToString() == "Info" ? "text-primary border-b-2 border-primary pb-1" : "text-slate-700")" asp-area="" asp-controller="Home" asp-action="Info">Thông tin rạp</a>
                     </nav>
                 </div>
