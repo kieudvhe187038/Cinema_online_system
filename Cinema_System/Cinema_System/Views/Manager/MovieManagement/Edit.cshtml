@@ -92,6 +92,7 @@
                 <div class="mb-3.5 col-span-2">
                     <label asp-for="Description" class="@fieldLabel"></label>
                     <textarea asp-for="Description" class="@fieldInput min-h-[110px] resize-y"></textarea>
+                    <span asp-validation-for="Description" class="@fieldError"></span>
                 </div>
             </div>
         </div>

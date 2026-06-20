@@ -36,6 +36,7 @@ public class UnitOfWork : IUnitOfWork
     private IGenericRepository<RewardPointHistory>? _rewardPointHistories;
     private IGenericRepository<FoodBeverage>? _foodBeverages;
     private IGenericRepository<BookingFood>? _bookingFoods;
+    private IGenericRepository<Promotion>? _promotions;
 
     public UnitOfWork(CinemaWebDbContext context)
     {
@@ -110,6 +111,9 @@ public class UnitOfWork : IUnitOfWork
 
     public IGenericRepository<BookingFood> BookingFoods =>
         _bookingFoods ??= new GenericRepository<BookingFood>(_context);
+
+    public IGenericRepository<Promotion> Promotions =>
+        _promotions ??= new GenericRepository<Promotion>(_context);
 
     // Lưu tất cả thay đổi của DbContext trong 1 transaction logic
     public async Task<int> SaveChangesAsync()

@@ -47,6 +47,12 @@ builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 builder.Services.AddScoped<IMovieService, MovieService>();
 builder.Services.AddScoped<IFoodBeverageService, FoodBeverageService>();
 builder.Services.AddScoped<IShowtimeService, ShowtimeService>();
+// Cổng thanh toán VNPay (sandbox). Secret nạp từ .env: Vnpay__TmnCode, Vnpay__HashSecret.
+builder.Services.Configure<Cinema_System.Infrastructure.PaymentGateway.VnpaySettings>(builder.Configuration.GetSection("Vnpay"));
+builder.Services.AddScoped<IVnpayService, Cinema_System.Infrastructure.PaymentGateway.VnpayService>();
+// VietQR (QR chuyển khoản). Thông tin TK nạp từ .env: VietQr__BankCode, VietQr__AccountNo, VietQr__AccountName.
+builder.Services.Configure<Cinema_System.Infrastructure.PaymentGateway.VietQrSettings>(builder.Configuration.GetSection("VietQr"));
+builder.Services.AddScoped<IVietQrService, Cinema_System.Infrastructure.PaymentGateway.VietQrService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 // Module quản trị của taido (quản lý người dùng, tỉ lệ điểm, loại phòng/ghế).
 builder.Services.AddScoped<IUserService, UserService>();
