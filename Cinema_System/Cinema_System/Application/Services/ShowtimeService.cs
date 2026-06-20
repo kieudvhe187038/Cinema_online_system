@@ -439,7 +439,7 @@ public class ShowtimeService : IShowtimeService
     // Kiểm tra mã khuyến mãi và tính số tiền giảm (áp SAU VAT, trên tổng đã gồm thuế).
     // Trả về (promo, discount, error): error != null nghĩa là mã không hợp lệ -> không áp.
     private async Task<(Promotion? Promo, decimal Discount, string? Error)> ResolvePromoAsync(
-        string? code, decimal seatTotal, decimal foodTotal, decimal grandTotal)
+        string? code, Guid userId, decimal seatTotal, decimal foodTotal, decimal grandTotal)
     {
         if (string.IsNullOrWhiteSpace(code)) return (null, 0m, null);
         code = code.Trim();
@@ -457,7 +457,11 @@ public class ShowtimeService : IShowtimeService
         if (promo.MinOrderValue.HasValue && subtotal < promo.MinOrderValue.Value)
             return (null, 0m, $"Cần đơn tối thiểu {promo.MinOrderValue.Value:N0}₫ để dùng mã này.");
 
-        // Giới hạn lượt dùng: đếm số booking đã gắn mã này.
+        // Mỗi user chỉ được dùng một mã đúng 1 lần.
+        var usedByUser = await _unitOfWork.Bookings.CountAsync(b => b.PromotionId == promo.Id && b.UserId == userId);
+        if (usedByUser >= 1) return (null, 0m, "Bạn đã sử dụng mã giảm giá này rồi.");
+
+        // Giới hạn tổng lượt dùng toàn hệ thống: đếm số booking đã gắn mã này.
         if (promo.UsageLimit.HasValue)
         {
             var used = await _unitOfWork.Bookings.CountAsync(b => b.PromotionId == promo.Id);
@@ -502,7 +506,7 @@ public class ShowtimeService : IShowtimeService
         var vatAmount = Math.Round(subtotal * vatRate, 0, MidpointRounding.AwayFromZero);
         var grandTotal = subtotal + vatAmount;
 
-        var (promo, discount, error) = await ResolvePromoAsync(code, seatTotal, foodTotal, grandTotal);
+        var (promo, discount, error) = await ResolvePromoAsync(code, userId, seatTotal, foodTotal, grandTotal);
         if (error != null || promo is null)
             return new PromoPreviewResult { Ok = false, Message = error ?? "Mã giảm giá không hợp lệ." };
 
@@ -589,7 +593,7 @@ public class ShowtimeService : IShowtimeService
         var grossTotal = subtotal + vatAmount;
 
         // Áp mã giảm giá (validate lại server-side); mã không hợp lệ -> báo lỗi, không đặt.
-        var (promo, promoDiscount, promoError) = await ResolvePromoAsync(promoCode, seatTotal, foodTotal, grossTotal);
+        var (promo, promoDiscount, promoError) = await ResolvePromoAsync(promoCode, userId, seatTotal, foodTotal, grossTotal);
         if (promoError != null) return BookingConfirmResult.Fail(promoError);
         var afterPromo = grossTotal - promoDiscount;
 
