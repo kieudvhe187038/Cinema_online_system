@@ -1,11 +1,11 @@
-@* Trang Lịch Chiếu công khai: chọn ngày + lọc theo phim/phòng, suất chiếu nhóm theo phim. *@
+@* Trang Lịch Chiếu công khai: chọn ngày + lọc theo phim/thể loại/độ tuổi/loại phòng, suất chiếu nhóm theo phim. *@
 @model Cinema_System.Application.ViewModels.ShowtimePageViewModel
 @{
     ViewData["Title"] = "Lịch Chiếu";
 
-    // Tạo URL giữ nguyên bộ lọc phim/phòng khi đổi ngày trên thanh ngày.
+    // Tạo URL giữ nguyên bộ lọc khi đổi ngày trên thanh ngày.
     string DateUrl(DateOnly d) => Url.Action("Index", "Showtime",
-        new { movieId = Model.MovieId, roomId = Model.RoomId, date = d.ToString("yyyy-MM-dd") })!;
+        new { movieId = Model.MovieId, genreId = Model.GenreId, ageRating = Model.AgeRating, roomTypeId = Model.RoomTypeId, date = d.ToString("yyyy-MM-dd") })!;
 
     // Nhãn thứ trong tuần cho thanh chọn ngày.
     string[] weekdays = { "CN", "T2", "T3", "T4", "T5", "T6", "T7" };
@@ -18,7 +18,7 @@
 
     <div>
         <h1 class="font-heading text-3xl font-black uppercase tracking-tight text-tertiary">Lịch Chiếu Phim</h1>
-        <p class="mt-1 text-sm text-slate-500">Xem suất chiếu theo phim, phòng và ngày.</p>
+        <p class="mt-1 text-sm text-slate-500">Xem suất chiếu theo phim, thể loại, độ tuổi và loại phòng.</p>
     </div>
 
     <!-- Thanh chọn ngày -->
@@ -35,48 +35,61 @@
         }
     </div>
 
-    <!-- Bộ lọc phim / phòng / ngày -->
+    <!-- Bộ lọc phim / thể loại / độ tuổi / loại phòng -->
     <form method="get" action="@Url.Action("Index", "Showtime")"
-          class="grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:grid-cols-2 lg:grid-cols-4">
+          class="grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:grid-cols-2 lg:grid-cols-5">
+        @* Giữ nguyên ngày đang chọn ở thanh ngày khi áp dụng bộ lọc. *@
+        <input type="hidden" name="date" value="@Model.SelectedDate.ToString("yyyy-MM-dd")" />
+
         <div class="flex flex-col gap-1.5">
             <label class="text-xs font-bold uppercase tracking-wide text-slate-500">Phim</label>
             <select name="movieId" class="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
-                @{
-                    if (Model.MovieId == null) { <option value="" selected>Tất cả phim</option> }
-                    else { <option value="">Tất cả phim</option> }
-                    foreach (var m in Model.Movies)
-                    {
-                        if (m.Id == Model.MovieId) { <option value="@m.Id" selected>@m.Name</option> }
-                        else { <option value="@m.Id">@m.Name</option> }
-                    }
+                <option value="">Tất cả phim</option>
+                @foreach (var m in Model.Movies)
+                {
+                    if (m.Id == Model.MovieId) { <option value="@m.Id" selected>@m.Name</option> }
+                    else { <option value="@m.Id">@m.Name</option> }
                 }
             </select>
         </div>
         <div class="flex flex-col gap-1.5">
-            <label class="text-xs font-bold uppercase tracking-wide text-slate-500">Phòng chiếu</label>
-            <select name="roomId" class="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
-                @{
-                    if (Model.RoomId == null) { <option value="" selected>Tất cả phòng</option> }
-                    else { <option value="">Tất cả phòng</option> }
-                    foreach (var r in Model.Rooms)
-                    {
-                        if (r.Id == Model.RoomId) { <option value="@r.Id" selected>@r.Name</option> }
-                        else { <option value="@r.Id">@r.Name</option> }
-                    }
+            <label class="text-xs font-bold uppercase tracking-wide text-slate-500">Thể loại</label>
+            <select name="genreId" class="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                <option value="">Tất cả thể loại</option>
+                @foreach (var g in Model.Genres)
+                {
+                    if (g.Id == Model.GenreId) { <option value="@g.Id" selected>@g.Name</option> }
+                    else { <option value="@g.Id">@g.Name</option> }
                 }
             </select>
         </div>
         <div class="flex flex-col gap-1.5">
-            <label class="text-xs font-bold uppercase tracking-wide text-slate-500">Ngày</label>
-            <input type="date" name="date" value="@Model.SelectedDate.ToString("yyyy-MM-dd")"
-                   min="@today.ToString("yyyy-MM-dd")"
-                   class="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+            <label class="text-xs font-bold uppercase tracking-wide text-slate-500">Độ tuổi</label>
+            <select name="ageRating" class="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                <option value="">Tất cả độ tuổi</option>
+                @foreach (var a in Model.AgeRatings)
+                {
+                    if (a == Model.AgeRating) { <option value="@a" selected>@a</option> }
+                    else { <option value="@a">@a</option> }
+                }
+            </select>
+        </div>
+        <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-bold uppercase tracking-wide text-slate-500">Loại phòng</label>
+            <select name="roomTypeId" class="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                <option value="">Tất cả loại phòng</option>
+                @foreach (var rt in Model.RoomTypes)
+                {
+                    if (rt.Id == Model.RoomTypeId) { <option value="@rt.Id" selected>@rt.Name</option> }
+                    else { <option value="@rt.Id">@rt.Name</option> }
+                }
+            </select>
         </div>
         <div class="flex items-end gap-2">
             <button type="submit" class="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-dark">
                 <span class="material-symbols-outlined text-[18px]">filter_list</span> Lọc
             </button>
-            @if (Model.MovieId != null || Model.RoomId != null)
+            @if (Model.MovieId != null || Model.GenreId != null || !string.IsNullOrEmpty(Model.AgeRating) || Model.RoomTypeId != null)
             {
                 <a href="@Url.Action("Index", "Showtime", new { date = Model.SelectedDate.ToString("yyyy-MM-dd") })"
                    class="rounded-lg px-3 py-2 text-sm font-medium text-slate-500 transition hover:text-primary">Xóa lọc</a>

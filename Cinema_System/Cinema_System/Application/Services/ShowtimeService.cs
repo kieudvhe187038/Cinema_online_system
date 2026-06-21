@@ -17,6 +17,9 @@ public class ShowtimeService : IShowtimeService
     // Giá trị quy đổi 1 điểm thưởng khi dùng để giảm giá (₫).
     private const int PointValueVnd = 100;
 
+    // Số lượng tối đa cho mỗi loại đồ ăn trong một đơn.
+    private const int MaxFoodPerItem = 20;
+
     // Nhận UnitOfWork + AutoMapper qua DI (mapping các mảnh phẳng; phần tính toán vẫn dựng tay).
     public ShowtimeService(IUnitOfWork unitOfWork, IMapper mapper)
     {
@@ -24,8 +27,8 @@ public class ShowtimeService : IShowtimeService
         _mapper = mapper;
     }
 
-    // Lấy dữ liệu trang lịch chiếu: lọc theo phim/phòng/ngày + tùy chọn dropdown.
-    public async Task<ShowtimePageViewModel> GetShowtimePageAsync(Guid? movieId, Guid? roomId, DateOnly? date)
+    // Lấy dữ liệu trang lịch chiếu: lọc theo phim/thể loại/độ tuổi/loại phòng + ngày + tùy chọn dropdown.
+    public async Task<ShowtimePageViewModel> GetShowtimePageAsync(Guid? movieId, Guid? genreId, string? ageRating, Guid? roomTypeId, DateOnly? date)
     {
         var now = DateTime.Now;
         var today = DateOnly.FromDateTime(now);
@@ -38,15 +41,17 @@ public class ShowtimeService : IShowtimeService
         // Mốc bắt đầu: nếu là hôm nay thì chỉ lấy suất từ thời điểm hiện tại trở đi (bỏ suất đã qua trong ngày).
         var lowerBound = selectedDate == today ? now : selectedDate.ToDateTime(TimeOnly.MinValue);
 
-        // Suất chiếu trong ngày đã chọn (từ hiện tại trở đi), lọc thêm theo phim/phòng nếu có.
+        // Suất chiếu trong ngày đã chọn (từ hiện tại trở đi), lọc thêm theo phim/thể loại/độ tuổi/loại phòng nếu có.
         var showtimes = await _unitOfWork.Showtimes.GetAllAsync(
             predicate: s =>
                 s.StartTime >= lowerBound && s.StartTime < dayEnd &&
                 (movieId == null || s.MovieId == movieId) &&
-                (roomId == null || s.RoomId == roomId) &&
+                (genreId == null || s.Movie.Genres.Any(g => g.Id == genreId)) &&
+                (ageRating == null || s.Movie.AgeRating == ageRating) &&
+                (roomTypeId == null || s.Room.RoomTypeId == roomTypeId) &&
                 s.Status != "Cancelled",
             include: q => q
-                .Include(s => s.Movie)
+                .Include(s => s.Movie).ThenInclude(m => m.Genres)
                 .Include(s => s.Room).ThenInclude(r => r.RoomType)
                 .Include(s => s.Room).ThenInclude(r => r.Cinema),
             orderBy: q => q.OrderBy(s => s.StartTime));
@@ -68,24 +73,32 @@ public class ShowtimeService : IShowtimeService
             Status = s.Status
         }).ToList();
 
-        // Tùy chọn dropdown: phim & phòng (kèm tên rạp).
+        // Tùy chọn dropdown: phim, thể loại, độ tuổi, loại phòng.
         var movies = await _unitOfWork.Movies.GetAllAsync(
             orderBy: q => q.OrderBy(m => m.Title));
-        var rooms = await _unitOfWork.Rooms.GetAllAsync(
-            include: q => q.Include(r => r.Cinema),
-            orderBy: q => q.OrderBy(r => r.Name));
+        var genres = await _unitOfWork.Genres.GetAllAsync(
+            orderBy: q => q.OrderBy(g => g.Name));
+        var roomTypes = await _unitOfWork.RoomTypes.GetAllAsync(
+            orderBy: q => q.OrderBy(rt => rt.Name));
+        // Danh sách độ tuổi: lấy các giá trị khác null đang có trên phim.
+        var ageRatings = movies
+            .Where(m => !string.IsNullOrEmpty(m.AgeRating))
+            .Select(m => m.AgeRating!)
+            .Distinct()
+            .OrderBy(a => a)
+            .ToList();
 
         return new ShowtimePageViewModel
         {
             MovieId = movieId,
-            RoomId = roomId,
+            GenreId = genreId,
+            AgeRating = ageRating,
+            RoomTypeId = roomTypeId,
             SelectedDate = selectedDate,
             Movies = movies.Select(m => new ShowtimeFilterOption { Id = m.Id, Name = m.Title }).ToList(),
-            Rooms = rooms.Select(r => new ShowtimeFilterOption
-            {
-                Id = r.Id,
-                Name = r.Cinema != null ? $"{r.Name} — {r.Cinema.Name}" : r.Name
-            }).ToList(),
+            Genres = genres.Select(g => new ShowtimeFilterOption { Id = g.Id, Name = g.Name }).ToList(),
+            AgeRatings = ageRatings,
+            RoomTypes = roomTypes.Select(rt => new ShowtimeFilterOption { Id = rt.Id, Name = rt.Name }).ToList(),
             // Thanh chọn ngày: 14 ngày kể từ hôm nay (không có ngày quá khứ).
             AvailableDates = Enumerable.Range(0, 14)
                 .Select(i => today.AddDays(i))
@@ -400,7 +413,7 @@ public class ShowtimeService : IShowtimeService
             .Select(kv =>
             {
                 var line = _mapper.Map<FoodLineItem>(foods[kv.Key]);
-                line.Quantity = kv.Value;
+                line.Quantity = Math.Min(MaxFoodPerItem, kv.Value);   // kẹp tối đa 20/loại
                 return line;
             }).ToList();
     }

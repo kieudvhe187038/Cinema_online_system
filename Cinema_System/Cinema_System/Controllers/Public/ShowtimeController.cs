@@ -37,10 +37,10 @@ namespace Cinema_System.Controllers.Public
         // Id user hiện tại (lấy từ claim đăng nhập).
         private Guid CurrentUserId => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-        // Xem lịch chiếu, lọc theo phim / phòng / ngày (mặc định hôm nay).
-        public async Task<IActionResult> Index(Guid? movieId, Guid? roomId, DateOnly? date)
+        // Xem lịch chiếu, lọc theo phim / thể loại / độ tuổi / loại phòng / ngày (mặc định hôm nay).
+        public async Task<IActionResult> Index(Guid? movieId, Guid? genreId, string? ageRating, Guid? roomTypeId, DateOnly? date)
         {
-            var vm = await _showtimeService.GetShowtimePageAsync(movieId, roomId, date);
+            var vm = await _showtimeService.GetShowtimePageAsync(movieId, genreId, ageRating, roomTypeId, date);
             return View(vm);
         }
 
