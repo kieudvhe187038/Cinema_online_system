@@ -40,4 +40,26 @@ public class ShowtimeCalendarViewModel
     
     /// <summary>Tỷ lệ phần trăm suất chiếu đã được đặt vé</summary>
     public int ConfirmedRate { get; set; }
+
+    /// <summary>Tổng số lịch chiếu của phim đang tìm kiếm (toàn bộ hệ thống)</summary>
+    public int? SearchMovieTotalShowtimes { get; set; }
+
+    /// <summary>Tổng số lịch chiếu trong tuần này (tất cả các phòng)</summary>
+    public int WeekTotalShowtimes { get; set; }
+
+    /// <summary>Số lượng lịch chiếu tuần này theo trạng thái Scheduled</summary>
+    public int WeekScheduledShowtimes { get; set; }
+
+    /// <summary>Số lượng lịch chiếu tuần này theo trạng thái Live</summary>
+    public int WeekLiveShowtimes { get; set; }
+
+    /// <summary>Số lượng lịch chiếu tuần này theo trạng thái Completed</summary>
+    public int WeekCompletedShowtimes { get; set; }
+
+    /// <summary>Số lượng lịch chiếu tuần này theo trạng thái Cancelled</summary>
+    public int WeekCancelledShowtimes { get; set; }
+
+    /// <summary>Tổng số lịch chiếu trong tháng này (tất cả các phòng)</summary>
+    public int MonthTotalShowtimes { get; set; }
 }
+

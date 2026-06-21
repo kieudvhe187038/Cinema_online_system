@@ -55,6 +55,9 @@ builder.Services.AddScoped<ISeatTypeService, SeatTypeService>();
 builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 
+// Đăng ký Background Service tự động cập nhật trạng thái lịch chiếu
+builder.Services.AddHostedService<ShowtimeStatusBackgroundService>();
+
 // Session lưu thông tin đăng ký tạm thời (chờ xác nhận OTP).
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>

@@ -16,8 +16,10 @@
 <div class="max-w-[760px] mx-auto mb-8">
     <h1 class="font-head text-2xl font-extrabold text-[#191c1d] mb-6">Chỉnh sửa suất chiếu</h1>
 
+
+
     @* Form chỉnh sửa thông tin suất chiếu *@
-    <form method="post" action="@Url.Action("Edit", "Showtime", new { id = Model.Id })">
+    <form id="editShowtimeForm" method="post" action="@Url.Action("Edit", "Showtime", new { id = Model.Id })">
         @Html.AntiForgeryToken()
         
         @* Card chứa các trường thông tin chính (Phim, Phòng, Giờ, Trạng thái) *@
@@ -25,112 +27,168 @@
             <p class="@sectionTitle">Thông tin suất chiếu</p>
             <div asp-validation-summary="ModelOnly" class="text-red-700 text-sm mb-4"></div>
 
+            @if (Model.HasBookings)
+            {
+                <div class="mb-5 p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm flex flex-col gap-1 col-span-2">
+                    <span class="font-bold">⚠️ Cảnh báo: Suất chiếu đã có khách đặt chỗ hoặc mua vé!</span>
+                    <span>Bạn không thể chỉnh sửa phim, phòng chiếu hoặc thời gian của suất chiếu này.</span>
+                </div>
+            }
+
             <div class="grid grid-cols-2 gap-x-5 gap-y-4">
                 <div class="mb-3.5 col-span-2">
                     <label asp-for="MovieId" class="@fieldLabel"></label>
-                    <select asp-for="MovieId" class="@fieldInput">
-                        <option value="">-- Chọn phim --</option>
-                        @foreach (var movie in Model.AvailableMovies)
-                        {
-                            if (movie.Id == Model.MovieId)
+                    @if (Model.HasBookings)
+                    {
+                        <select class="@fieldInput" disabled>
+                            <option value="">-- Chọn phim --</option>
+                            @foreach (var movie in Model.AvailableMovies)
                             {
-                                <option value="@movie.Id" selected>@movie.Name</option>
+                                if (movie.Id == Model.MovieId)
+                                {
+                                    <option value="@movie.Id" selected>@movie.Name</option>
+                                }
+                                else
+                                {
+                                    <option value="@movie.Id">@movie.Name</option>
+                                }
                             }
-                            else
+                        </select>
+                        <input type="hidden" asp-for="MovieId" />
+                    }
+                    else
+                    {
+                        <select asp-for="MovieId" class="@fieldInput">
+                            <option value="">-- Chọn phim --</option>
+                            @foreach (var movie in Model.AvailableMovies)
                             {
-                                <option value="@movie.Id">@movie.Name</option>
+                                if (movie.Id == Model.MovieId)
+                                {
+                                    <option value="@movie.Id" selected>@movie.Name</option>
+                                }
+                                else
+                                {
+                                    <option value="@movie.Id">@movie.Name</option>
+                                }
                             }
-                        }
-                    </select>
+                        </select>
+                    }
                     <span asp-validation-for="MovieId" class="@fieldError"></span>
                 </div>
                 <div class="mb-3.5 col-span-2">
                     <label asp-for="RoomId" class="@fieldLabel"></label>
-                    <select asp-for="RoomId" class="@fieldInput">
-                        <option value="">-- Chọn phòng --</option>
-                        @foreach (var room in Model.AvailableRooms)
-                        {
-                            if (room.Id == Model.RoomId)
+                    @if (Model.HasBookings)
+                    {
+                        <select class="@fieldInput" disabled>
+                            <option value="">-- Chọn phòng --</option>
+                            @foreach (var room in Model.AvailableRooms)
                             {
-                                <option value="@room.Id" selected>@room.Name</option>
+                                if (room.Id == Model.RoomId)
+                                {
+                                    <option value="@room.Id" selected>@room.Name</option>
+                                }
+                                else
+                                {
+                                    <option value="@room.Id">@room.Name</option>
+                                }
                             }
-                            else
+                        </select>
+                        <input type="hidden" asp-for="RoomId" />
+                    }
+                    else
+                    {
+                        <select asp-for="RoomId" class="@fieldInput">
+                            <option value="">-- Chọn phòng --</option>
+                            @foreach (var room in Model.AvailableRooms)
                             {
-                                <option value="@room.Id">@room.Name</option>
+                                if (room.Id == Model.RoomId)
+                                {
+                                    <option value="@room.Id" selected>@room.Name</option>
+                                }
+                                else
+                                {
+                                    <option value="@room.Id">@room.Name</option>
+                                }
                             }
-                        }
-                    </select>
+                        </select>
+                    }
                     <span asp-validation-for="RoomId" class="@fieldError"></span>
                 </div>
 
-                <div class="mb-3.5 grid grid-cols-2 gap-x-5">
+                <div class="mb-3.5 grid grid-cols-2 gap-x-5 col-span-2">
                     <div>
                         <label class="@fieldLabel">Ngày bắt đầu</label>
-                        <input id="StartDate" name="StartDate" type="date" value="@Model.StartTime.ToString("yyyy-MM-dd")" class="@fieldInput" />
+                        @if (Model.HasBookings)
+                        {
+                            <input id="StartDate" type="date" value="@Model.StartTime.ToString("yyyy-MM-dd")" class="@fieldInput" disabled />
+                        }
+                        else
+                        {
+                            <input id="StartDate" name="StartDate" type="date" value="@Model.StartTime.ToString("yyyy-MM-dd")" class="@fieldInput" />
+                        }
                     </div>
                     <div>
                         <label class="@fieldLabel">Giờ bắt đầu</label>
-                        <input id="StartTimeInput" name="StartTimeInput" type="time" step="60" value="@Model.StartTime.ToString("HH:mm")" class="@fieldInput" />
+                        @if (Model.HasBookings)
+                        {
+                            <input id="StartTimeInput" type="time" step="60" value="@Model.StartTime.ToString("HH:mm")" class="@fieldInput" disabled />
+                        }
+                        else
+                        {
+                            <input id="StartTimeInput" name="StartTimeInput" type="time" step="60" value="@Model.StartTime.ToString("HH:mm")" class="@fieldInput" />
+                        }
                     </div>
                 </div>
                 <input id="StartTime" name="StartTime" type="hidden" value="@Model.StartTime.ToString("yyyy-MM-ddTHH:mm")" />
                 <span asp-validation-for="StartTime" class="@fieldError"></span>
-                <div class="mb-3.5 grid grid-cols-2 gap-x-5">
-                    <div>
-                        <label class="@fieldLabel">Ngày kết thúc</label>
-                        <input id="EndDate" name="EndDate" type="date" value="@Model.EndTime.ToString("yyyy-MM-dd")" class="@fieldInput" />
-                    </div>
-                    <div>
-                        <label class="@fieldLabel">Giờ kết thúc</label>
-                        <input id="EndTimeInput" name="EndTimeInput" type="time" step="60" value="@Model.EndTime.ToString("HH:mm")" class="@fieldInput" />
-                    </div>
-                </div>
-                <input id="EndTime" name="EndTime" type="hidden" value="@Model.EndTime.ToString("yyyy-MM-ddTHH:mm")" />
-                <span asp-validation-for="EndTime" class="@fieldError"></span>
-
+                
                 <div class="mb-3.5 col-span-2">
-                    <label asp-for="Status" class="@fieldLabel"></label>
-                    <select asp-for="Status" class="@fieldInput">
-                        <option value="Scheduled">Scheduled</option>
-                        <option value="Live">Live</option>
-                        <option value="Completed">Completed</option>
-                        <option value="Cancelled">Cancelled</option>
-                    </select>
-                    <span asp-validation-for="Status" class="@fieldError"></span>
+                    <div class="text-sm text-gray-500 italic mt-2">
+                        * Giờ kết thúc sẽ được hệ thống tự động tính toán dựa trên thời lượng phim.
+                    </div>
+                    <div class="text-sm text-gray-500 italic mt-1">
+                        * Hệ thống sẽ tự động cộng thêm 20 phút dọn dẹp sau khi phim kết thúc.
+                    </div>
                 </div>
-            </div>
-        </div>
-
-        <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <button id="showtimeSubmit" type="submit" class="px-5 py-2.5 bg-primary text-white rounded-lg font-semibold hover:bg-primary-dark transition-colors">Lưu</button>
-                <a class="px-5 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50" href="@Url.Action("Calendar", "Showtime")">Hủy</a>
             </div>
     </form>
 
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            @if (!Model.HasBookings)
+            {
+                <button id="showtimeSubmit" form="editShowtimeForm" type="submit" class="px-5 py-2.5 bg-primary text-white rounded-lg font-semibold hover:bg-primary-dark transition-colors">Lưu</button>
+            }
+            <a class="px-5 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50" href="@Url.Action("Calendar", "Showtime")">Quay lại</a>
+        </div>
+
+        @if (Model.HasBookings)
+        {
+            <form method="post" action="@Url.Action("Cancel", "Showtime", new { id = Model.Id })" onsubmit="return confirm('Bạn có chắc chắn muốn HỦY suất chiếu này không? Việc hủy suất chiếu sẽ hủy tất cả vé đã đặt.');">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="px-5 py-2.5 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors">Hủy suất chiếu</button>
+            </form>
+        }
+        else
+        {
             <form method="post" action="@Url.Action("Delete", "Showtime", new { id = Model.Id })" onsubmit="return confirm('Bạn có chắc chắn muốn xóa suất chiếu này không?');">
                 @Html.AntiForgeryToken()
                 <button type="submit" class="px-5 py-2.5 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors">Xóa suất chiếu</button>
             </form>
-        </div>
+        }
+    </div>
 </div>
 <script>
-    // Tự động đồng bộ giá trị ngày và giờ riêng lẻ vào các input hidden (StartTime, EndTime) để gửi lên Controller
+    // Tự động đồng bộ giá trị ngày và giờ riêng lẻ vào input hidden (StartTime) để gửi lên Controller
     (function () {
-        var form = document.querySelector('form');
+        var form = document.getElementById('editShowtimeForm');
         var startDate = document.getElementById('StartDate');
         var startTime = document.getElementById('StartTimeInput');
-        var endDate = document.getElementById('EndDate');
-        var endTime = document.getElementById('EndTimeInput');
         var startHidden = document.getElementById('StartTime');
-        var endHidden = document.getElementById('EndTime');
 
         function syncHidden() {
             if (startDate && startTime && startHidden) {
                 startHidden.value = startDate.value + 'T' + startTime.value;
-            }
-            if (endDate && endTime && endHidden) {
-                endHidden.value = endDate.value + 'T' + endTime.value;
             }
         }
 
@@ -140,7 +198,7 @@
         }
 
         // Lắng nghe sự kiện thay đổi của các trường ngày giờ
-        [startDate, startTime, endDate, endTime].forEach(function (el) {
+        [startDate, startTime].forEach(function (el) {
             if (el) el.addEventListener('change', syncHidden);
         });
     })();

@@ -130,4 +130,17 @@ public class ShowtimeController : Controller
             result.Succeeded ? "Đã xóa suất chiếu." : result.Error;
         return RedirectToAction(nameof(Calendar));
     }
+
+    /// <summary>
+    /// Hủy suất chiếu
+    /// </summary>
+    [HttpPost("Cancel/{id}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Cancel(Guid id)
+    {
+        var result = await _showtimeService.CancelAsync(id);
+        TempData[result.Succeeded ? "Success" : "Error"] =
+            result.Succeeded ? "Đã hủy suất chiếu." : result.Error;
+        return RedirectToAction(nameof(Calendar));
+    }
 }

@@ -16,6 +16,8 @@
 <div class="max-w-[760px] mx-auto mb-8">
     <h1 class="font-head text-2xl font-extrabold text-[#191c1d] mb-6">Tạo suất chiếu mới</h1>
 
+
+
     @* Form nhập liệu thông tin suất chiếu *@
     <form method="post" action="@Url.Action("Create", "Showtime")">
         @Html.AntiForgeryToken()
@@ -75,28 +77,13 @@
                 </div>
                 <input id="StartTime" name="StartTime" type="hidden" value="@Model.StartTime.ToString("yyyy-MM-ddTHH:mm")" />
                 <span asp-validation-for="StartTime" class="@fieldError"></span>
-                <div class="mb-3.5 grid grid-cols-2 gap-x-5">
-                    <div>
-                        <label class="@fieldLabel">Ngày kết thúc</label>
-                        <input id="EndDate" name="EndDate" type="date" value="@Model.EndTime.ToString("yyyy-MM-dd")" class="@fieldInput" />
-                    </div>
-                    <div>
-                        <label class="@fieldLabel">Giờ kết thúc</label>
-                        <input id="EndTimeInput" name="EndTimeInput" type="time" step="60" value="@Model.EndTime.ToString("HH:mm")" class="@fieldInput" />
-                    </div>
-                </div>
-                <input id="EndTime" name="EndTime" type="hidden" value="@Model.EndTime.ToString("yyyy-MM-ddTHH:mm")" />
-                <span asp-validation-for="EndTime" class="@fieldError"></span>
-
                 <div class="mb-3.5 col-span-2">
-                    <label asp-for="Status" class="@fieldLabel"></label>
-                    <select asp-for="Status" class="@fieldInput">
-                        <option value="Scheduled">Scheduled</option>
-                        <option value="Live">Live</option>
-                        <option value="Completed">Completed</option>
-                        <option value="Cancelled">Cancelled</option>
-                    </select>
-                    <span asp-validation-for="Status" class="@fieldError"></span>
+                    <div class="text-sm text-gray-500 italic mt-2">
+                        * Giờ kết thúc sẽ được hệ thống tự động tính toán dựa trên thời lượng phim.
+                    </div>
+                    <div class="text-sm text-gray-500 italic mt-1">
+                        * Hệ thống sẽ tự động cộng thêm 20 phút dọn dẹp sau khi phim kết thúc.
+                    </div>
                 </div>
             </div>
         </div>
@@ -108,22 +95,16 @@
     </form>
 </div>
 <script>
-    // Tự động đồng bộ giá trị ngày và giờ riêng lẻ vào các input hidden (StartTime, EndTime) để gửi lên Controller
+    // Tự động đồng bộ giá trị ngày và giờ riêng lẻ vào input hidden (StartTime) để gửi lên Controller
     (function () {
         var form = document.querySelector('form');
         var startDate = document.getElementById('StartDate');
         var startTime = document.getElementById('StartTimeInput');
-        var endDate = document.getElementById('EndDate');
-        var endTime = document.getElementById('EndTimeInput');
         var startHidden = document.getElementById('StartTime');
-        var endHidden = document.getElementById('EndTime');
 
         function syncHidden() {
             if (startDate && startTime && startHidden) {
                 startHidden.value = startDate.value + 'T' + startTime.value;
-            }
-            if (endDate && endTime && endHidden) {
-                endHidden.value = endDate.value + 'T' + endTime.value;
             }
         }
 
@@ -133,7 +114,7 @@
         }
         
         // Lắng nghe sự kiện thay đổi của các trường ngày giờ
-        [startDate, startTime, endDate, endTime].forEach(function (el) {
+        [startDate, startTime].forEach(function (el) {
             if (el) el.addEventListener('change', syncHidden);
         });
     })();

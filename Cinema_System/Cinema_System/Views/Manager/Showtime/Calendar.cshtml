@@ -52,6 +52,8 @@
     </div>
 </div>
 
+
+
 @* Khu vực form chứa các bộ lọc (phòng chiếu, trạng thái, từ khóa) *@
 <div class="w-full mb-6">
     <div class="mx-auto w-full max-w-[1300px]">
@@ -142,6 +144,55 @@
     </div>
 </div>
 
+@* Khu vực Dashboard thống kê *@
+<div class="mx-auto w-full max-w-[1300px] mb-6">
+    <div class="grid grid-cols-1 @(string.IsNullOrEmpty(Model.Search) ? "md:grid-cols-2" : "md:grid-cols-3") gap-5">
+        @* Card 1: Thống kê tuần này *@
+        <div class="bg-white rounded-2xl border border-[#e8eaed] p-5 shadow-sm hover:shadow-md transition-all duration-300 flex items-start gap-4">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-sm">
+                <span class="material-symbols-outlined" style="font-size:24px">calendar_view_week</span>
+            </div>
+            <div class="min-w-0 flex-1">
+                <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Suất chiếu tuần này</span>
+                <div class="text-3xl font-extrabold text-[#191c1d] mt-1">@Model.WeekTotalShowtimes</div>
+                <div class="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs text-gray-500">
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-orange-400"></span> @Model.WeekScheduledShowtimes Sched</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span> @Model.WeekLiveShowtimes Live</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-green-500"></span> @Model.WeekCompletedShowtimes Comp</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> @Model.WeekCancelledShowtimes Canc</span>
+                </div>
+            </div>
+        </div>
+
+        @* Card 2: Thống kê tháng này *@
+        <div class="bg-white rounded-2xl border border-[#e8eaed] p-5 shadow-sm hover:shadow-md transition-all duration-300 flex items-start gap-4">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-gradient-to-br from-purple-500 to-pink-600 text-white shadow-sm">
+                <span class="material-symbols-outlined" style="font-size:24px">calendar_month</span>
+            </div>
+            <div class="min-w-0 flex-1">
+                <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Suất chiếu tháng này</span>
+                <div class="text-3xl font-extrabold text-[#191c1d] mt-1">@Model.MonthTotalShowtimes</div>
+                <span class="text-xs text-gray-500 mt-2 block font-medium">Tháng @Model.WeekStart.ToString("MM/yyyy") (theo phòng đang chọn)</span>
+            </div>
+        </div>
+
+        @* Card 3: Kết quả tìm kiếm *@
+        @if (!string.IsNullOrEmpty(Model.Search))
+        {
+            <div class="bg-white rounded-2xl border border-[#e8eaed] p-5 shadow-sm hover:shadow-md transition-all duration-300 flex items-start gap-4 border-l-4 border-l-primary">
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-gradient-to-br from-orange-400 to-red-500 text-white shadow-sm">
+                    <span class="material-symbols-outlined" style="font-size:24px">search</span>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Kết quả tìm kiếm phim</span>
+                    <div class="text-3xl font-extrabold text-primary mt-1">@Model.SearchMovieTotalShowtimes</div>
+                    <span class="text-xs text-gray-500 mt-2 block font-medium">Tổng lịch chiếu chứa phim "<span class="text-primary font-semibold">@Model.Search</span>" (theo phòng đang chọn)</span>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
 @* Khu vực chính hiển thị lịch chiếu tuần dưới dạng timeline lưới *@
 <div class="bg-white rounded-xl border border-[#e8eaed] shadow-sm overflow-hidden mx-auto max-w-[1300px]">
     <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
@@ -196,54 +247,34 @@
                 </div>
                 <div class="grid grid-cols-[120px_repeat(7,minmax(0,1fr))]">
                     <div class="py-3 border-r border-gray-200 bg-gradient-to-b from-[#fafbfc] to-[#f5f7fa]">
-                        @for (int hour = 0; hour <= 2; hour++)
+                        @for (int hour = 0; hour <= 23; hour++)
                         {
-                            <div class="px-4 text-sm font-medium text-gray-600 border-b border-gray-150" style="height:100px;display:flex;align-items:flex-start;padding-top:8px">@(hour.ToString("00")):00</div>
-                        }
-                        @for (int hour = 8; hour <= 23; hour++)
-                        {
-                            <div class="px-4 text-sm font-medium text-gray-600 border-b border-gray-150" style="height:100px;display:flex;align-items:flex-start;padding-top:8px">@(hour.ToString("00")):00</div>
+                            <div class="px-4 text-sm font-medium text-gray-600 border-b border-gray-150" style="height:80px;display:flex;align-items:flex-start;padding-top:8px">@(hour.ToString("00")):00</div>
                         }
                     </div>
                     @foreach (var day in Model.WeekDays)
                     {
-                        <div class="border-l border-gray-200 min-h-[1900px] relative px-2 py-3 bg-white hover:bg-[#f9fafb] transition-colors">
-                            <div class="timeline-container relative w-full" style="height:1900px;border:1px solid #e5e7eb;border-radius:8px;background:#fbfcfe;overflow-y:auto;box-shadow:inset 0 1px 3px rgba(0,0,0,0.05)">
+                        <div class="border-l border-gray-200 min-h-[1920px] relative px-2 py-3 bg-white hover:bg-[#f9fafb] transition-colors">
+                            <div class="timeline-container relative w-full" style="height:1920px;border:1px solid #e5e7eb;border-radius:8px;background:#fbfcfe;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,0.05)">
                                 @* Tính toán và hiển thị các khối suất chiếu cho ngày hiện tại *@
                                 @{
-                                    // Timeline layout: 00:00-02:00 hiển thị ở trên, sau đó 08:00-24:00.
+                                    // Timeline layout: 24 giờ liên tục.
                                     var currentDayStart = day.Date;
-                                    var earlyStartLimit = currentDayStart;
-                                    var earlyEndLimit = currentDayStart.AddHours(2);
-                                    var lateStartLimit = currentDayStart.AddHours(8);
-                                    var lateEndLimit = currentDayStart.AddHours(24);
+                                    var endOfDayLimit = currentDayStart.AddHours(24);
 
                                     var dayShows = Model.Showtimes
-                                        .Where(s => s.EndTime > currentDayStart && s.StartTime < lateEndLimit)
+                                        .Where(s => s.EndTime > currentDayStart && s.StartTime < endOfDayLimit)
                                         .OrderBy(s => s.StartTime)
                                         .ToList();
 
                                     var blocks = new List<ShowtimeBlock>();
                                     foreach (var st in dayShows)
                                     {
-                                        if (st.EndTime > earlyStartLimit && st.StartTime < earlyEndLimit)
+                                        var blockStart = st.StartTime < currentDayStart ? currentDayStart : st.StartTime;
+                                        var blockEnd = st.EndTime > endOfDayLimit ? endOfDayLimit : st.EndTime;
+                                        if (blockEnd > blockStart)
                                         {
-                                            var blockStart = st.StartTime < earlyStartLimit ? earlyStartLimit : st.StartTime;
-                                            var blockEnd = st.EndTime > earlyEndLimit ? earlyEndLimit : st.EndTime;
-                                            if (blockEnd > blockStart)
-                                            {
-                                                blocks.Add(new ShowtimeBlock { Show = st, Start = blockStart, End = blockEnd, Column = 0 });
-                                            }
-                                        }
-
-                                        if (st.EndTime > lateStartLimit && st.StartTime < lateEndLimit)
-                                        {
-                                            var blockStart = st.StartTime < lateStartLimit ? lateStartLimit : st.StartTime;
-                                            var blockEnd = st.EndTime > lateEndLimit ? lateEndLimit : st.EndTime;
-                                            if (blockEnd > blockStart)
-                                            {
-                                                blocks.Add(new ShowtimeBlock { Show = st, Start = blockStart, End = blockEnd, Column = 0 });
-                                            }
+                                            blocks.Add(new ShowtimeBlock { Show = st, Start = blockStart, End = blockEnd, Column = 0 });
                                         }
                                     }
 
@@ -270,55 +301,34 @@
                                     }
 
                                     var cols = Math.Max(1, columnEnds.Count);
-                                    var earlySegmentHeight = 300.0;
-                                    var lateSegmentHeight = 1600.0;
-                                    var totalHeight = earlySegmentHeight + lateSegmentHeight;
+                                    var totalHeight = 1920.0;
                                 }
 
-                                @* render hour background lines - adjusted for new layout *@
-                                @for (int h = 0; h <= 2; h++)
+                                @* render hour background lines *@
+                                @for (int h = 0; h <= 24; h++)
                                 {
-                                    var top = (h * 100.0) / totalHeight * 100.0;
-                                    <div style="position:absolute;left:0;right:0;top:@(top)% ;height:0.5px;background:rgba(0,0,0,0.04)"></div>
-                                }
-                                @for (int h = 8; h <= 23; h++)
-                                {
-                                    var top = (earlySegmentHeight + (h - 8) * 100.0) / totalHeight * 100.0;
+                                    var top = (h * 80.0) / totalHeight * 100.0;
                                     <div style="position:absolute;left:0;right:0;top:@(top)% ;height:0.5px;background:rgba(0,0,0,0.04)"></div>
                                 }
 
                                 @* render blocks *@
                                 @foreach (var b in blocks)
                                 {
-                                    double topPercent, heightPercent;
                                     var dayStartOfDay = day.Date;
-                                    var earlyEnd = day.Date.AddHours(2);
-                                    var eightAM = day.Date.AddHours(8);
-
-                                    if (b.Start < earlyEnd)
-                                    {
-                                        // Block in 00:00-02:00 section
-                                        topPercent = ((b.Start - dayStartOfDay).TotalMinutes) / (2 * 60.0) * (earlySegmentHeight / totalHeight * 100.0);
-                                        heightPercent = ((b.End - b.Start).TotalMinutes) / (2 * 60.0) * (earlySegmentHeight / totalHeight * 100.0);
-                                    }
-                                    else
-                                    {
-                                        // Block in 08:00-24:00 section
-                                        topPercent = ((earlySegmentHeight) + ((b.Start - eightAM).TotalMinutes) / (16 * 60.0) * lateSegmentHeight) / totalHeight * 100.0;
-                                        heightPercent = ((b.End - b.Start).TotalMinutes) / (16 * 60.0) * lateSegmentHeight / totalHeight * 100.0;
-                                    }
+                                    double topPercent = ((b.Start - dayStartOfDay).TotalMinutes) / (24 * 60.0) * 100.0;
+                                    double heightPercent = ((b.End - b.Start).TotalMinutes) / (24 * 60.0) * 100.0;
 
                                     var widthPercent = 100.0 / cols;
                                     var leftPercent = b.Column * widthPercent;
-                                    var tooltipText = $"{b.Show.MovieTitle} — {b.Show.RoomName} {b.Start:HH:mm}-{b.End:HH:mm}";
+                                    var tooltipText = $"{b.Show.MovieTitle} — {b.Show.RoomName} {b.Show.StartTime:HH:mm}-{b.Show.EndTime:HH:mm}";
                                     var editUrl = Url.Action("Edit","Showtime", new { id = b.Show.Id });
-                                    var minHeightPx = 60;
-                                    var blockHeightPx = Math.Max(minHeightPx, (heightPercent / 100.0) * 1600.0);
-                                    <div class="show-block absolute rounded-lg shadow-md border border-l-4 overflow-hidden hover:shadow-lg transition-all" data-tooltip="@tooltipText" data-edit-url="@editUrl" style="top:@(topPercent)% ; left:@(leftPercent)% ; width:calc(@(widthPercent - 3)% - 4px) ; height:@(heightPercent)% ; min-height:@(minHeightPx)px; background:linear-gradient(135deg, #ffffff 0%, #f9fafb 100%); border-color:#e5e7eb; border-left-color:#3b82f6; padding:10px; box-sizing:border-box; cursor:pointer;">
+                                    var minHeightPx = 40;
+                                    var blockHeightPx = Math.Max(minHeightPx, (heightPercent / 100.0) * totalHeight);
+                                    <div class="show-block absolute rounded-lg shadow-md border border-l-4 overflow-hidden hover:shadow-lg transition-all" data-tooltip="@tooltipText" data-edit-url="@editUrl" style="top:@(topPercent)% ; left:@(leftPercent)% ; width:calc(@(widthPercent - 3)% - 4px) ; height:@(heightPercent)% ; min-height:@(minHeightPx)px; background:linear-gradient(135deg, #ffffff 0%, #f9fafb 100%); border-color:#e5e7eb; border-left-color:#3b82f6; padding:8px 10px; box-sizing:border-box; cursor:pointer;">
                                         <div class="text-xs font-bold text-[#191c1d] truncate uppercase tracking-wide">@b.Show.MovieTitle</div>
-                                        <div class="text-xs text-gray-600 mt-1 font-medium">@b.Show.RoomName</div>
-                                        <div class="text-xs text-gray-500 mt-1">@b.Start.ToString("HH:mm") - @b.End.ToString("HH:mm")</div>
-                                        <div class="inline-flex items-center gap-1 text-[9px] font-bold uppercase text-white px-2 py-0.5 rounded-full mt-2 @StatusClass(b.Show.Status)" style="width:fit-content;">
+                                        <div class="text-xs text-gray-600 mt-0.5 font-medium">@b.Show.RoomName</div>
+                                        <div class="text-xs text-gray-500 mt-0.5">@b.Show.StartTime.ToString("HH:mm") - @b.Show.EndTime.ToString("HH:mm")</div>
+                                        <div class="inline-flex items-center gap-1 text-[9px] font-bold uppercase text-white px-2 py-0.5 rounded-full mt-1.5 @StatusClass(b.Show.Status)" style="width:fit-content;">
                                             @b.Show.Status
                                         </div>
                                     </div>
@@ -370,8 +380,24 @@
                 tooltip.textContent = txt;
                 tooltip.style.display = 'block';
                 const rect = this.getBoundingClientRect();
-                tooltip.style.left = (rect.right + 12) + 'px';
-                tooltip.style.top = (rect.top) + 'px';
+                
+                // Tránh lỗi tooltip bị cắt mất (ra khỏi màn hình)
+                const tooltipWidth = tooltip.offsetWidth;
+                const tooltipHeight = tooltip.offsetHeight;
+                
+                // Xử lý tràn viền phải
+                if (rect.right + 12 + tooltipWidth > window.innerWidth) {
+                    tooltip.style.left = (rect.left - 12 - tooltipWidth) + 'px';
+                } else {
+                    tooltip.style.left = (rect.right + 12) + 'px';
+                }
+                
+                // Xử lý tràn viền dưới
+                if (rect.top + tooltipHeight > window.innerHeight) {
+                    tooltip.style.top = (window.innerHeight - tooltipHeight - 12) + 'px';
+                } else {
+                    tooltip.style.top = (rect.top) + 'px';
+                }
             });
             
             // Ẩn tooltip khi chuột rời khỏi khối suất chiếu
