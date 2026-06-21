@@ -62,6 +62,9 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
+builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddScoped<IRoomManagementService, RoomManagementService>();
+
 // Cookie Authentication.
 var authBuilder = builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
