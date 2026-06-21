@@ -67,9 +67,18 @@
                             </td>
                             <td class="py-4 align-top">
                                 <p class="font-semibold text-tertiary">@item.ActionLabel</p>
-                                <p class="text-xs text-gray-400 line-clamp-2" title="@item.Description">
-                                    @(string.IsNullOrEmpty(item.Description) ? "-" : item.Description)
-                                </p>
+                                @if (!string.IsNullOrEmpty(item.Description))
+                                {
+                                    <p class="desc-text text-xs text-gray-400 line-clamp-2 cursor-pointer transition-all"
+                                       onclick="this.classList.toggle('line-clamp-2')"
+                                       title="Bấm để xem đầy đủ">
+                                        @item.Description
+                                    </p>
+                                }
+                                else
+                                {
+                                    <p class="text-xs text-gray-400">-</p>
+                                }
                             </td>
                             <td class="py-4 text-right align-top font-bold @(item.IsPositive ? "text-green-600" : "text-primary")">
                                 @item.PointsDisplay
