@@ -2,9 +2,15 @@
 @{
     var badge = ViewData["Badge"] as string;
     var badgeClass = ViewData["BadgeClass"] as string ?? "from-orange-500 to-red-500";
-    var poster = string.IsNullOrEmpty(Model.PosterUrl)
+    var rawPoster = Model.PosterUrl;
+    if (!string.IsNullOrEmpty(rawPoster) && !rawPoster.StartsWith("/") && !rawPoster.StartsWith("http"))
+    {
+        rawPoster = $"/images/{rawPoster}";
+    }
+    
+    var poster = string.IsNullOrEmpty(rawPoster)
         ? $"https://placehold.co/300x420?text={Uri.EscapeDataString(Model.Title)}&font=raleway"
-        : Model.PosterUrl;
+        : rawPoster;
     var hideBuyButton = ViewData["HideBuyButton"] as bool? ?? false;
 }
 <article class="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-300/50 bg-white shadow-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-2">

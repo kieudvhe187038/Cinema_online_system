@@ -182,22 +182,34 @@ public class MovieService : IMovieService
     }
 
     // Tìm phim theo từ khóa (đẩy điều kiện xuống SQL) và trả về kết quả phân trang.
-    public async Task<PagedResult<MovieDTO>> SearchMoviesAsync(string keyword, int page, int pageSize)
+    public async Task<PagedResult<MovieDTO>> SearchMoviesAsync(string keyword, string? tab, int page, int pageSize)
     {
-        var searchTerm = keyword?.Trim().ToLowerInvariant() ?? string.Empty;
+        var searchTerm = keyword?.Trim() ?? string.Empty;
 
         if (string.IsNullOrWhiteSpace(searchTerm))
         {
             return PagedResult<MovieDTO>.Create(Array.Empty<MovieDTO>(), page, pageSize);
         }
 
+        string? statusFilter = tab?.ToLowerInvariant() switch
+        {
+            "now" => MovieStatus.NowShowing,
+            "coming" => MovieStatus.ComingSoon,
+            "special" => MovieStatus.Special,
+            _ => null
+        };
+
+        var pattern = $"%{searchTerm}%";
+
         var searchResults = await _unitOfWork.Movies.GetAllAsync(
             predicate: movie =>
-                movie.Status != null && movie.Status.ToLower() != MovieStatus.StoppedLower &&
-                ((movie.Title != null && movie.Title.ToLower().Contains(searchTerm)) ||
-                (movie.Description != null && movie.Description.ToLower().Contains(searchTerm)) ||
-                (movie.Director != null && movie.Director.ToLower().Contains(searchTerm)) ||
-                (movie.CastMembers != null && movie.CastMembers.ToLower().Contains(searchTerm))),
+                movie.Status != null &&
+                !EF.Functions.Like(EF.Functions.Collate(movie.Status, "Latin1_General_CI_AS"), "%stopped%") &&
+                (statusFilter == null || EF.Functions.Like(EF.Functions.Collate(movie.Status, "Latin1_General_CI_AS"), statusFilter)) &&
+                ((movie.Title != null && EF.Functions.Like(EF.Functions.Collate(movie.Title, "Latin1_General_CI_AS"), pattern)) ||
+                (movie.Description != null && EF.Functions.Like(EF.Functions.Collate(movie.Description, "Latin1_General_CI_AS"), pattern)) ||
+                (movie.Director != null && EF.Functions.Like(EF.Functions.Collate(movie.Director, "Latin1_General_CI_AS"), pattern)) ||
+                (movie.CastMembers != null && EF.Functions.Like(EF.Functions.Collate(movie.CastMembers, "Latin1_General_CI_AS"), pattern))),
             includeProperties: new[] { ShowtimesIncludeProperty, GenresIncludeProperty }
         );
 
