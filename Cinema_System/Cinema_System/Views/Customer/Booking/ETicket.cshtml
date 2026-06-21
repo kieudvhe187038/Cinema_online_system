@@ -69,16 +69,11 @@
 </div>
 
 <!-- Nút -->
-<div class="mx-auto mt-5 flex max-w-md gap-3">
+<div class="mx-auto mt-5 max-w-md">
     <button type="button" onclick="window.print()"
-            class="flex flex-1 items-center justify-center gap-2 rounded-xl bg-secondary px-4 py-3 font-semibold text-white hover:bg-tertiary transition">
+            class="flex w-full items-center justify-center gap-2 rounded-xl bg-secondary px-4 py-3 font-semibold text-white hover:bg-tertiary transition">
         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
-        Tải xuống
-    </button>
-    <button type="button" id="shareBtn"
-            class="flex flex-1 items-center justify-center gap-2 rounded-xl border-2 border-secondary px-4 py-3 font-semibold text-secondary hover:bg-secondary hover:text-white transition">
-        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" /></svg>
-        Chia sẻ
+        Tải xuống vé
     </button>
 </div>
 
@@ -87,16 +82,5 @@
     <script>
         var qrEl = document.getElementById("qrcode");
         if (qrEl) new QRCode(qrEl, { text: "@qrContent", width: 180, height: 180, colorDark: "#002F59", colorLight: "#ffffff" });
-
-        // Chia sẻ: dùng Web Share nếu có, không thì copy link
-        document.getElementById("shareBtn").addEventListener("click", async () => {
-            const url = window.location.href;
-            if (navigator.share) {
-                try { await navigator.share({ title: "Vé điện tử CineStar", url }); } catch { }
-            } else {
-                await navigator.clipboard.writeText(url);
-                alert("Đã copy link vé vào clipboard!");
-            }
-        });
     </script>
 }
