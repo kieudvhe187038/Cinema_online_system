@@ -31,7 +31,18 @@ namespace Cinema_System.Controllers.Staff
         public async Task<IActionResult> Seats(Guid roomId)
         {
             var data = await _roomService.GetRoomSeatsAsync(roomId);
-            if (data == null) return NotFound("Không tìm thấy phòng");
+
+            // Không tìm thấy phòng -> trả về view báo lỗi (vẫn nằm trong layout Staff),
+            if (data == null)
+            {
+                var allRooms = await _roomService.GetAllRoomsAsync();
+                var notFoundVm = new RoomSeatsViewModel
+                {
+                    AllRooms = allRooms.Select(r => _mapper.Map<RoomListItemViewModel>(r)).ToList()
+                };
+                Response.StatusCode = StatusCodes.Status404NotFound; // vẫn đúng chuẩn 404
+                return View("RoomNotFound", notFoundVm);
+            }
 
             var vm = _mapper.Map<RoomSeatsViewModel>(data);
 
