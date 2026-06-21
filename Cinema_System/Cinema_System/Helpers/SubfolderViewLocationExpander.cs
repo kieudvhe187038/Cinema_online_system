@@ -10,6 +10,7 @@ namespace Cinema_System.Helpers
         [
             "/Views/Admin/{1}/{0}.cshtml",
             "/Views/Manager/{1}/{0}.cshtml",
+            "/Views/Staff/{1}/{0}.cshtml",
             "/Views/Customer/{1}/{0}.cshtml",
             "/Views/Auth/{1}/{0}.cshtml",
             "/Views/Public/{1}/{0}.cshtml",
