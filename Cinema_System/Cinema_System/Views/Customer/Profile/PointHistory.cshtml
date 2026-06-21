@@ -67,7 +67,9 @@
                             </td>
                             <td class="py-4 align-top">
                                 <p class="font-semibold text-tertiary">@item.ActionLabel</p>
-                                <p class="text-xs text-gray-400">@(string.IsNullOrEmpty(item.Description) ? "-" : item.Description)</p>
+                                <p class="text-xs text-gray-400 line-clamp-2" title="@item.Description">
+                                    @(string.IsNullOrEmpty(item.Description) ? "-" : item.Description)
+                                </p>
                             </td>
                             <td class="py-4 text-right align-top font-bold @(item.IsPositive ? "text-green-600" : "text-primary")">
                                 @item.PointsDisplay
