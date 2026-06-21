@@ -136,7 +136,11 @@
 
             <div class="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
                 <span class="font-semibold text-slate-700">Tổng cộng</span>
-                <span id="grand-display" class="text-lg font-bold text-primary">@Model.GrandTotal.ToString("N0") ₫</span>
+                <span class="flex items-baseline gap-2">
+                    @* Giá gốc (gạch ngang) chỉ hiện khi có giảm bằng mã/điểm *@
+                    <span id="grand-original" class="hidden text-sm font-medium text-slate-400 line-through">@Model.GrandTotal.ToString("N0") ₫</span>
+                    <span id="grand-display" class="text-lg font-bold text-primary">@Model.GrandTotal.ToString("N0") ₫</span>
+                </span>
             </div>
 
             <button type="submit" id="confirm-btn"
@@ -209,6 +213,15 @@
                 } else {
                     discountRow.classList.add('hidden'); discountRow.classList.remove('flex');
                 }
+                // Có giảm (mã hoặc điểm) -> hiện giá gốc gạch ngang bên cạnh giá đã giảm.
+                const grandOriginal = document.getElementById('grand-original');
+                if (promoDiscount + pointsDisc > 0) {
+                    grandOriginal.textContent = vnd(grandTotal);
+                    grandOriginal.classList.remove('hidden');
+                } else {
+                    grandOriginal.classList.add('hidden');
+                }
+
                 grandDisplay.textContent = vnd(total);
                 payAmount.textContent = vnd(total);
             }

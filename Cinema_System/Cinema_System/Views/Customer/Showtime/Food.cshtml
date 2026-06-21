@@ -153,13 +153,15 @@
                     `<span class="font-semibold text-slate-800">${vnd(v.price * v.qty)}</span></div>`).join('');
             }
 
-            // Tăng/giảm số lượng từng món.
+            const MAX_PER_ITEM = 20;   // tối đa 20 phần mỗi loại đồ ăn
+
+            // Tăng/giảm số lượng từng món (kẹp trong [0, 20]).
             function changeQty(card, delta) {
                 const id = card.dataset.foodId;
                 const name = card.dataset.foodName;
                 const price = parseFloat(card.dataset.foodPrice) || 0;
                 const item = cart.get(id) || { name, price, qty: 0 };
-                item.qty = Math.max(0, item.qty + delta);
+                item.qty = Math.max(0, Math.min(MAX_PER_ITEM, item.qty + delta));
                 cart.set(id, item);
                 card.querySelector('.qty').textContent = item.qty;
                 render();
