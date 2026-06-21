@@ -80,6 +80,8 @@ namespace Cinema_System.Controllers.Public
                 var model = new CreateReviewDTO { MovieId = movieId };
                 ViewData["MovieTitle"] = movie.Title;
                 ViewData["MovieSlug"] = movie.Slug;
+                ViewData["PosterUrl"] = movie.PosterUrl;
+                ViewData["BannerUrl"] = movie.BannerUrl;
 
                 return View(model);
             }
@@ -106,6 +108,8 @@ namespace Cinema_System.Controllers.Public
                     ViewData["MovieId"] = reviewDTO.MovieId;
                     ViewData["MovieTitle"] = movie.Title;
                     ViewData["MovieSlug"] = movie.Slug;
+                    ViewData["PosterUrl"] = movie.PosterUrl;
+                    ViewData["BannerUrl"] = movie.BannerUrl;
                     return View(reviewDTO);
                 }
 
@@ -118,7 +122,7 @@ namespace Cinema_System.Controllers.Public
             try
             {
                 await _reviewService.CreateReviewAsync(userId, reviewDTO);
-                TempData["Success"] = "Cảm ơn bạn! Đánh giá của bạn đã được gửi. Chúng tôi sẽ duyệt và hiển thị trong thời gian sớm nhất.";
+                TempData["Success"] = "Cảm ơn bạn! Đánh giá của bạn đã được hiển thị ngay ở trang review phim.";
 
                 var movie = await _movieService.GetMovieByIdAsync(reviewDTO.MovieId);
                 return RedirectToAction("Details", "Movies", new { id = movie?.Slug ?? reviewDTO.MovieId.ToString() });
@@ -131,6 +135,8 @@ namespace Cinema_System.Controllers.Public
                     ViewData["MovieId"] = reviewDTO.MovieId;
                     ViewData["MovieTitle"] = movie.Title;
                     ViewData["MovieSlug"] = movie.Slug;
+                    ViewData["PosterUrl"] = movie.PosterUrl;
+                    ViewData["BannerUrl"] = movie.BannerUrl;
                 }
                 
                 // Log chi tiết lỗi để debugging

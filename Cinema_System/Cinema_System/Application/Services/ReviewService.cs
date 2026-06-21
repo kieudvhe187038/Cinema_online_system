@@ -85,7 +85,7 @@ public class ReviewService : IReviewService
     }
 
     /// <summary>
-    /// Tạo mới một đánh giá phim ở trạng thái chờ duyệt (status = pending)
+    /// Tạo mới một đánh giá phim ở trạng thái được phê duyệt ngay lập tức (status = approved)
     /// </summary>
     public async Task<ReviewDTO> CreateReviewAsync(Guid userId, CreateReviewDTO reviewDTO)
     {
@@ -96,7 +96,7 @@ public class ReviewService : IReviewService
             MovieId = reviewDTO.MovieId,
             Rating = reviewDTO.Rating,
             Comment = reviewDTO.Comment,
-            Status = "pending", // Đánh giá mới tạo luôn ở trạng thái chờ duyệt
+            Status = "approved", // Đánh giá mới tạo sẽ hiển thị ngay mà không cần duyệt
             CreatedAt = DateTime.Now
         };
 

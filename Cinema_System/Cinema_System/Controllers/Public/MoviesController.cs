@@ -55,7 +55,7 @@ namespace Cinema_System.Controllers.Public
             }
 
             var trimmed = searchQuery.Trim();
-            if (trimmed.Length > 30)
+            if (trimmed.Length > 100)
             {
                 return false;
             }
@@ -66,19 +66,18 @@ namespace Cinema_System.Controllers.Public
         /// <summary>
         /// Xử lý tìm kiếm phim theo từ khóa
         /// </summary>
-       
-        public async Task<IActionResult> Search([FromQuery(Name = "find")] string? searchQuery, int page = 1)
+        public async Task<IActionResult> Search([FromQuery(Name = "find")] string? searchQuery, string? tab = "now", int page = 1)
         {
             if (!IsValidSearchQuery(searchQuery))
             {
-                TempData["SearchError"] = "Từ khóa tìm kiếm chỉ được tối đa 30 ký tự và không chứa ký tự đặc biệt.";
-                return RedirectToAction("Index");
-            } 
+                TempData["SearchError"] = "Từ khóa tìm kiếm chỉ được tối đa 100 ký tự và không chứa ký tự đặc biệt.";
+                return RedirectToAction("Index", new { tab = tab ?? "now" });
+            }
 
             var keyword = searchQuery!.Trim();
-            // Thực hiện tìm kiếm phim có chứa từ khóa
-            var pagedMovies = await _movieService.SearchMoviesAsync(keyword, page, MoviePaging.DefaultPageSize);
-            var moviesPageViewModel = BuildViewModel(pagedMovies, selectedTab: "search", searchKeyword: keyword);
+            var selectedTab = string.IsNullOrWhiteSpace(tab) ? "now" : tab.ToLowerInvariant();
+            var pagedMovies = await _movieService.SearchMoviesAsync(keyword, selectedTab, page, MoviePaging.DefaultPageSize);
+            var moviesPageViewModel = BuildViewModel(pagedMovies, selectedTab: selectedTab, searchKeyword: keyword);
             ViewData["SearchKeyword"] = keyword;
             return View("Index", moviesPageViewModel);
         }
