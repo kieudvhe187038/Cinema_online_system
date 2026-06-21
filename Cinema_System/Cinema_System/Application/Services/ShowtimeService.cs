@@ -1,3 +1,4 @@
+using AutoMapper;
 using Cinema_System.Application.Common;
 using Cinema_System.Application.DTOs;
 using Cinema_System.Application.Interfaces;
@@ -11,14 +12,16 @@ namespace Cinema_System.Application.Services;
 public class ShowtimeService : IShowtimeService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IMapper _mapper;
 
     // Giá trị quy đổi 1 điểm thưởng khi dùng để giảm giá (₫).
     private const int PointValueVnd = 100;
 
-    // Nhận UnitOfWork qua DI để truy cập các repository (Showtimes, Seats, Tickets...).
-    public ShowtimeService(IUnitOfWork unitOfWork)
+    // Nhận UnitOfWork + AutoMapper qua DI (mapping các mảnh phẳng; phần tính toán vẫn dựng tay).
+    public ShowtimeService(IUnitOfWork unitOfWork, IMapper mapper)
     {
         _unitOfWork = unitOfWork;
+        _mapper = mapper;
     }
 
     // Lấy dữ liệu trang lịch chiếu: lọc theo phim/phòng/ngày + tùy chọn dropdown.
@@ -282,15 +285,7 @@ public class ShowtimeService : IShowtimeService
         var foods = await _unitOfWork.FoodBeverages.GetAllAsync(
             predicate: f => f.StockStatus == "In Stock",
             orderBy: q => q.OrderBy(f => f.Name));
-        var foodItems = foods.Select(f => new FoodBeverageDTO
-        {
-            Id = f.Id,
-            Name = f.Name,
-            Description = f.Description,
-            ImageUrl = f.ImageUrl,
-            Price = f.Price,
-            StockStatus = f.StockStatus
-        }).ToList();
+        var foodItems = _mapper.Map<List<FoodBeverageDTO>>(foods);
 
         // Thời gian giữ còn lại = tới hold sắp hết hạn sớm nhất.
         var secondsLeft = (int)Math.Max(0, (holds.Min(h => h.ExpiresAt) - now).TotalSeconds);
@@ -402,12 +397,11 @@ public class ShowtimeService : IShowtimeService
         var foods = (await _unitOfWork.FoodBeverages.GetAllAsync(predicate: f => ids.Contains(f.Id)))
             .ToDictionary(f => f.Id);
         return qtyById.Where(kv => foods.ContainsKey(kv.Key))
-            .Select(kv => new FoodLineItem
+            .Select(kv =>
             {
-                FbId = kv.Key,
-                Name = foods[kv.Key].Name,
-                Quantity = kv.Value,
-                Price = foods[kv.Key].Price
+                var line = _mapper.Map<FoodLineItem>(foods[kv.Key]);
+                line.Quantity = kv.Value;
+                return line;
             }).ToList();
     }
 
