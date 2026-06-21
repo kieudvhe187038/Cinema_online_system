@@ -12,5 +12,6 @@ public interface IShowtimeService
     Task<ShowtimeCalendarViewModel> GetCalendarAsync(Guid? roomId, string? status, string? search, DateTime? weekStart);
     Task<Result> CreateAsync(ShowtimeFormViewModel model);
     Task<Result> UpdateAsync(ShowtimeFormViewModel model);
+    Task<Result> CancelAsync(Guid id);
     Task<Result> DeleteAsync(Guid id);
 }

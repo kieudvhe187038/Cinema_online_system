@@ -27,6 +27,9 @@ public class ShowtimeFormViewModel : IValidatableObject
     [Display(Name = "Trạng thái")]
     public string Status { get; set; } = "Scheduled";
 
+    // Cờ đánh dấu suất chiếu đã có khách đặt vé chưa (Dùng để kiểm soát UI Edit/Cancel)
+    public bool HasBookings { get; set; }
+
     // Danh sách phim và phòng chiếu để populate dropdown trong form (không submit lên server)
     public IEnumerable<ItemOptionDTO> AvailableMovies { get; set; } = new List<ItemOptionDTO>();
     public IEnumerable<ItemOptionDTO> AvailableRooms { get; set; } = new List<ItemOptionDTO>();
@@ -38,10 +41,6 @@ public class ShowtimeFormViewModel : IValidatableObject
 
         if (RoomId == Guid.Empty)
             yield return new ValidationResult("Vui lòng chọn phòng chiếu.", new[] { nameof(RoomId) });
-
-        // Kiểm tra logic thời gian chiếu hợp lệ
-        if (StartTime >= EndTime)
-            yield return new ValidationResult("Thời gian kết thúc phải lớn hơn thời gian bắt đầu.", new[] { nameof(EndTime) });
 
         // Chỉ chặn lịch trong quá khứ đối với thao tác Tạo mới (Id = rỗng). Khi Edit thì cho phép sửa lịch cũ.
         if (Id == Guid.Empty && StartTime < DateTime.Now)
