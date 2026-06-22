@@ -1,0 +1,177 @@
+@model CreateReviewDTO
+
+@{
+    ViewData["Title"] = "Đánh giá phim";
+    var movieId = Model.MovieId != Guid.Empty ? Model.MovieId : (ViewData["MovieId"] as Guid? ?? Guid.Empty);
+    var movieTitle = ViewData["MovieTitle"] as string ?? "Phim";
+    var movieSlug = ViewData["MovieSlug"] as string;
+    
+    // Xử lý ảnh bìa và poster
+    var rawPoster = ViewData["PosterUrl"] as string;
+    var rawBanner = ViewData["BannerUrl"] as string;
+    
+    if (!string.IsNullOrEmpty(rawPoster) && !rawPoster.StartsWith("/") && !rawPoster.StartsWith("http"))
+    {
+        rawPoster = $"/images/{rawPoster}";
+    }
+    
+    if (!string.IsNullOrEmpty(rawBanner) && !rawBanner.StartsWith("/") && !rawBanner.StartsWith("http"))
+    {
+        rawBanner = $"/banner/{rawBanner}";
+    }
+
+    var posterUrl = string.IsNullOrEmpty(rawPoster) 
+        ? $"https://placehold.co/300x420?text={Uri.EscapeDataString(movieTitle)}" 
+        : rawPoster;
+        
+    var bannerUrl = string.IsNullOrEmpty(rawBanner) ? posterUrl : rawBanner;
+}
+
+<div class="min-h-screen bg-slate-50 font-body antialiased relative">
+    <!-- Cinematic Backdrop (Light Mode) -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute inset-0 bg-cover bg-center opacity-10 blur-3xl scale-110" style="background-image: url('@bannerUrl');"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-slate-50/60 via-slate-50/90 to-slate-50"></div>
+    </div>
+
+    <div class="relative mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8 z-10">
+        <!-- Header -->
+        <div class="mb-10 text-center">
+            <h1 class="text-3xl font-bold text-slate-900 tracking-tight sm:text-4xl lg:text-5xl mb-4">Chia sẻ cảm nhận của bạn</h1>
+            <p class="text-slate-600 text-lg">Đánh giá của bạn giúp cộng đồng chọn được phim hay!</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+            
+            <!-- Sidebar: Movie Info -->
+            <div class="lg:col-span-4 flex flex-col items-center lg:items-start space-y-6">
+                <div class="relative w-48 lg:w-full aspect-[3/4.5] rounded-2xl overflow-hidden shadow-xl border border-slate-200 group">
+                    <img src="@posterUrl" alt="@movieTitle" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-90"></div>
+                </div>
+                <div class="text-center lg:text-left w-full">
+                    <h2 class="text-2xl font-bold text-slate-900 mb-2 leading-tight">@movieTitle</h2>
+                    <a href="@Url.Action("Details", "Movies", new { id = movieSlug ?? movieId.ToString() })" class="inline-flex items-center justify-center lg:justify-start gap-2 text-sm font-medium text-slate-500 hover:text-primary transition">
+                        <span class="material-symbols-outlined text-sm">arrow_back</span>
+                        Quay lại trang chi tiết
+                    </a>
+                </div>
+            </div>
+
+            <!-- Main: Review Form -->
+            <div class="lg:col-span-8">
+                <div class="rounded-3xl border border-slate-200 bg-white/80 backdrop-blur-xl p-6 sm:p-10 shadow-xl relative overflow-hidden">
+                    <!-- Deco element -->
+                    <div class="absolute -top-24 -right-24 w-64 h-64 bg-primary/20 rounded-full blur-[80px] pointer-events-none"></div>
+
+                    <form method="post" asp-action="Create" asp-controller="Reviews" class="space-y-8 relative z-10">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="MovieId" value="@movieId" />
+
+                        @if (TempData["Error"] != null)
+                        {
+                            <div class="rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-4 text-sm text-red-200 flex items-center gap-3">
+                                <span class="material-symbols-outlined text-red-400">error</span>
+                                @TempData["Error"]
+                            </div>
+                        }
+                        <div asp-validation-summary="ModelOnly" class="text-sm text-red-400"></div>
+
+                        <!-- Rating Section -->
+                        <div class="space-y-4">
+                            <label class="block text-lg font-semibold text-slate-900">Chấm điểm phim <span class="text-primary">*</span></label>
+                            
+                            <div class="flex items-center gap-2 sm:gap-4 flex-wrap">
+                                @for (int i = 1; i <= 5; i++)
+                                {
+                                    <label class="relative cursor-pointer group">
+                                        <input type="radio" asp-for="Rating" name="Rating" value="@i" class="peer sr-only star-radio" />
+                                        <div class="flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-2xl text-slate-300 transition-all duration-300 peer-checked:border-primary peer-checked:bg-primary/10 peer-checked:text-primary peer-hover:border-primary/50 peer-hover:text-primary/80 hover:-translate-y-1">
+                                            ★
+                                        </div>
+                                    </label>
+                                }
+                            </div>
+                            <span asp-validation-for="Rating" class="block text-sm text-red-500 mt-2"></span>
+                        </div>
+
+                        <!-- Comment Section -->
+                        <div class="space-y-4">
+                            <label asp-for="Comment" class="flex items-center justify-between text-lg font-semibold text-slate-900">
+                                Bình luận 
+                                <span class="text-sm font-normal text-slate-500">(Tùy chọn)</span>
+                            </label>
+                            <div class="relative">
+                                <textarea id="comment" asp-for="Comment" maxlength="1000" rows="6" 
+                                    placeholder="Phim này có gì đặc sắc? Diễn viên đóng thế nào? Cốt truyện ra sao..." 
+                                    class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-slate-900 placeholder-slate-400 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none"></textarea>
+                                
+                                <div class="absolute bottom-4 right-4 text-xs font-medium text-slate-500 bg-slate-100/80 border border-slate-200 px-2 py-1 rounded-md backdrop-blur-md">
+                                    <span id="char-count">@((Model?.Comment?.Length ?? 0))</span>/1000
+                                </div>
+                            </div>
+                            <span asp-validation-for="Comment" class="block text-sm text-red-500"></span>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="pt-6 border-t border-slate-200 flex flex-col sm:flex-row gap-4 items-center justify-end">
+                            <a href="@Url.Action("Details", "Movies", new { id = movieSlug ?? movieId.ToString() })" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-8 py-3.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 hover:border-slate-300">
+                                Hủy bỏ
+                            </a>
+                            <button type="submit" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-primary to-orange-600 px-8 py-3.5 text-sm font-bold text-white shadow-lg shadow-primary/30 transition hover:shadow-xl hover:scale-105 active:scale-95">
+                                <span class="material-symbols-outlined text-sm">send</span>
+                                Gửi đánh giá
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const commentField = document.getElementById('comment');
+    const charCount = document.getElementById('char-count');
+    if (commentField && charCount) {
+        const updateCount = () => {
+            const value = commentField.value || '';
+            charCount.textContent = value.length;
+        };
+        commentField.addEventListener('input', updateCount);
+        updateCount();
+    }
+
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const rating = document.querySelector('input[name="Rating"]:checked');
+            if (!rating) {
+                e.preventDefault();
+                alert('Vui lòng chọn số sao để đánh giá phim.');
+            }
+        });
+    }
+
+    // Hover effect for star ratings to fill up previous stars
+    const starRadios = document.querySelectorAll('.star-radio');
+    starRadios.forEach((radio, index) => {
+        const container = radio.nextElementSibling;
+        
+        radio.parentElement.addEventListener('mouseenter', () => {
+            for(let i=0; i<=index; i++) {
+                const prevStar = starRadios[i].nextElementSibling;
+                if(!starRadios[i].checked) {
+                    prevStar.classList.add('!text-primary/60', '!border-primary/40');
+                }
+            }
+        });
+        
+        radio.parentElement.addEventListener('mouseleave', () => {
+            starRadios.forEach(r => {
+                const s = r.nextElementSibling;
+                s.classList.remove('!text-primary/60', '!border-primary/40');
+            });
+        });
+    });
+</script>
