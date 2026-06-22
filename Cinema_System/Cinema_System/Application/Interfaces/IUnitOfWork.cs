@@ -27,13 +27,23 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<Movie> Movies { get; }
 
-    IGenericRepository<Genre> Genres { get; }
+    IGenericRepository<Genre> Genres { get; } 
 
     IGenericRepository<RewardPointHistory> RewardPointHistories { get; }
 
     IGenericRepository<FoodBeverage> FoodBeverages { get; }
 
     IGenericRepository<BookingFood> BookingFoods { get; }
+
+    IGenericRepository<Review> Reviews { get; }
+
+    IGenericRepository<Booking> Bookings { get; }
+
+    IGenericRepository<Ticket> Tickets { get; }
+
+    IGenericRepository<SeatHold> SeatHolds { get; }
+
+    IGenericRepository<Showtime> Showtimes { get; }
 
     Task<int> SaveChangesAsync();
 }

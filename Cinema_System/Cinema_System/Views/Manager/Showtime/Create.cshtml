@@ -1,0 +1,121 @@
+@model Cinema_System.Application.ViewModels.ShowtimeFormViewModel
+@{
+    ViewData["Title"] = "Tạo suất chiếu";
+    Layout = "~/Views/Shared/_ManagerLayout.cshtml";
+}
+
+@{
+    const string fieldInput = "w-full px-3 py-2.5 border border-[#e0c0b2] rounded-lg bg-white text-sm box-border focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20";
+    const string fieldLabel = "block font-semibold text-[#584237] mb-1.5 text-sm";
+    const string fieldError = "block text-red-700 text-xs mt-1";
+    const string card = "bg-white rounded-xl shadow-sm p-7 mb-5";
+    const string sectionTitle = "font-bold text-base text-[#191c1d] mb-4 pb-2 border-b-2 border-[#edeeef]";
+}
+
+@* Tiêu đề của trang Tạo suất chiếu mới *@
+<div class="max-w-[760px] mx-auto mb-8">
+    <h1 class="font-head text-2xl font-extrabold text-[#191c1d] mb-6">Tạo suất chiếu mới</h1>
+
+
+
+    @* Form nhập liệu thông tin suất chiếu *@
+    <form method="post" action="@Url.Action("Create", "Showtime")">
+        @Html.AntiForgeryToken()
+        
+        @* Card chứa các trường thông tin chính (Phim, Phòng, Giờ, Trạng thái) *@
+        <div class="@card">
+            <p class="@sectionTitle">Thông tin suất chiếu</p>
+            <div asp-validation-summary="ModelOnly" class="text-red-700 text-sm mb-4"></div>
+
+            <div class="grid grid-cols-2 gap-x-5 gap-y-4">
+                <div class="mb-3.5 col-span-2">
+                    <label asp-for="MovieId" class="@fieldLabel"></label>
+                    <select asp-for="MovieId" class="@fieldInput">
+                        <option value="">-- Chọn phim --</option>
+                        @foreach (var movie in Model.AvailableMovies)
+                        {
+                            if (movie.Id == Model.MovieId)
+                            {
+                                <option value="@movie.Id" selected>@movie.Name</option>
+                            }
+                            else
+                            {
+                                <option value="@movie.Id">@movie.Name</option>
+                            }
+                        }
+                    </select>
+                    <span asp-validation-for="MovieId" class="@fieldError"></span>
+                </div>
+                <div class="mb-3.5 col-span-2">
+                    <label asp-for="RoomId" class="@fieldLabel"></label>
+                    <select asp-for="RoomId" class="@fieldInput">
+                        <option value="">-- Chọn phòng --</option>
+                        @foreach (var room in Model.AvailableRooms)
+                        {
+                            if (room.Id == Model.RoomId)
+                            {
+                                <option value="@room.Id" selected>@room.Name</option>
+                            }
+                            else
+                            {
+                                <option value="@room.Id">@room.Name</option>
+                            }
+                        }
+                    </select>
+                    <span asp-validation-for="RoomId" class="@fieldError"></span>
+                </div>
+
+                <div class="mb-3.5 grid grid-cols-2 gap-x-5">
+                    <div>
+                        <label class="@fieldLabel">Ngày bắt đầu</label>
+                        <input id="StartDate" name="StartDate" type="date" value="@Model.StartTime.ToString("yyyy-MM-dd")" class="@fieldInput" />
+                    </div>
+                    <div>
+                        <label class="@fieldLabel">Giờ bắt đầu</label>
+                        <input id="StartTimeInput" name="StartTimeInput" type="time" step="60" value="@Model.StartTime.ToString("HH:mm")" class="@fieldInput" />
+                    </div>
+                </div>
+                <input id="StartTime" name="StartTime" type="hidden" value="@Model.StartTime.ToString("yyyy-MM-ddTHH:mm")" />
+                <span asp-validation-for="StartTime" class="@fieldError"></span>
+                <div class="mb-3.5 col-span-2">
+                    <div class="text-sm text-gray-500 italic mt-2">
+                        * Giờ kết thúc sẽ được hệ thống tự động tính toán dựa trên thời lượng phim.
+                    </div>
+                    <div class="text-sm text-gray-500 italic mt-1">
+                        * Hệ thống sẽ tự động cộng thêm 20 phút dọn dẹp sau khi phim kết thúc.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button id="showtimeSubmit" type="submit" class="px-5 py-2.5 bg-primary text-white rounded-lg font-semibold hover:bg-primary-dark transition-colors">Lưu</button>
+            <a class="px-5 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50" href="@Url.Action("Calendar", "Showtime")">Hủy</a>
+        </div>
+    </form>
+</div>
+<script>
+    // Tự động đồng bộ giá trị ngày và giờ riêng lẻ vào input hidden (StartTime) để gửi lên Controller
+    (function () {
+        var form = document.querySelector('form');
+        var startDate = document.getElementById('StartDate');
+        var startTime = document.getElementById('StartTimeInput');
+        var startHidden = document.getElementById('StartTime');
+
+        function syncHidden() {
+            if (startDate && startTime && startHidden) {
+                startHidden.value = startDate.value + 'T' + startTime.value;
+            }
+        }
+
+        // Lắng nghe sự kiện submit để ghép ngày và giờ trước khi nộp form
+        if (form) {
+            form.addEventListener('submit', syncHidden);
+        }
+        
+        // Lắng nghe sự kiện thay đổi của các trường ngày giờ
+        [startDate, startTime].forEach(function (el) {
+            if (el) el.addEventListener('change', syncHidden);
+        });
+    })();
+</script>
