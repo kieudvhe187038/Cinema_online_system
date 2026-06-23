@@ -56,13 +56,14 @@ public class SeatTypeService : ISeatTypeService
 
     public async Task<Result> CreateAsync(SeatTypeFormViewModel model)
     {
-        var nameTaken = await _unitOfWork.SeatTypes.ExistsAsync(t => t.Name == model.Name);
+        var name = model.Name.Trim();
+        var nameTaken = await _unitOfWork.SeatTypes.ExistsAsync(t => t.Name == name);
         if (nameTaken)
             return Result.Failure("Tên loại ghế đã tồn tại.");
 
         var seatType = new SeatType
         {
-            Name = model.Name.Trim(),
+            Name = name,
             Capacity = model.Capacity,
             ColumnSpan = model.ColumnSpan
         };
@@ -79,12 +80,13 @@ public class SeatTypeService : ISeatTypeService
         if (seatType is null)
             return Result.Failure("Không tìm thấy loại ghế.");
 
+        var name = model.Name.Trim();
         var nameTaken = await _unitOfWork.SeatTypes.ExistsAsync(
-            t => t.Name == model.Name && t.Id != model.Id);
+            t => t.Name == name && t.Id != model.Id);
         if (nameTaken)
             return Result.Failure("Tên loại ghế đã tồn tại.");
 
-        seatType.Name = model.Name.Trim();
+        seatType.Name = name;
         seatType.Capacity = model.Capacity;
         seatType.ColumnSpan = model.ColumnSpan;
 
