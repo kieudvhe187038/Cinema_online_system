@@ -14,6 +14,11 @@ public class CounterBookingService : ICounterBookingService
     private const string TicketCancelled = "Cancelled";
     private const string OutOfStock = "Out of Stock";
 
+    // Phương thức thanh toán hợp lệ tại quầy (khớp với UI: Tiền mặt / Chuyển khoản).
+    // Chặn giá trị tùy ý / quá dài tràn vào cột Payments.payment_method NVARCHAR(100).
+    private static readonly HashSet<string> AllowedPaymentMethods =
+        new(StringComparer.OrdinalIgnoreCase) { "Cash", "Transfer" };
+
     private readonly IUnitOfWork _unitOfWork;
     private readonly IPricingService _pricing;
     private readonly IStaffContextService _staffContext;
@@ -246,6 +251,8 @@ public class CounterBookingService : ICounterBookingService
 
         // --- Thanh toán tại quầy ---
         var method = string.IsNullOrWhiteSpace(request.PaymentMethod) ? "Cash" : request.PaymentMethod.Trim();
+        if (!AllowedPaymentMethods.Contains(method))
+            return Result<Guid>.Failure("Phương thức thanh toán không hợp lệ.");
         decimal? cashReceived = null;
         decimal? changeAmount = null;
         if (method.Equals("Cash", StringComparison.OrdinalIgnoreCase))
