@@ -13,6 +13,7 @@ public class CounterBookingService : ICounterBookingService
     private const string HoldHolding = "Holding";
     private const string TicketCancelled = "Cancelled";
     private const string OutOfStock = "Out of Stock";
+    private const string ShowtimeScheduled = "Scheduled";
 
     // Phương thức thanh toán hợp lệ tại quầy (khớp với UI: Tiền mặt / Chuyển khoản).
     // Chặn giá trị tùy ý / quá dài tràn vào cột Payments.payment_method NVARCHAR(100).
@@ -161,6 +162,11 @@ public class CounterBookingService : ICounterBookingService
         var showtime = await _unitOfWork.Showtimes.GetWithRoomAndMovieAsync(request.ShowtimeId);
         if (showtime is null)
             return Result<Guid>.Failure("Không tìm thấy suất chiếu.");
+        // Chỉ cho đặt suất còn lịch chiếu và chưa bắt đầu (khớp filter ở danh sách suất chiếu).
+        if (!string.Equals(showtime.Status, ShowtimeScheduled, StringComparison.OrdinalIgnoreCase))
+            return Result<Guid>.Failure("Suất chiếu không còn nhận đặt vé.");
+        if (showtime.StartTime <= DateTime.Now)
+            return Result<Guid>.Failure("Suất chiếu đã bắt đầu, không thể đặt vé.");
 
         var seatIds = request.SeatIds.Distinct().ToList();
         var seats = await _unitOfWork.Seats.GetByIdsWithTypeAsync(seatIds);

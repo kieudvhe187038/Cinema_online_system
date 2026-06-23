@@ -97,7 +97,9 @@ public class PricingService : IPricingService
         if (c.DayOfWeek is not null)
         {
             hasCondition = true;
-            if (c.DayOfWeek.Value == (int)when.DayOfWeek) return true;
+            // DB quy ước day_of_week: 1=Chủ Nhật ... 7=Thứ Bảy (CK_PTime_day).
+            // .NET DayOfWeek: Sunday=0 ... Saturday=6 -> cộng 1 để khớp quy ước DB.
+            if (c.DayOfWeek.Value == (int)when.DayOfWeek + 1) return true;
         }
 
         if (c.StartTime is not null && c.EndTime is not null)
