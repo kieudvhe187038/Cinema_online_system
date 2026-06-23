@@ -8,6 +8,7 @@ namespace Cinema_System.Helpers
         [
             "/Views/Admin/{1}/{0}.cshtml",
             "/Views/Manager/{1}/{0}.cshtml",
+            "/Views/Staff/{1}/{0}.cshtml",
         ];
 
         public void PopulateValues(ViewLocationExpanderContext context) { }
