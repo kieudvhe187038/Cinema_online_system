@@ -33,6 +33,9 @@ builder.Services.AddScoped<IMemberService, MemberService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<ICounterBookingService, CounterBookingService>();
 
+// Inter3 (Staff) - check-in vé
+builder.Services.AddScoped<ITicketCheckinService, TicketCheckinService>();
+
 var app = builder.Build();
 
 // Dùng culture cố định (dấu "." cho số thập phân) để parse/format số nhất quán
