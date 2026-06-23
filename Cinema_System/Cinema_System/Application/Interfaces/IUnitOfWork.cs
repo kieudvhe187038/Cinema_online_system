@@ -4,7 +4,7 @@ namespace Cinema_System.Application.Interfaces;
 
 public interface IUnitOfWork : IDisposable
 {
-    IGenericRepository<User> Users { get; }
+    IUserRepository Users { get; }
 
     IGenericRepository<Role> Roles { get; }
 
@@ -12,15 +12,51 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<SeatType> SeatTypes { get; }
 
-    IGenericRepository<Seat> Seats { get; }
+    ISeatRepository Seats { get; }
 
     IGenericRepository<PriceSeatConfig> PriceSeatConfigs { get; }
 
     IGenericRepository<RoomType> RoomTypes { get; }
 
-    IGenericRepository<Room> Rooms { get; }
+    IRoomRepository Rooms { get; }
 
     IGenericRepository<PriceRoomTypeConfig> PriceRoomTypeConfigs { get; }
 
+    // --- Booking / counter-sale flow (Inter2 - Staff) ---
+    IBookingRepository Bookings { get; }
+
+    IGenericRepository<Ticket> Tickets { get; }
+
+    IGenericRepository<Payment> Payments { get; }
+
+    IGenericRepository<BookingFood> BookingFoods { get; }
+
+    IShowtimeRepository Showtimes { get; }
+
+    IGenericRepository<Movie> Movies { get; }
+
+    IGenericRepository<FoodBeverage> FoodBeverages { get; }
+
+    IGenericRepository<RewardPointHistory> RewardPointHistories { get; }
+
+    IGenericRepository<Promotion> Promotions { get; }
+
+    IGenericRepository<Vat> Vats { get; }
+
+    IGenericRepository<Cinema> Cinemas { get; }
+
+    IGenericRepository<SeatHold> SeatHolds { get; }
+
+    IGenericRepository<PriceBaseConfig> PriceBaseConfigs { get; }
+
+    IGenericRepository<PriceTimeConfig> PriceTimeConfigs { get; }
+
     Task<int> SaveChangesAsync();
+
+    /// <summary>
+    /// Lưu thay đổi nhưng trả về <c>false</c> khi vi phạm ràng buộc dữ liệu
+    /// (DbUpdateException) — backstop chống đặt trùng ghế khi có người đặt cùng lúc.
+    /// Các loại lỗi khác vẫn được ném ra như thường.
+    /// </summary>
+    Task<bool> TrySaveChangesAsync();
 }

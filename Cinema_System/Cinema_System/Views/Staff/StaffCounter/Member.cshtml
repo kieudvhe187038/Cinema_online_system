@@ -1,0 +1,57 @@
+@{
+    ViewData["Title"] = "Tra Cứu Thành Viên";
+}
+
+@section Styles {
+    <style>
+        .ml-wrap { max-width: 560px; margin: 6rem auto 3rem; padding: 0 1.5rem; }
+        .ml-title { font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: var(--on-surface); margin-bottom: 1.5rem; }
+        .ml-card { background: var(--white); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); padding: 1.75rem; }
+        .ml-row { display: flex; gap: .5rem; }
+        .ml-input { flex: 1; padding: .6rem .8rem; border: 1px solid var(--outline-variant); border-radius: var(--radius); font-family: var(--font-body); }
+        .ml-btn { padding: .6rem 1.3rem; border: none; border-radius: var(--radius); font-weight: 600; cursor: pointer; background: var(--primary); color: #fff; font-family: var(--font-body); }
+        .ml-result { margin-top: 1.5rem; }
+        .ml-line { display: flex; justify-content: space-between; padding: .5rem 0; border-bottom: 1px dashed var(--surface-container); font-size: .92rem; }
+        .ml-line span:first-child { color: var(--on-surface-variant); }
+        .ml-line span:last-child { font-weight: 600; }
+        .ml-empty { margin-top: 1.5rem; color: #b45309; font-size: .9rem; }
+        .ml-points { color: var(--primary); font-weight: 800; font-size: 1.2rem; }
+    </style>
+}
+
+<div class="ml-wrap">
+    <h1 class="ml-title">Tra Cứu Thành Viên</h1>
+    <div class="ml-card">
+        <div class="ml-row">
+            <input type="text" id="phone" class="ml-input" placeholder="Nhập số điện thoại khách hàng..." />
+            <button type="button" id="btn" class="ml-btn">Tra cứu</button>
+        </div>
+        <div id="result"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function lookup() {
+            const phone = $('#phone').val().trim();
+            const $r = $('#result');
+            if (!phone) { $r.html(''); return; }
+            $.getJSON('/Staff/Counter/LookupMember', { phone: phone }, function (res) {
+                if (res.found) {
+                    const m = res.member;
+                    $r.html(
+                        '<div class="ml-result">' +
+                        '<div class="ml-line"><span>Họ tên</span><span>' + m.fullName + '</span></div>' +
+                        '<div class="ml-line"><span>SĐT</span><span>' + (m.maskedPhone || '—') + '</span></div>' +
+                        '<div class="ml-line"><span>Email</span><span>' + (m.email || '—') + '</span></div>' +
+                        '<div class="ml-line"><span>Điểm thưởng</span><span class="ml-points">' + (m.rewardPoints || 0) + '</span></div>' +
+                        '</div>');
+                } else {
+                    $r.html('<div class="ml-empty">Không tìm thấy thành viên với SĐT này.</div>');
+                }
+            });
+        }
+        $('#btn').on('click', lookup);
+        $('#phone').on('keypress', function (e) { if (e.which === 13) lookup(); });
+    </script>
+}

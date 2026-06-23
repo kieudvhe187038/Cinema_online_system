@@ -1,0 +1,338 @@
+@model CounterBookingViewModel
+@{
+    ViewData["Title"] = "Đặt Vé Tại Quầy";
+}
+
+@section Styles {
+    <style>
+        .ct-wrap { max-width: 1280px; margin: 5.5rem auto 3rem; padding: 0 1.5rem; }
+        .ct-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; gap: 1rem; flex-wrap: wrap; }
+        .ct-title { font-family: var(--font-head); font-size: 1.7rem; font-weight: 800; color: var(--on-surface); }
+        .ct-staff { font-size: .85rem; color: var(--on-surface-variant); }
+        .ct-alert { padding: .75rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: .9rem; }
+        .ct-alert.error { background: #fde8e8; color: #b91c1c; border: 1px solid #b91c1c33; }
+        .ct-alert.warn { background: #fef9c3; color: #854d0e; border: 1px solid #854d0e33; }
+        .ct-grid { display: grid; grid-template-columns: 1fr 360px; gap: 1.25rem; align-items: start; }
+        .ct-card { background: var(--white); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); padding: 1.25rem 1.4rem; margin-bottom: 1.25rem; }
+        .ct-card h3 { font-family: var(--font-head); font-size: 1.05rem; font-weight: 700; margin-bottom: .9rem; color: var(--on-surface); }
+        .ct-step { display: inline-flex; width: 1.4rem; height: 1.4rem; border-radius: 50%; background: var(--primary); color: #fff; align-items: center; justify-content: center; font-size: .8rem; margin-right: .5rem; }
+        label.ct-lbl { display:block; font-weight:600; color: var(--on-surface-variant); margin-bottom:.35rem; font-size:.85rem; }
+        .ct-input, .ct-select { width: 100%; padding: .55rem .75rem; border: 1px solid var(--outline-variant); border-radius: var(--radius); background: var(--white); font-family: var(--font-body); }
+        .ct-showtimes { display: flex; flex-wrap: wrap; gap: .6rem; }
+        .ct-show { border: 1px solid var(--outline-variant); border-radius: var(--radius); padding: .55rem .8rem; cursor: pointer; font-size: .85rem; background: var(--white); text-align: left; }
+        .ct-show:hover { border-color: var(--primary); }
+        .ct-show.active { border-color: var(--primary); background: rgba(243,112,33,.08); }
+        .ct-show .t { font-weight: 700; color: var(--on-surface); }
+        .ct-show .m { color: var(--on-surface-variant); font-size: .78rem; }
+        .ct-screen { text-align:center; background: var(--surface-container); color: var(--on-surface-variant); border-radius: 999px; padding: .35rem; font-size: .8rem; letter-spacing: .3em; margin-bottom: 1rem; }
+        .ct-seatmap { display: flex; flex-direction: column; gap: .4rem; align-items: center; overflow-x: auto; }
+        .ct-seatrow { display: flex; gap: .4rem; align-items: center; }
+        .ct-rowlabel { width: 1.2rem; font-size: .75rem; color: var(--on-surface-variant); font-weight: 700; }
+        .seat { min-width: 2rem; height: 2rem; border-radius: .35rem .35rem .55rem .55rem; border: 1px solid var(--outline-variant); background: var(--white); font-size: .7rem; cursor: pointer; color: var(--on-surface); }
+        .seat:hover:not(.occupied):not(.selected) { border-color: var(--primary); }
+        .seat.selected { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .seat.occupied { background: #e5e7eb; color: #9ca3af; cursor: not-allowed; }
+        .ct-legend { display:flex; gap:1rem; justify-content:center; margin-top:1rem; font-size:.78rem; color: var(--on-surface-variant); }
+        .ct-legend span { display:inline-flex; align-items:center; gap:.35rem; }
+        .ct-dot { width:.9rem; height:.9rem; border-radius:.2rem; display:inline-block; border:1px solid var(--outline-variant); }
+        .ct-foodrow { display:flex; align-items:center; justify-content:space-between; gap:.5rem; padding:.45rem 0; border-bottom:1px dashed var(--surface-container); font-size:.88rem; }
+        .ct-qty { width: 4rem; padding:.35rem; border:1px solid var(--outline-variant); border-radius: var(--radius); text-align:center; }
+        .ct-summary { position: sticky; top: 5.5rem; }
+        .ct-sumrow { display:flex; justify-content:space-between; padding:.3rem 0; font-size:.9rem; }
+        .ct-sumrow.total { font-size:1.15rem; font-weight:800; color: var(--primary); border-top:1px solid var(--surface-container); margin-top:.5rem; padding-top:.6rem; }
+        .ct-chips { display:flex; flex-wrap:wrap; gap:.3rem; margin:.4rem 0; }
+        .ct-chip { background: rgba(243,112,33,.1); color: var(--primary); border-radius:999px; padding:.15rem .55rem; font-size:.75rem; font-weight:600; }
+        .ct-pay { display:flex; gap:.5rem; margin:.5rem 0; }
+        .ct-pay label { flex:1; border:1px solid var(--outline-variant); border-radius: var(--radius); padding:.5rem; text-align:center; cursor:pointer; font-size:.85rem; }
+        .ct-pay input { display:none; }
+        .ct-pay input:checked + span { font-weight:700; color: var(--primary); }
+        .ct-btn { width:100%; padding:.7rem; border:none; border-radius: var(--radius); font-weight:700; cursor:pointer; font-family: var(--font-body); background: var(--primary); color:#fff; font-size:.95rem; }
+        .ct-btn:disabled { background: var(--surface-container); color: var(--on-surface-variant); cursor: not-allowed; }
+        .ct-member { font-size:.83rem; margin-top:.4rem; }
+        .ct-member.ok { color:#166534; }
+        .ct-member.no { color:#b45309; }
+        @@media (max-width: 980px) { .ct-grid { grid-template-columns: 1fr; } .ct-summary { position: static; } }
+    </style>
+}
+
+<div class="ct-wrap">
+    <div class="ct-head">
+        <h1 class="ct-title">Đặt Vé Tại Quầy</h1>
+        <div class="ct-staff">Nhân viên: <strong>@Model.ActingStaffName</strong></div>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="ct-alert error">@TempData["Error"]</div>
+    }
+    @if (!Model.HasStaff)
+    {
+        <div class="ct-alert warn">Chưa có tài khoản nhân viên (role Staff) đang hoạt động — không thể tạo đơn. Vui lòng tạo nhân viên trước.</div>
+    }
+
+    <div class="ct-grid">
+        <div>
+            <div class="ct-card">
+                <h3><span class="ct-step">1</span>Chọn phim & suất chiếu</h3>
+                <label class="ct-lbl" for="movieSelect">Phim</label>
+                <select id="movieSelect" class="ct-select">
+                    <option value="">-- Chọn phim --</option>
+                    @foreach (var m in Model.Movies)
+                    {
+                        <option value="@m.Id">@m.Title @(m.DurationMinutes.HasValue ? $"({m.DurationMinutes} phút)" : "")</option>
+                    }
+                </select>
+
+                <div style="margin-top:1rem;">
+                    <label class="ct-lbl">Suất chiếu</label>
+                    <div id="showtimeList" class="ct-showtimes"><span class="ct-staff">Chọn phim để xem suất chiếu.</span></div>
+                </div>
+            </div>
+
+            <div class="ct-card" id="seatCard" style="display:none;">
+                <h3><span class="ct-step">2</span>Chọn ghế</h3>
+                <div class="ct-screen">MÀN HÌNH</div>
+                <div id="seatMap" class="ct-seatmap"></div>
+                <div class="ct-legend">
+                    <span><i class="ct-dot" style="background:var(--white)"></i> Trống</span>
+                    <span><i class="ct-dot" style="background:var(--primary)"></i> Đang chọn</span>
+                    <span><i class="ct-dot" style="background:#e5e7eb"></i> Đã bán/giữ</span>
+                </div>
+            </div>
+
+            <div class="ct-card" id="foodCard" style="display:none;">
+                <h3><span class="ct-step">3</span>Đồ ăn & thức uống (tùy chọn)</h3>
+                @foreach (var f in Model.Foods)
+                {
+                    <div class="ct-foodrow">
+                        <span>@f.Name</span>
+                        <span>
+                            <span class="ct-staff">@f.Price.ToString("#,##0") đ</span>
+                            <input type="number" min="0" value="0" class="ct-qty food-qty"
+                                   data-id="@f.Id" data-price="@f.Price" />
+                        </span>
+                    </div>
+                }
+                @if (!Model.Foods.Any())
+                {
+                    <div class="ct-staff">Không có món nào đang bán.</div>
+                }
+            </div>
+        </div>
+
+        <div class="ct-card ct-summary">
+            <h3>Thông tin đơn</h3>
+
+            <label class="ct-lbl">SĐT khách (tra cứu thành viên)</label>
+            <div style="display:flex; gap:.4rem;">
+                <input type="text" id="phoneInput" class="ct-input" placeholder="Nhập SĐT..." />
+                <button type="button" id="lookupBtn" class="ct-btn" style="width:auto; padding:.55rem .9rem;">Tra</button>
+            </div>
+            <div id="memberInfo" class="ct-member"></div>
+
+            <label class="ct-lbl" style="margin-top:.7rem;">Tên khách (nếu khách lẻ)</label>
+            <input type="text" id="customerName" class="ct-input" placeholder="Khách lẻ" />
+
+            <hr style="border:none; border-top:1px solid var(--surface-container); margin:1rem 0;" />
+
+            <div class="ct-lbl">Ghế đã chọn</div>
+            <div id="seatChips" class="ct-chips"><span class="ct-staff">Chưa chọn ghế.</span></div>
+
+            <div class="ct-sumrow"><span>Tiền vé</span><span id="seatTotal">0 đ</span></div>
+            <div class="ct-sumrow"><span>Đồ ăn</span><span id="foodTotal">0 đ</span></div>
+            <div class="ct-sumrow"><span>VAT (@Model.VatRate.ToString("0.##")%)</span><span id="vatTotal">0 đ</span></div>
+            <div class="ct-sumrow total"><span>Tổng cộng</span><span id="grandTotal">0 đ</span></div>
+
+            <label class="ct-lbl" style="margin-top:.8rem;">Phương thức thanh toán</label>
+            <div class="ct-pay">
+                <label><input type="radio" name="payMethod" value="Cash" checked /><span>Tiền mặt</span></label>
+                <label><input type="radio" name="payMethod" value="Transfer" /><span>Chuyển khoản</span></label>
+            </div>
+
+            <div id="cashBox">
+                <label class="ct-lbl">Tiền khách đưa</label>
+                <input type="number" id="cashReceived" class="ct-input" min="0" value="0" />
+                <div class="ct-sumrow"><span>Tiền thối</span><span id="changeAmount">0 đ</span></div>
+            </div>
+
+            <button type="button" id="submitBtn" class="ct-btn" style="margin-top:1rem;" @(Model.HasStaff ? "" : "disabled")>Xác nhận & Thanh toán</button>
+
+            <form id="createForm" method="post" action="@Url.Action("Create", "StaffCounter")" style="display:none;">
+                @Html.AntiForgeryToken()
+                <div id="formFields"></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const VAT_RATE = @Model.VatRate.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        let selectedShowtimeId = null;
+        let selectedSeats = {}; // id -> { label, price }
+        let memberId = null;
+
+        const fmt = n => (Math.round(n)).toLocaleString('vi-VN') + ' đ';
+
+        // --- Bước 1: chọn phim → tải suất chiếu ---
+        $('#movieSelect').on('change', function () {
+            const movieId = this.value;
+            resetSeats();
+            $('#seatCard,#foodCard').hide();
+            const $list = $('#showtimeList');
+            if (!movieId) { $list.html('<span class="ct-staff">Chọn phim để xem suất chiếu.</span>'); return; }
+            $list.html('<span class="ct-staff">Đang tải...</span>');
+            $.getJSON('/Staff/Counter/Showtimes/' + movieId, function (data) {
+                if (!data || data.length === 0) { $list.html('<span class="ct-staff">Không có suất chiếu sắp tới.</span>'); return; }
+                $list.empty();
+                data.forEach(function (s) {
+                    const start = new Date(s.startTime);
+                    const t = start.toLocaleString('vi-VN', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+                    $('<button type="button" class="ct-show"></button>')
+                        .attr('data-id', s.id)
+                        .html('<div class="t">' + t + '</div><div class="m">' + s.roomName + ' · ' + (s.roomType||'') + ' · còn ' + s.availableSeats + ' ghế</div>')
+                        .appendTo($list);
+                });
+            });
+        });
+
+        // --- Bước 1b: chọn suất → tải sơ đồ ghế ---
+        $('#showtimeList').on('click', '.ct-show', function () {
+            $('.ct-show').removeClass('active');
+            $(this).addClass('active');
+            selectedShowtimeId = $(this).data('id');
+            resetSeats();
+            loadSeatMap(selectedShowtimeId);
+        });
+
+        function loadSeatMap(showtimeId) {
+            $('#seatCard').show();
+            $('#seatMap').html('<span class="ct-staff">Đang tải sơ đồ ghế...</span>');
+            $.getJSON('/Staff/Counter/Seats/' + showtimeId, function (map) {
+                renderSeatMap(map);
+                $('#foodCard').show();
+            });
+        }
+
+        function renderSeatMap(map) {
+            const $m = $('#seatMap').empty();
+            const rows = {};
+            map.seats.forEach(function (s) { (rows[s.rowNumber] = rows[s.rowNumber] || []).push(s); });
+            Object.keys(rows).map(Number).sort((a,b)=>a-b).forEach(function (r) {
+                const $row = $('<div class="ct-seatrow"></div>');
+                const rowLabel = (r >= 1 && r <= 26) ? String.fromCharCode(64 + r) : r;
+                $row.append('<span class="ct-rowlabel">' + rowLabel + '</span>');
+                rows[r].sort((a,b)=>a.seatNumber-b.seatNumber).forEach(function (s) {
+                    const $seat = $('<button type="button" class="seat"></button>')
+                        .text(s.label)
+                        .attr('title', s.seatTypeName + ' · ' + fmt(s.price));
+                    if (s.isOccupied) { $seat.addClass('occupied').prop('disabled', true); }
+                    else {
+                        $seat.attr('data-id', s.id).attr('data-price', s.price).attr('data-label', s.label);
+                    }
+                    $row.append($seat);
+                });
+                $m.append($row);
+            });
+        }
+
+        // --- Chọn / bỏ ghế ---
+        $('#seatMap').on('click', '.seat:not(.occupied)', function () {
+            const id = $(this).data('id');
+            if (selectedSeats[id]) { delete selectedSeats[id]; $(this).removeClass('selected'); }
+            else { selectedSeats[id] = { label: $(this).data('label'), price: parseFloat($(this).data('price')) }; $(this).addClass('selected'); }
+            recalc();
+        });
+
+        // --- Đồ ăn ---
+        $('.food-qty').on('input', recalc);
+
+        // --- Thanh toán ---
+        $('input[name="payMethod"]').on('change', function () {
+            $('#cashBox').toggle(this.value === 'Cash');
+            recalc();
+        });
+        $('#cashReceived').on('input', recalc);
+
+        // --- Tra cứu thành viên ---
+        $('#lookupBtn').on('click', function () {
+            const phone = $('#phoneInput').val().trim();
+            const $info = $('#memberInfo');
+            if (!phone) { $info.removeClass('ok no').text(''); return; }
+            $.getJSON('/Staff/Counter/LookupMember', { phone: phone }, function (res) {
+                if (res.found) {
+                    memberId = res.member.id;
+                    $('#customerName').val(res.member.fullName);
+                    $info.removeClass('no').addClass('ok')
+                        .text('✓ ' + res.member.fullName + ' · ' + (res.member.rewardPoints || 0) + ' điểm');
+                } else {
+                    memberId = null;
+                    $info.removeClass('ok').addClass('no').text('Không tìm thấy thành viên — sẽ tính là khách lẻ.');
+                }
+            });
+        });
+        $('#phoneInput').on('input', function () { memberId = null; $('#memberInfo').removeClass('ok no').text(''); });
+
+        function recalc() {
+            let seatTotal = 0;
+            const chips = [];
+            Object.keys(selectedSeats).forEach(function (id) {
+                seatTotal += selectedSeats[id].price;
+                chips.push('<span class="ct-chip">' + selectedSeats[id].label + '</span>');
+            });
+            let foodTotal = 0;
+            $('.food-qty').each(function () {
+                const q = parseInt(this.value) || 0;
+                if (q > 0) foodTotal += q * parseFloat($(this).data('price'));
+            });
+            const sub = seatTotal + foodTotal;
+            const vat = Math.round(sub * VAT_RATE / 100);
+            const grand = sub + vat;
+
+            $('#seatChips').html(chips.length ? chips.join('') : '<span class="ct-staff">Chưa chọn ghế.</span>');
+            $('#seatTotal').text(fmt(seatTotal));
+            $('#foodTotal').text(fmt(foodTotal));
+            $('#vatTotal').text(fmt(vat));
+            $('#grandTotal').text(fmt(grand));
+
+            const cash = parseFloat($('#cashReceived').val()) || 0;
+            $('#changeAmount').text(fmt(Math.max(0, cash - grand)));
+
+            window._grandTotal = grand;
+        }
+
+        // --- Submit ---
+        $('#submitBtn').on('click', function () {
+            const seatIds = Object.keys(selectedSeats);
+            if (!selectedShowtimeId) { alert('Vui lòng chọn suất chiếu.'); return; }
+            if (seatIds.length === 0) { alert('Vui lòng chọn ít nhất một ghế.'); return; }
+
+            const method = $('input[name="payMethod"]:checked').val();
+            const cash = parseFloat($('#cashReceived').val()) || 0;
+            if (method === 'Cash' && cash < (window._grandTotal || 0)) {
+                alert('Tiền khách đưa không đủ.'); return;
+            }
+
+            const $f = $('#formFields').empty();
+            const add = (n, v) => $('<input type="hidden">').attr('name', n).val(v).appendTo($f);
+            add('ShowtimeId', selectedShowtimeId);
+            seatIds.forEach(id => add('SeatIds', id));
+            let fi = 0;
+            $('.food-qty').each(function () {
+                const q = parseInt(this.value) || 0;
+                if (q > 0) { add('Foods[' + fi + '].FbId', $(this).data('id')); add('Foods[' + fi + '].Quantity', q); fi++; }
+            });
+            if (memberId) add('CustomerId', memberId);
+            add('CustomerName', $('#customerName').val().trim());
+            add('CustomerPhone', $('#phoneInput').val().trim());
+            add('PaymentMethod', method);
+            if (method === 'Cash') add('CashReceived', cash);
+
+            $(this).prop('disabled', true).text('Đang xử lý...');
+            $('#createForm').submit();
+        });
+
+        function resetSeats() { selectedSeats = {}; recalc(); }
+        recalc();
+    </script>
+}

@@ -1,0 +1,120 @@
+@model BookingDetailDTO
+@{
+    ViewData["Title"] = "Chi Tiết Đơn Hàng";
+}
+
+@section Styles {
+    <style>
+        .bd-wrap { max-width: 980px; margin: 6rem auto 3rem; padding: 0 1.5rem; }
+        .bd-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap; }
+        .bd-title { font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: var(--on-surface); }
+        .bd-code { font-family: monospace; font-weight: 700; color: var(--primary); }
+        .bd-btn { padding: .55rem 1.1rem; border: none; border-radius: var(--radius); font-weight: 600; cursor: pointer; font-family: var(--font-body); text-decoration: none; display: inline-flex; align-items: center; gap: .35rem; }
+        .bd-btn-primary { background: var(--primary); color: var(--white); }
+        .bd-btn-ghost { background: var(--surface-container); color: var(--on-surface); }
+        .bd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+        .bd-card { background: var(--white); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); padding: 1.5rem; }
+        .bd-card h3 { font-family: var(--font-head); font-size: 1rem; font-weight: 700; margin-bottom: 1rem; color: var(--on-surface); }
+        .bd-row { display: flex; justify-content: space-between; padding: .35rem 0; font-size: .9rem; border-bottom: 1px dashed var(--surface-container); }
+        .bd-row span:first-child { color: var(--on-surface-variant); }
+        .bd-row span:last-child { font-weight: 600; color: var(--on-surface); }
+        .bd-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+        .bd-table th, .bd-table td { padding: .6rem .5rem; text-align: left; border-bottom: 1px solid var(--surface-container); }
+        .bd-table th { color: var(--on-surface-variant); font-weight: 600; }
+        .bd-total { text-align: right; font-size: 1.1rem; font-weight: 800; color: var(--primary); margin-top: .75rem; }
+        @@media (max-width: 720px) { .bd-grid { grid-template-columns: 1fr; } }
+    </style>
+}
+
+<div class="bd-wrap">
+    <div class="bd-top">
+        <div>
+            <h1 class="bd-title">Chi Tiết Đơn Hàng</h1>
+            <div class="bd-code">@(string.IsNullOrEmpty(Model.BookingCode) ? "—" : Model.BookingCode)</div>
+        </div>
+        <div style="display:flex; gap:.5rem;">
+            <a class="bd-btn bd-btn-primary" target="_blank" href="@Url.Action("Ticket", "StaffCounter", new { id = Model.Id })">In vé</a>
+            <a class="bd-btn bd-btn-ghost" href="@Url.Action("Index", "StaffBooking")">Quay lại</a>
+        </div>
+    </div>
+
+    <div class="bd-grid">
+        <div class="bd-card">
+            <h3>Thông tin suất chiếu</h3>
+            <div class="bd-row"><span>Phim</span><span>@Model.MovieTitle</span></div>
+            <div class="bd-row"><span>Rạp</span><span>@Model.CinemaName</span></div>
+            <div class="bd-row"><span>Phòng</span><span>@Model.RoomName</span></div>
+            <div class="bd-row"><span>Bắt đầu</span><span>@Model.ShowStartTime.ToString("dd/MM/yyyy HH:mm")</span></div>
+            <div class="bd-row"><span>Kết thúc</span><span>@Model.ShowEndTime.ToString("dd/MM/yyyy HH:mm")</span></div>
+        </div>
+        <div class="bd-card">
+            <h3>Khách hàng & Đơn</h3>
+            <div class="bd-row"><span>Khách hàng</span><span>@Model.CustomerName</span></div>
+            <div class="bd-row"><span>SĐT</span><span>@(string.IsNullOrEmpty(Model.CustomerPhone) ? "—" : Model.CustomerPhone)</span></div>
+            <div class="bd-row"><span>Nhân viên</span><span>@(string.IsNullOrEmpty(Model.StaffName) ? "—" : Model.StaffName)</span></div>
+            <div class="bd-row"><span>Loại đơn</span><span>@Model.BookingType</span></div>
+            <div class="bd-row"><span>Trạng thái</span><span>@Model.PaymentStatus</span></div>
+            <div class="bd-row"><span>Ngày tạo</span><span>@(Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "—")</span></div>
+        </div>
+    </div>
+
+    <div class="bd-card" style="margin-bottom:1.25rem;">
+        <h3>Vé (@Model.Seats.Count ghế)</h3>
+        <table class="bd-table">
+            <thead><tr><th>Ghế</th><th>Loại ghế</th><th>Trạng thái</th><th style="text-align:right">Giá</th></tr></thead>
+            <tbody>
+                @foreach (var s in Model.Seats)
+                {
+                    <tr>
+                        <td><strong>@s.SeatLabel</strong></td>
+                        <td>@s.SeatType</td>
+                        <td>@s.Status</td>
+                        <td style="text-align:right">@s.Price.ToString("#,##0") đ</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.Foods.Any())
+    {
+        <div class="bd-card" style="margin-bottom:1.25rem;">
+            <h3>Đồ ăn / Thức uống</h3>
+            <table class="bd-table">
+                <thead><tr><th>Món</th><th>SL</th><th style="text-align:right">Đơn giá</th><th style="text-align:right">Thành tiền</th></tr></thead>
+                <tbody>
+                    @foreach (var f in Model.Foods)
+                    {
+                        <tr>
+                            <td>@f.Name</td>
+                            <td>@f.Quantity</td>
+                            <td style="text-align:right">@f.UnitPrice.ToString("#,##0") đ</td>
+                            <td style="text-align:right">@f.LineTotal.ToString("#,##0") đ</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    <div class="bd-card">
+        <h3>Thanh toán</h3>
+        <div class="bd-row"><span>Tạm tính</span><span>@Model.TotalAmount.ToString("#,##0") đ</span></div>
+        <div class="bd-row"><span>Giảm giá</span><span>@Model.DiscountAmount.ToString("#,##0") đ</span></div>
+        <div class="bd-row"><span>VAT</span><span>@Model.VatAmount.ToString("#,##0") đ</span></div>
+        @foreach (var p in Model.Payments)
+        {
+            <div class="bd-row">
+                <span>@p.Method @(string.IsNullOrEmpty(p.Source) ? "" : $"({p.Source})")</span>
+                <span>
+                    @p.Amount.ToString("#,##0") đ
+                    @if (p.CashReceived.HasValue)
+                    {
+                        <text> · Khách đưa @p.CashReceived.Value.ToString("#,##0") đ · Thối @((p.ChangeAmount ?? 0).ToString("#,##0")) đ</text>
+                    }
+                </span>
+            </div>
+        }
+        <div class="bd-total">Tổng cộng: @Model.FinalAmount.ToString("#,##0") đ</div>
+    </div>
+</div>

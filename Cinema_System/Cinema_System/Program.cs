@@ -1,12 +1,19 @@
 using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.Services;
+using Cinema_System.Helpers;
 using Cinema_System.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+// Đăng ký SubfolderViewLocationExpander để controller trong các area con
+// (Admin / Manager / Staff) tìm được view ở /Views/{Area}/{Controller}/{Action}.cshtml.
+builder.Services.AddControllersWithViews()
+    .AddRazorOptions(options =>
+    {
+        options.ViewLocationExpanders.Add(new SubfolderViewLocationExpander());
+    });
 
 var connectionStr = builder.Configuration.GetConnectionString("MyCnn");
 builder.Services.AddDbContext<CinemaWebDbContext>(options =>
@@ -18,6 +25,13 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IPointConfigService, PointConfigService>();
 builder.Services.AddScoped<ISeatTypeService, SeatTypeService>();
 builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
+
+// Inter2 (Staff) - luồng đặt vé tại quầy
+builder.Services.AddScoped<IStaffContextService, StaffContextService>();
+builder.Services.AddScoped<IPricingService, PricingService>();
+builder.Services.AddScoped<IMemberService, MemberService>();
+builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddScoped<ICounterBookingService, CounterBookingService>();
 
 var app = builder.Build();
 
