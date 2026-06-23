@@ -104,15 +104,19 @@ public class UserService : IUserService
         if (user is null)
             return Result.Failure("Không tìm thấy người dùng.");
 
+        var fullName = model.FullName.Trim();
+        var email = model.Email.Trim();
+        var phone = string.IsNullOrWhiteSpace(model.Phone) ? null : model.Phone.Trim();
+
         var emailTaken = await _unitOfWork.Users.ExistsAsync(
-            u => u.Email == model.Email && u.Id != model.Id);
+            u => u.Email == email && u.Id != model.Id);
         if (emailTaken)
             return Result.Failure("Email đã được sử dụng bởi tài khoản khác.");
 
-        if (!string.IsNullOrWhiteSpace(model.Phone))
+        if (phone is not null)
         {
             var phoneTaken = await _unitOfWork.Users.ExistsAsync(
-                u => u.Phone == model.Phone && u.Id != model.Id);
+                u => u.Phone == phone && u.Id != model.Id);
             if (phoneTaken)
                 return Result.Failure("Số điện thoại đã được sử dụng bởi tài khoản khác.");
         }
@@ -121,9 +125,9 @@ public class UserService : IUserService
         if (!roleExists)
             return Result.Failure("Vai trò không hợp lệ.");
 
-        user.FullName = model.FullName;
-        user.Email = model.Email;
-        user.Phone = model.Phone;
+        user.FullName = fullName;
+        user.Email = email;
+        user.Phone = phone;
         user.DateOfBirth = model.DateOfBirth;
         user.RoleId = model.RoleId;
         user.UpdatedAt = DateTime.Now;
