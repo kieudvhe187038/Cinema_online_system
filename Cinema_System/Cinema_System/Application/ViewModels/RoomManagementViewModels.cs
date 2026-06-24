@@ -20,9 +20,15 @@ public class RoomSeatsViewModel
     public Guid RoomId { get; set; }
     public string RoomName { get; set; } = string.Empty;
     public string RoomTypeName { get; set; } = string.Empty;
+    public string RoomStatus { get; set; } = string.Empty;
     public List<SeatItemViewModel> Seats { get; set; } = new();
     public int BrokenCount { get; set; }
     public int AvailableCount { get; set; }
+
+    // Trạng thái bảo trì phòng (cho nút bật/tắt + badge)
+    public bool IsUnderMaintenance => RoomStatus == "Maintenance" || RoomStatus == "Inactive";
+    public string RoomStatusLabel => IsUnderMaintenance ? "Bảo trì" : "Hoạt động";
+    public string RoomStatusClass => IsUnderMaintenance ? "bg-orange-100 text-orange-700" : "bg-green-100 text-green-700";
 
     // Danh sách tất cả phòng (cho cột trái màn quản lý ghế)
     public List<RoomListItemViewModel> AllRooms { get; set; } = new();

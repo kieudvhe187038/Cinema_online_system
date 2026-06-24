@@ -53,14 +53,24 @@ namespace Cinema_System.Controllers.Staff
             return View(vm);
         }
 
-        // Đổi trạng thái ghế (mở <-> hỏng) rồi quay lại sơ đồ
+        // Đổi trạng thái phòng (Bảo trì <-> Hoạt động) rồi quay lại sơ đồ
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleRoomStatus(Guid roomId)
+        {
+            var result = await _roomService.ToggleRoomStatusAsync(roomId);
+            TempData[result.Succeeded ? "Success" : "Error"] = result.Succeeded ? result.Data : result.Error;
+            return RedirectToAction(nameof(Seats), new { roomId });
+        }
+
+        // Đổi trạng thái ghế (mở <-> hỏng) rồi quay lại sơ đồ, kèm thông báo kết quả
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleSeat(Guid seatId, Guid roomId)
         {
-            await _roomService.ToggleSeatStatusAsync(seatId);
+            var result = await _roomService.ToggleSeatStatusAsync(seatId);
+            TempData[result.Succeeded ? "Success" : "Error"] = result.Succeeded ? result.Data : result.Error;
             return RedirectToAction(nameof(Seats), new { roomId });
         }
-
     }
 }
