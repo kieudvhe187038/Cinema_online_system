@@ -4,9 +4,25 @@
     Layout = "_StaffLayout";
 }
 
+@if (TempData["Success"] != null)
+{
+    <div class="mb-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">@TempData["Error"]</div>
+}
+
 <div class="mb-5 flex items-center justify-between">
     <h1 class="font-head text-2xl font-bold text-secondary-dark">Quản lý phòng chiếu</h1>
-    <span class="rounded-full bg-secondary/10 px-3 py-1 text-sm font-semibold text-secondary">@Model.RoomName · @Model.RoomTypeName</span>
+    <div class="flex items-center gap-3">
+        <span class="rounded-full px-3 py-1 text-sm font-semibold @Model.RoomStatusClass">@Model.RoomName · @Model.RoomTypeName · @Model.RoomStatusLabel</span>
+        <button type="button" id="roomToggleBtn" data-maintenance="@Model.IsUnderMaintenance.ToString().ToLower()"
+                class="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-sm font-semibold transition @(Model.IsUnderMaintenance ? "border-green-600 text-green-700 hover:bg-green-600 hover:text-white" : "border-orange-500 text-orange-600 hover:bg-orange-500 hover:text-white")">
+            <span class="material-symbols-outlined text-sm">@(Model.IsUnderMaintenance ? "lock_open" : "build")</span>
+            @(Model.IsUnderMaintenance ? "Mở lại phòng" : "Đặt bảo trì")
+        </button>
+    </div>
 </div>
 
 <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -106,6 +122,11 @@
     <input type="hidden" name="seatId" id="seatIdInput" />
 </form>
 
+<form id="roomToggleForm" asp-action="ToggleRoomStatus" method="post" class="hidden">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="roomId" value="@Model.RoomId" />
+</form>
+
 @section Scripts {
     <script>
         const modal = document.getElementById('confirmModal');
@@ -114,7 +135,7 @@
         const modalIcon = document.getElementById('modalIcon');
         const modalOk = document.getElementById('modalOk');
         const modalCancel = document.getElementById('modalCancel');
-        let pendingId = null;
+        let pendingAction = null;   // việc sẽ chạy khi bấm Xác nhận (ghế hoặc phòng)
 
         function openModal(title, msg, danger, icon) {
             modalTitle.textContent = title;
@@ -125,7 +146,7 @@
             modal.classList.remove('hidden');
             modal.classList.add('flex');
         }
-        function closeModal() { modal.classList.add('hidden'); modal.classList.remove('flex'); pendingId = null; }
+        function closeModal() { modal.classList.add('hidden'); modal.classList.remove('flex'); pendingAction = null; }
 
         document.querySelectorAll('.seat-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -133,13 +154,17 @@
                 const isBooked = btn.dataset.booked === 'true';
                 const count = btn.dataset.count || '0';
                 const label = btn.dataset.label;
-                pendingId = btn.dataset.id;
+                // Việc khi xác nhận: điền seatId rồi submit form ghế
+                pendingAction = () => {
+                    document.getElementById('seatIdInput').value = btn.dataset.id;
+                    document.getElementById('toggleForm').submit();
+                };
 
                 if (isBroken) {
                     openModal('Mở lại ghế', `Mở lại ghế ${label} cho khách dùng bình thường?`, false, 'lock_open');
                 } else if (isBooked) {
                     openModal('Ghế đang có khách đặt',
-                        `Ghế ${label} đang có ${count} vé đã thanh toán cho suất sắp tới. Khóa ghế có thể ảnh hưởng vé đã bán. Bạn chắc chắn muốn khóa?`,
+                        `Ghế ${label} đang có ${count} vé đã thanh toán cho suất sắp tới. Khi khóa, hệ thống sẽ tự ĐỔI khách sang ghế trống cùng phòng; nếu hết ghế thì HOÀN ĐIỂM bồi thường. Bạn chắc chắn muốn khóa?`,
                         true, 'warning');
                 } else {
                     openModal('Khóa ghế', `Khóa (đánh dấu hỏng) ghế ${label}?`, false, 'lock');
@@ -147,10 +172,22 @@
             });
         });
 
+        // Nút đổi trạng thái phòng (Bảo trì <-> Hoạt động)
+        const roomToggleBtn = document.getElementById('roomToggleBtn');
+        if (roomToggleBtn) {
+            roomToggleBtn.addEventListener('click', () => {
+                const underMaintenance = roomToggleBtn.dataset.maintenance === 'true';
+                if (underMaintenance) {
+                    openModal('Mở lại phòng', 'Mở lại phòng này cho hoạt động bình thường?', false, 'lock_open');
+                } else {
+                    openModal('Đặt bảo trì phòng', 'Đặt phòng này sang trạng thái Bảo trì? Badge phòng sẽ chuyển thành "Bảo trì".', false, 'build');
+                }
+                pendingAction = () => document.getElementById('roomToggleForm').submit();
+            });
+        }
+
         modalOk.addEventListener('click', () => {
-            if (!pendingId) return;
-            document.getElementById('seatIdInput').value = pendingId;
-            document.getElementById('toggleForm').submit();
+            if (pendingAction) pendingAction();
         });
         modalCancel.addEventListener('click', closeModal);
         modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });

@@ -35,5 +35,9 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<BookingFood> BookingFoods { get; }
     IGenericRepository<Booking> Bookings { get; }
+    IGenericRepository<Showtime> Showtimes { get; }
+    IGenericRepository<ShowtimeIncident> ShowtimeIncidents { get; }
+    IGenericRepository<Promotion> Promotions { get; }
+    IGenericRepository<Ticket> Tickets { get; }
     Task<int> SaveChangesAsync();
 }

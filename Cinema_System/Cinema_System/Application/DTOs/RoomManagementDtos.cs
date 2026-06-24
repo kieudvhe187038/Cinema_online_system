@@ -16,6 +16,7 @@ public class RoomSeatsDto
     public Guid RoomId { get; set; }
     public string RoomName { get; set; } = string.Empty;
     public string RoomTypeName { get; set; } = string.Empty;
+    public string RoomStatus { get; set; } = string.Empty; // Active / Maintenance / Inactive
     public List<SeatItemDto> Seats { get; set; } = new();
     public int BrokenCount { get; set; }
     public int AvailableCount { get; set; }
