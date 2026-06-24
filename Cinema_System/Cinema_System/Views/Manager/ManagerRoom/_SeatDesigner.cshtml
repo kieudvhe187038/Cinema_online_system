@@ -26,7 +26,7 @@
         <p class="text-xs text-gray-500">
             @if (locked)
             {
-                <text>Phòng đã có vé đặt — sơ đồ chỉ ở chế độ xem.</text>
+                <text>Phòng có suất chiếu sắp tới — sơ đồ chỉ ở chế độ xem.</text>
             }
             else
             {
@@ -44,7 +44,14 @@
 {
     <div class="px-4 py-2.5 rounded-lg mb-3 text-sm bg-amber-50 text-amber-700 border border-amber-200 flex items-start gap-2">
         <span class="material-symbols-outlined" style="font-size:18px">lock</span>
-        <span>Không thể thay đổi sơ đồ ghế &amp; kích thước vì phòng đã có vé được đặt.</span>
+        <span>Phòng đang có <strong>suất chiếu sắp tới</strong> nên không thể đổi sơ đồ ghế &amp; kích thước (chỉ sửa được tên/loại/trạng thái). Hãy hủy/đổi các suất chiếu đó trước nếu cần bố trí lại ghế.</span>
+    </div>
+}
+else if (Model.WillCreateNewVersion)
+{
+    <div class="px-4 py-2.5 rounded-lg mb-3 text-sm bg-blue-50 text-blue-700 border border-blue-200 flex items-start gap-2">
+        <span class="material-symbols-outlined" style="font-size:18px">history</span>
+        <span>Phòng này đã có vé ở các suất chiếu <strong>trước đây</strong>. Nếu bạn <strong>thay đổi sơ đồ ghế hoặc kích thước</strong>, hệ thống sẽ lưu trữ phòng cũ (đổi tên + ngừng dùng) và tạo phòng mới để giữ lịch sử vé. Nếu chỉ đổi tên / loại phòng / trạng thái thì cập nhật bình thường.</span>
     </div>
 }
 
@@ -92,6 +99,8 @@
 (function () {
     const MAXR = @RoomPolicy.MaxRows, MAXC = @RoomPolicy.MaxColumns;
     const LOCKED = @(locked ? "true" : "false");
+    const IS_EDIT = @(Model.Id != Guid.Empty ? "true" : "false");
+    const WILL_VERSION = @(Model.WillCreateNewVersion ? "true" : "false");
     const seatTypes = @Json.Serialize(Model.SeatTypes);
 
     const rowInput = document.getElementById('TotalRow');
@@ -322,18 +331,69 @@
         colInput.addEventListener('input', onDim);
         rowInput.addEventListener('blur', () => floorInput(rowInput));
         colInput.addEventListener('blur', () => floorInput(colInput));
+    }
 
-        // ghi sơ đồ vào hidden field trước khi submit
-        if (form) {
-            form.addEventListener('submit', () => {
-                hidden.value = JSON.stringify(seats.map(s => ({ row: s.row, startColumn: s.col, seatTypeId: s.typeId })));
-            });
+    // ghi sơ đồ ghế hiện tại vào hidden field
+    function serialize() {
+        hidden.value = JSON.stringify(seats.map(s => ({ row: s.row, startColumn: s.col, seatTypeId: s.typeId })));
+    }
+
+    // chữ ký sơ đồ (kích thước + tập ghế) để phát hiện thay đổi
+    function signature() {
+        const dims = (rowInput.value || '') + 'x' + (colInput.value || '');
+        const arr = seats.map(s => s.row + ':' + s.col + ':' + s.typeId).sort();
+        return dims + '|' + arr.join(',');
+    }
+    let originalSig = '';
+
+    // cảnh báo xác nhận khi LƯU (đặc biệt khi Sửa: khóa do suất tương lai, hoặc đổi sơ đồ → tạo bản mới)
+    function confirmOpts(seatMapChanged) {
+        if (LOCKED) {
+            return {
+                title: 'Lưu thay đổi phòng',
+                message: 'Phòng đang có suất chiếu sắp tới nên chỉ cập nhật Tên / Loại phòng / Trạng thái — sơ đồ ghế và kích thước giữ nguyên. Tiếp tục lưu?',
+                type: 'warning', okText: 'Lưu thay đổi'
+            };
         }
+        if (WILL_VERSION && seatMapChanged) {
+            return {
+                title: 'Lưu trữ phòng cũ & tạo phòng mới',
+                message: 'Bạn đã thay đổi sơ đồ ghế / kích thước của phòng đã từng bán vé. Khi lưu, phòng cũ sẽ được LƯU TRỮ (đổi tên + ngừng dùng) để giữ lịch sử vé, và hệ thống TẠO PHÒNG MỚI theo cấu hình bạn vừa chỉnh. Tiếp tục?',
+                type: 'warning', okText: 'Lưu trữ & tạo mới'
+            };
+        }
+        return {
+            title: 'Lưu thay đổi phòng',
+            message: seatMapChanged
+                ? 'Lưu các thay đổi cho phòng chiếu này? Sơ đồ ghế hiện tại trên lưới sẽ được áp dụng (thay cho sơ đồ cũ).'
+                : 'Lưu thay đổi thông tin phòng chiếu này?',
+            type: 'warning', okText: 'Lưu thay đổi'
+        };
+    }
+
+    if (form) {
+        let confirmed = false;
+        form.addEventListener('submit', function (e) {
+            if (confirmed) return;            // đã xác nhận → cho submit thật
+            if (!LOCKED) serialize();
+            if (!IS_EDIT) return;             // màn Tạo mới: lưu thẳng, không cảnh báo
+            e.preventDefault();
+            // qua kiểm tra hợp lệ phía client trước khi hỏi xác nhận
+            if (window.jQuery && jQuery(form).data('validator') && !jQuery(form).valid()) return;
+            const seatMapChanged = !LOCKED && (signature() !== originalSig);
+            confirmPopup(confirmOpts(seatMapChanged)).then(function (ok) {
+                if (!ok) return;
+                confirmed = true;
+                if (!LOCKED) serialize();
+                form.submit();
+            });
+        });
     }
 
     hydrate();
     rebuildOcc();
     buildGrid();
     updateCount();
+    originalSig = signature();
 })();
 </script>
