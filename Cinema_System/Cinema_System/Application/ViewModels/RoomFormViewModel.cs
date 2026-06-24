@@ -39,8 +39,17 @@ public class RoomFormViewModel : IValidatableObject
     /// <summary>Các loại ghế dùng làm palette vẽ (không bind từ form).</summary>
     public IReadOnlyList<SeatTypeOptionDTO> SeatTypes { get; set; } = new List<SeatTypeOptionDTO>();
 
-    /// <summary>True nếu phòng đã có vé đặt → khóa chỉnh sửa sơ đồ ghế &amp; kích thước.</summary>
+    /// <summary>
+    /// True nếu phòng có **suất chiếu/vé trong tương lai** → khóa chỉnh sơ đồ ghế &amp; kích thước
+    /// (chỉ cho sửa tên/loại/trạng thái), tránh phá các vé đã đặt cho suất sắp tới.
+    /// </summary>
     public bool Locked { get; set; }
+
+    /// <summary>
+    /// True nếu phòng CHỈ có vé ở suất chiếu quá khứ (không có suất tương lai) → khi lưu sẽ
+    /// lưu trữ phòng cũ (đổi tên + ngừng dùng) và tạo phòng MỚI với cấu hình vừa sửa.
+    /// </summary>
+    public bool WillCreateNewVersion { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {

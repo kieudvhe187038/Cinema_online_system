@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using AutoMapper;
 using Cinema_System.Application.Common;
 using Cinema_System.Application.DTOs;
@@ -26,8 +27,7 @@ public class RoomService : IRoomService
     public async Task<IEnumerable<RoomDTO>> GetAllAsync()
     {
         var rooms = await _unitOfWork.Rooms.GetAllAsync(
-            includeProperties: new[] { nameof(Room.RoomType) },
-            orderBy: q => q.OrderBy(r => r.Name));
+            includeProperties: new[] { nameof(Room.RoomType) });
 
         var result = new List<RoomDTO>();
         foreach (var room in rooms)
@@ -39,8 +39,25 @@ public class RoomService : IRoomService
             result.Add(dto);
         }
 
-        return result;
+        // Sắp xếp: phòng đang dùng/bảo trì lên trước, phòng lưu trữ (Ngừng dùng) xuống cuối;
+        // trong mỗi nhóm theo tên dạng số tự nhiên (Phòng 2 trước Phòng 10).
+        return result
+            .OrderBy(d => StatusRank(d.Status))
+            .ThenBy(d => NaturalKey(d.Name), StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
+
+    private static int StatusRank(string? status) => status switch
+    {
+        RoomStatus.Active => 0,
+        RoomStatus.Maintenance => 1,
+        RoomStatus.Inactive => 2,
+        _ => 3
+    };
+
+    /// <summary>Chuẩn hóa tên để sắp số tự nhiên: pad các cụm chữ số về 10 ký tự.</summary>
+    private static string NaturalKey(string name) =>
+        Regex.Replace(name, @"\d+", m => m.Value.PadLeft(10, '0'));
 
     public async Task<RoomFormViewModel> BuildCreateFormAsync()
     {
@@ -55,7 +72,9 @@ public class RoomService : IRoomService
         if (room is null) return null;
 
         var model = _mapper.Map<RoomFormViewModel>(room);
-        model.Locked = await HasBookedTicketsAsync(id);
+        var hasFuture = await HasFutureShowtimeAsync(id);
+        model.Locked = hasFuture;
+        model.WillCreateNewVersion = !hasFuture && await HasBookedTicketsAsync(id);
         model.SeatsJson = await BuildSeatsJsonAsync(id);
         await PopulateOptionsAsync(model);
         return model;
@@ -113,40 +132,62 @@ public class RoomService : IRoomService
         return Result.Success();
     }
 
-    public async Task<Result> UpdateAsync(RoomFormViewModel model)
+    public async Task<Result<string>> UpdateAsync(RoomFormViewModel model)
     {
         var room = await _unitOfWork.Rooms.GetByIdAsync(model.Id);
         if (room is null)
-            return Result.Failure("Không tìm thấy phòng.");
+            return Result<string>.Failure("Không tìm thấy phòng.");
 
         var roomTypeId = model.RoomTypeId!.Value;
         if (!await _unitOfWork.RoomTypes.ExistsAsync(t => t.Id == roomTypeId))
-            return Result.Failure("Loại phòng không tồn tại.");
+            return Result<string>.Failure("Loại phòng không tồn tại.");
 
         var name = model.Name.Trim();
         var nameTaken = await _unitOfWork.Rooms.ExistsAsync(
             r => r.CinemaId == room.CinemaId && r.Name == name && r.Id != room.Id);
         if (nameTaken)
-            return Result.Failure("Tên phòng đã tồn tại trong rạp.");
+            return Result<string>.Failure("Tên phòng đã tồn tại trong rạp.");
 
-        var locked = await HasBookedTicketsAsync(room.Id);
-
-        if (locked)
+        // CÓ suất chiếu/vé trong TƯƠNG LAI → chỉ cho sửa thông tin, GIỮ NGUYÊN sơ đồ ghế & kích thước.
+        if (await HasFutureShowtimeAsync(room.Id))
         {
-            // Phòng đã có vé đặt: chỉ cho sửa thông tin, GIỮ NGUYÊN sơ đồ ghế & kích thước.
             room.Name = name;
             room.RoomTypeId = roomTypeId;
             room.Status = model.Status;
             _unitOfWork.Rooms.Update(room);
             await _unitOfWork.SaveChangesAsync();
-            return Result.Success();
+            return Result<string>.Success(
+                "Phòng có suất chiếu sắp tới nên chỉ cập nhật tên/loại/trạng thái; sơ đồ ghế giữ nguyên.");
         }
 
         var seatsResult = await BuildSeatsAsync(model.TotalRow, model.TotalColumns, model.SeatsJson);
         if (!seatsResult.Succeeded)
-            return Result.Failure(seatsResult.Error!);
+            return Result<string>.Failure(seatsResult.Error!);
         var drafts = seatsResult.Data!;
 
+        // CHỈ có vé ở suất chiếu QUÁ KHỨ.
+        if (await HasBookedTicketsAsync(room.Id))
+        {
+            var current = await _unitOfWork.Seats.GetAllAsync(s => s.RoomId == room.Id);
+            var dimsSame = room.TotalRow == model.TotalRow && room.TotalColumns == model.TotalColumns;
+            var seatsSame = SeatLayoutEquals(current, drafts);
+
+            // Chỉ đổi tên/loại/trạng thái, KHÔNG đụng sơ đồ ghế/kích thước → cập nhật tại chỗ.
+            if (dimsSame && seatsSame)
+            {
+                room.Name = name;
+                room.RoomTypeId = roomTypeId;
+                room.Status = model.Status;
+                _unitOfWork.Rooms.Update(room);
+                await _unitOfWork.SaveChangesAsync();
+                return Result<string>.Success("Cập nhật phòng chiếu thành công.");
+            }
+
+            // Có thay đổi sơ đồ ghế/kích thước → lưu trữ phòng cũ + tạo phòng MỚI (giữ lịch sử vé cũ).
+            return await VersionRoomAsync(room, name, roomTypeId, model, drafts);
+        }
+
+        // KHÔNG có vé nào → sửa tại chỗ, thay toàn bộ ghế.
         room.Name = name;
         room.RoomTypeId = roomTypeId;
         room.Status = model.Status;
@@ -155,7 +196,6 @@ public class RoomService : IRoomService
         room.TotalSeats = drafts.Count > 0 ? drafts.Count : null;
         _unitOfWork.Rooms.Update(room);
 
-        // Thay toàn bộ ghế cũ bằng sơ đồ mới (an toàn vì chưa có vé đặt).
         var existing = await _unitOfWork.Seats.GetAllAsync(s => s.RoomId == room.Id);
         foreach (var seat in existing)
             _unitOfWork.Seats.Remove(seat);
@@ -163,7 +203,55 @@ public class RoomService : IRoomService
             await _unitOfWork.Seats.AddAsync(ToSeat(room.Id, d));
 
         await _unitOfWork.SaveChangesAsync();
-        return Result.Success();
+        return Result<string>.Success("Cập nhật phòng chiếu thành công.");
+    }
+
+    /// <summary>
+    /// Lưu trữ phòng cũ (đổi tên kèm mã ngày-giờ + ngừng dùng, GIỮ ghế cũ cho lịch sử vé) rồi
+    /// tạo phòng mới mang cấu hình vừa sửa. Tách 2 lần SaveChanges để tránh đụng unique tên phòng.
+    /// </summary>
+    private async Task<Result<string>> VersionRoomAsync(
+        Room oldRoom, string newName, Guid roomTypeId, RoomFormViewModel model, List<SeatInputDTO> drafts)
+    {
+        var stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+        var archivedName = BuildArchivedName(oldRoom.Name, stamp);
+
+        oldRoom.Name = archivedName;
+        oldRoom.Status = RoomStatus.Inactive;
+        _unitOfWork.Rooms.Update(oldRoom);
+        await _unitOfWork.SaveChangesAsync();
+
+        var newId = Guid.NewGuid();
+        var newRoom = new Room
+        {
+            Id = newId,
+            CinemaId = oldRoom.CinemaId,
+            Name = newName,
+            RoomTypeId = roomTypeId,
+            Status = model.Status,
+            TotalRow = model.TotalRow,
+            TotalColumns = model.TotalColumns,
+            TotalSeats = drafts.Count > 0 ? drafts.Count : null
+        };
+
+        await _unitOfWork.Rooms.AddAsync(newRoom);
+        foreach (var d in drafts)
+            await _unitOfWork.Seats.AddAsync(ToSeat(newId, d));
+
+        await _unitOfWork.SaveChangesAsync();
+        return Result<string>.Success(
+            $"Phòng cũ đã có vé ở suất chiếu trước đây nên được lưu trữ thành \"{archivedName}\" (Ngừng dùng); " +
+            "đã tạo phòng mới với cấu hình bạn vừa chỉnh.");
+    }
+
+    /// <summary>Ghép tên lưu trữ "{tên} (lưu trữ {stamp})", cắt bớt để vừa NVARCHAR(100).</summary>
+    private static string BuildArchivedName(string currentName, string stamp)
+    {
+        const int max = 100;
+        var suffix = $" (lưu trữ {stamp})";
+        var keep = Math.Max(0, max - suffix.Length);
+        var baseName = currentName.Length > keep ? currentName[..keep] : currentName;
+        return baseName + suffix;
     }
 
     public async Task<Result> DeleteAsync(Guid id)
@@ -229,6 +317,14 @@ public class RoomService : IRoomService
         return Result<List<SeatInputDTO>>.Success(items);
     }
 
+    /// <summary>So khớp sơ đồ ghế hiện có (DB) với sơ đồ mới (drafts) — coi như tập (hàng, cột bắt đầu, loại ghế).</summary>
+    private static bool SeatLayoutEquals(IEnumerable<Seat> existing, List<SeatInputDTO> drafts)
+    {
+        var a = existing.Select(s => (s.RowNumber, s.SeatNumber, s.SeatTypeId)).ToHashSet();
+        var b = drafts.Select(d => (d.Row, d.StartColumn, d.SeatTypeId)).ToHashSet();
+        return a.Count == b.Count && a.SetEquals(b);
+    }
+
     private static Seat ToSeat(Guid roomId, SeatInputDTO d) => new()
     {
         Id = Guid.NewGuid(),
@@ -266,5 +362,12 @@ public class RoomService : IRoomService
         if (seatIds.Count == 0) return false;
 
         return await _unitOfWork.Tickets.ExistsAsync(t => seatIds.Contains(t.SeatId));
+    }
+
+    /// <summary>Phòng có suất chiếu đang/sẽ diễn ra (chưa kết thúc) → đang được cam kết cho khách.</summary>
+    private async Task<bool> HasFutureShowtimeAsync(Guid roomId)
+    {
+        var now = DateTime.Now;
+        return await _unitOfWork.Showtimes.ExistsAsync(s => s.RoomId == roomId && s.EndTime > now);
     }
 }

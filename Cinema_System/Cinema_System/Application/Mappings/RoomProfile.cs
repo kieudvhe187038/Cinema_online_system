@@ -22,6 +22,7 @@ public class RoomProfile : Profile
             .ForMember(d => d.SeatTypes, o => o.Ignore())
             .ForMember(d => d.SeatsJson, o => o.Ignore())
             .ForMember(d => d.Locked, o => o.Ignore())
+            .ForMember(d => d.WillCreateNewVersion, o => o.Ignore())
             .ForMember(d => d.TotalRow, o => o.MapFrom(s => s.TotalRow ?? 1))
             .ForMember(d => d.TotalColumns, o => o.MapFrom(s => s.TotalColumns ?? 1));
 

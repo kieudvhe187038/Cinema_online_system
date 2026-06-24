@@ -76,7 +76,7 @@ public class ManagerRoomController : Controller
             return View(model);
         }
 
-        TempData["Success"] = "Cập nhật phòng chiếu thành công.";
+        TempData["Success"] = result.Data ?? "Cập nhật phòng chiếu thành công.";
         return RedirectToAction(nameof(Index));
     }
 

@@ -18,7 +18,8 @@ public interface IRoomService
 
     Task<Result> CreateAsync(RoomFormViewModel model);
 
-    Task<Result> UpdateAsync(RoomFormViewModel model);
+    /// <summary>Cập nhật phòng. Data = thông báo mô tả kết quả (sửa tại chỗ / tạo bản mới...).</summary>
+    Task<Result<string>> UpdateAsync(RoomFormViewModel model);
 
     Task<Result> DeleteAsync(Guid id);
 }
