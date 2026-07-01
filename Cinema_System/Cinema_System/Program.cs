@@ -50,6 +50,7 @@ builder.Services.AddScoped<IProfileService, ProfileService>();
 // Module quản trị của taido (quản lý người dùng, tỉ lệ điểm, loại phòng/ghế).
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IPointConfigService, PointConfigService>();
+builder.Services.AddScoped<IShowtimeIncidentService, ShowtimeIncidentService>();
 builder.Services.AddScoped<ISeatTypeService, SeatTypeService>();
 builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
 
