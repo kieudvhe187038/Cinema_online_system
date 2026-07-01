@@ -48,10 +48,15 @@
                         <a class="text-sm font-semibold transition hover:text-primary text-slate-700" href="#">Giá Vé</a>
                         <a class="text-sm font-semibold transition hover:text-primary text-slate-700" href="#">Khuyến Mãi</a>
                         <a class="text-sm font-semibold transition hover:text-primary text-slate-700" href="#">Tin Điện Ảnh</a>
-                        @if (User.IsInRole("STAFF") || User.IsInRole("MANAGER") || User.IsInRole("ADMIN"))
+                        @if (User.IsInRole("STAFF"))
                         {
                             <a class="text-sm font-semibold text-primary transition hover:text-primary-dark" asp-controller="RoomManagement" asp-action="Index">Quản Lý Phòng</a>
                         }
+                        @if (User.IsInRole("MANAGER"))
+                        {
+                            <a class="text-sm font-semibold text-primary transition hover:text-primary-dark" asp-controller="ManagerIncident" asp-action="Index">Quản Lý Sự Cố</a>
+                        }
+
                     </nav>
                 </div>
                 <div class="flex items-center gap-3">
