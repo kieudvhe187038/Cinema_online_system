@@ -22,7 +22,7 @@
     <form method="post" action="@Url.Action("Create", "Showtime")">
         @Html.AntiForgeryToken()
         
-        @* Card chứa các trường thông tin chính (Phim, Phòng, Giờ, Trạng thái) *@
+        @* Card chứa các trường thông tin chính (Phim, Phòng, Giờ, Trạng thái) *@ 
         <div class="@card">
             <p class="@sectionTitle">Thông tin suất chiếu</p>
             <div asp-validation-summary="ModelOnly" class="text-red-700 text-sm mb-4"></div>
