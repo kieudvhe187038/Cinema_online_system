@@ -280,3 +280,8 @@ Nhật ký thay đổi mã nguồn / CSDL / quyết định kỹ thuật của d
   - **Khuyến mãi:** đã có phân trang sẵn → **refactor** footer inline ~45 dòng sang dùng chung `_Pagination` (RouteValues{search,status}).
 - **Why:** Yêu cầu phân trang ở 3 màn quản lý; gom logic phân trang về 1 partial để nhất quán & đỡ lặp.
 - **Impact/Notes for Team:** Mọi danh sách quản lý về sau dùng `_Pagination` + `PaginationViewModel` (set `Controller`, `ItemLabel`, `RouteValues` để giữ filter/tab trên link trang). Partial bỏ qua giá trị route rỗng (null search/tab → không thêm vào URL). Giá: badge tab = TỔNG (không phải số dòng trang hiện tại). `PagedResult.Create` tự kẹp page về [1,TotalPages]. Build pass 0/0.
+
+### [2026-06-21] Staff - Sơ đồ ghế: trang báo "Không tìm thấy phòng" thân thiện (By: dung)
+- **What changed:** `RoomManagementController.Seats(Guid roomId)`: khi `GetRoomSeatsAsync` trả `null` (roomId không tồn tại, vd sửa URL tay), thay `return NotFound("...")` bằng **`return View("RoomNotFound", vm)`** — vẫn set `Response.StatusCode = 404` cho đúng chuẩn HTTP nhưng render trong `_StaffLayout`. View mới `Views/Staff/RoomManagement/RoomNotFound.cshtml` (nhận `RoomSeatsViewModel`) vẫn nạp `AllRooms` để cột trái chọn phòng khác + nút "Về danh sách phòng".
+- **Why:** `NotFound("text")` nhả ra response 404 plain-text → trình duyệt tự vẽ trang lỗi trần (màn trắng/đen), không qua layout, trải nghiệm xấu.
+- **Impact/Notes for Team:** Mẫu xử lý "không tìm thấy" cho các trang Staff/Manager: trả View báo lỗi trong layout + set `Response.StatusCode` thủ công, đừng dùng `NotFound()` nếu muốn giữ giao diện. Cần `using Microsoft.AspNetCore.Http;` (cho `StatusCodes`). Build pass 0/0.
