@@ -1,0 +1,59 @@
+@using Microsoft.AspNetCore.Routing
+@model Cinema_System.Application.ViewModels.PaginationViewModel
+@{
+    int cp = Model.CurrentPage;
+    int tp = Model.TotalPages;
+    int fromItem = Model.TotalCount == 0 ? 0 : (cp - 1) * Model.PageSize + 1;
+    int toItem = Math.Min(cp * Model.PageSize, Model.TotalCount);
+
+    // Dải số trang rút gọn: luôn có trang 1, trang cuối và lân cận trang hiện tại; phần cách hiện "…".
+    var pages = new List<int?>();
+    for (int i = 1; i <= tp; i++)
+    {
+        if (i == 1 || i == tp || (i >= cp - 2 && i <= cp + 2))
+            pages.Add(i);
+        else if (pages.Count == 0 || pages[pages.Count - 1] != null)
+            pages.Add(null);
+    }
+
+    string PageUrl(int p)
+    {
+        var rv = new RouteValueDictionary();
+        foreach (var kv in Model.RouteValues)
+        {
+            if (!string.IsNullOrEmpty(kv.Value)) rv[kv.Key] = kv.Value;
+        }
+        rv["page"] = p;
+        return Url.Action(Model.Action, Model.Controller, rv)!;
+    }
+
+    const string pgBtn = "min-w-9 h-9 px-2 flex items-center justify-center border border-gray-200 rounded-md text-sm text-gray-700 bg-white hover:bg-[#fff7f0] hover:border-primary hover:text-primary transition-colors";
+}
+
+<div class="flex items-center justify-between flex-wrap gap-3">
+    <span class="text-sm text-gray-500">
+        Hiển thị <strong class="text-[#191c1d]">@fromItem–@toItem</strong> trên <strong class="text-[#191c1d]">@Model.TotalCount</strong> @Model.ItemLabel
+    </span>
+    @if (tp > 1)
+    {
+        <div class="flex gap-1.5 flex-wrap">
+            <a class="@pgBtn @(cp == 1 ? "opacity-40 pointer-events-none" : "")" href="@PageUrl(cp - 1)">&lsaquo;</a>
+            @foreach (var pg in pages)
+            {
+                if (pg == null)
+                {
+                    <span class="min-w-9 h-9 px-2 flex items-center justify-center text-gray-400">…</span>
+                }
+                else if (pg == cp)
+                {
+                    <a class="min-w-9 h-9 px-2 flex items-center justify-center border border-primary rounded-md text-sm bg-primary text-white font-bold" href="@PageUrl(pg.Value)">@pg</a>
+                }
+                else
+                {
+                    <a class="@pgBtn" href="@PageUrl(pg.Value)">@pg</a>
+                }
+            }
+            <a class="@pgBtn @(cp == tp ? "opacity-40 pointer-events-none" : "")" href="@PageUrl(cp + 1)">&rsaquo;</a>
+        </div>
+    }
+</div>

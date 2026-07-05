@@ -22,11 +22,18 @@ public class UnitOfWork : IUnitOfWork
     private IGenericRepository<RoomType>? _roomTypes;
     private IGenericRepository<Room>? _rooms;
     private IGenericRepository<PriceRoomTypeConfig>? _priceRoomTypeConfigs;
+    private IGenericRepository<PriceBaseConfig>? _priceBaseConfigs;
+    private IGenericRepository<PriceTimeConfig>? _priceTimeConfigs;
     private IGenericRepository<Movie>? _movies;
     private IGenericRepository<Genre>? _genres;
     private IGenericRepository<RewardPointHistory>? _rewardPointHistories;
     private IGenericRepository<FoodBeverage>? _foodBeverages;
     private IGenericRepository<BookingFood>? _bookingFoods;
+    private IGenericRepository<Promotion>? _promotions;
+    private IGenericRepository<Booking>? _bookings;
+    private IGenericRepository<Cinema>? _cinemas;
+    private IGenericRepository<Showtime>? _showtimes;
+    private IGenericRepository<Ticket>? _tickets;
 
     public UnitOfWork(CinemaWebDbContext context)
     {
@@ -60,6 +67,12 @@ public class UnitOfWork : IUnitOfWork
     public IGenericRepository<PriceRoomTypeConfig> PriceRoomTypeConfigs =>
         _priceRoomTypeConfigs ??= new GenericRepository<PriceRoomTypeConfig>(_context);
 
+    public IGenericRepository<PriceBaseConfig> PriceBaseConfigs =>
+        _priceBaseConfigs ??= new GenericRepository<PriceBaseConfig>(_context);
+
+    public IGenericRepository<PriceTimeConfig> PriceTimeConfigs =>
+        _priceTimeConfigs ??= new GenericRepository<PriceTimeConfig>(_context);
+
     public IGenericRepository<Movie> Movies =>
         _movies ??= new GenericRepository<Movie>(_context);
 
@@ -75,10 +88,31 @@ public class UnitOfWork : IUnitOfWork
     public IGenericRepository<BookingFood> BookingFoods =>
         _bookingFoods ??= new GenericRepository<BookingFood>(_context);
 
+    public IGenericRepository<Promotion> Promotions =>
+        _promotions ??= new GenericRepository<Promotion>(_context);
+
+    public IGenericRepository<Booking> Bookings =>
+        _bookings ??= new GenericRepository<Booking>(_context);
+
+    public IGenericRepository<Cinema> Cinemas =>
+        _cinemas ??= new GenericRepository<Cinema>(_context);
+
+    public IGenericRepository<Showtime> Showtimes =>
+        _showtimes ??= new GenericRepository<Showtime>(_context);
+
+    public IGenericRepository<Ticket> Tickets =>
+        _tickets ??= new GenericRepository<Ticket>(_context);
+
     // Lưu tất cả thay đổi của DbContext trong 1 transaction logic
     public async Task<int> SaveChangesAsync()
     {
         return await _context.SaveChangesAsync();
+    }
+
+    // Gỡ theo dõi toàn bộ entity đang tracked (xem IUnitOfWork.ClearTracking).
+    public void ClearTracking()
+    {
+        _context.ChangeTracker.Clear();
     }
 
     public void Dispose()

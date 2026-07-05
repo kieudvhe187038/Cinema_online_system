@@ -25,6 +25,10 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<PriceRoomTypeConfig> PriceRoomTypeConfigs { get; }
 
+    IGenericRepository<PriceBaseConfig> PriceBaseConfigs { get; }
+
+    IGenericRepository<PriceTimeConfig> PriceTimeConfigs { get; }
+
     IGenericRepository<Movie> Movies { get; }
 
     IGenericRepository<Genre> Genres { get; }
@@ -35,5 +39,21 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<BookingFood> BookingFoods { get; }
 
+    IGenericRepository<Promotion> Promotions { get; }
+
+    IGenericRepository<Booking> Bookings { get; }
+
+    IGenericRepository<Cinema> Cinemas { get; }
+
+    IGenericRepository<Showtime> Showtimes { get; }
+
+    IGenericRepository<Ticket> Tickets { get; }
+
     Task<int> SaveChangesAsync();
+
+    /// <summary>
+    /// Gỡ theo dõi toàn bộ entity đang tracked. Dùng khi cần truy vấn lại rồi cập nhật
+    /// (tránh xung đột "another instance with the same key is already being tracked").
+    /// </summary>
+    void ClearTracking();
 }
