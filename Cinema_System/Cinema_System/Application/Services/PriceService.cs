@@ -27,7 +27,7 @@ public class PriceService : IPriceService
         _mapper = mapper;
     }
 
-    public async Task<PriceManagementViewModel> GetManagementAsync(string? tab)
+    public async Task<PriceManagementViewModel> GetManagementAsync(string? tab, int page, int pageSize)
     {
         var bases = await _unitOfWork.PriceBaseConfigs.GetAllAsync(includeProperties: new[] { "Movie" });
         var rooms = await _unitOfWork.PriceRoomTypeConfigs.GetAllAsync(includeProperties: new[] { "RoomType" });
@@ -35,18 +35,43 @@ public class PriceService : IPriceService
         var times = await _unitOfWork.PriceTimeConfigs.GetAllAsync();
 
         // Sắp xếp: trạng thái MỞ trước, TẮT sau. Riêng giá cơ bản: mức "Áp dụng chung" đang mở lên đầu.
+        var baseList = _mapper.Map<List<PriceConfigDTO>>(bases)
+            .OrderByDescending(d => d.IsGlobalBase && IsOpen(d.DisplayStatus))
+            .ThenBy(d => StatusRank(d.DisplayStatus)).ThenBy(d => d.TargetName).ThenBy(d => d.EffectiveFrom).ToList();
+        var roomList = _mapper.Map<List<PriceConfigDTO>>(rooms)
+            .OrderBy(d => StatusRank(d.DisplayStatus)).ThenBy(d => d.TargetName).ThenBy(d => d.EffectiveFrom).ToList();
+        var seatList = _mapper.Map<List<PriceConfigDTO>>(seats)
+            .OrderBy(d => StatusRank(d.DisplayStatus)).ThenBy(d => d.TargetName).ThenBy(d => d.EffectiveFrom).ToList();
+        var timeList = _mapper.Map<List<PriceConfigDTO>>(times)
+            .OrderBy(d => StatusRank(d.DisplayStatus)).ThenBy(d => d.RuleGroup).ThenBy(d => d.TargetName).ThenBy(d => d.EffectiveFrom).ToList();
+
+        var active = PriceKind.AllowedValues.Contains(tab ?? "") ? tab! : PriceKind.Base;
+        IReadOnlyList<PriceConfigDTO> source = active switch
+        {
+            PriceKind.Room => roomList,
+            PriceKind.Seat => seatList,
+            PriceKind.Time => timeList,
+            _ => baseList
+        };
+        var paged = PagedResult<PriceConfigDTO>.Create(source, page, pageSize);
+        var empty = (IReadOnlyList<PriceConfigDTO>)Array.Empty<PriceConfigDTO>();
+
         return new PriceManagementViewModel
         {
-            ActiveTab = PriceKind.AllowedValues.Contains(tab ?? "") ? tab! : PriceKind.Base,
-            BaseConfigs = _mapper.Map<List<PriceConfigDTO>>(bases)
-                .OrderByDescending(d => d.IsGlobalBase && IsOpen(d.DisplayStatus))
-                .ThenBy(d => StatusRank(d.DisplayStatus)).ThenBy(d => d.TargetName).ThenBy(d => d.EffectiveFrom).ToList(),
-            RoomConfigs = _mapper.Map<List<PriceConfigDTO>>(rooms)
-                .OrderBy(d => StatusRank(d.DisplayStatus)).ThenBy(d => d.TargetName).ThenBy(d => d.EffectiveFrom).ToList(),
-            SeatConfigs = _mapper.Map<List<PriceConfigDTO>>(seats)
-                .OrderBy(d => StatusRank(d.DisplayStatus)).ThenBy(d => d.TargetName).ThenBy(d => d.EffectiveFrom).ToList(),
-            TimeConfigs = _mapper.Map<List<PriceConfigDTO>>(times)
-                .OrderBy(d => StatusRank(d.DisplayStatus)).ThenBy(d => d.RuleGroup).ThenBy(d => d.TargetName).ThenBy(d => d.EffectiveFrom).ToList()
+            ActiveTab = active,
+            // Chỉ tab đang xem mới nạp dữ liệu (đã phân trang); các tab khác để rỗng.
+            BaseConfigs = active == PriceKind.Base ? paged.Items : empty,
+            RoomConfigs = active == PriceKind.Room ? paged.Items : empty,
+            SeatConfigs = active == PriceKind.Seat ? paged.Items : empty,
+            TimeConfigs = active == PriceKind.Time ? paged.Items : empty,
+            BaseCount = baseList.Count,
+            RoomCount = roomList.Count,
+            SeatCount = seatList.Count,
+            TimeCount = timeList.Count,
+            CurrentPage = paged.CurrentPage,
+            TotalPages = paged.TotalPages,
+            PageSize = paged.PageSize,
+            TotalCount = paged.TotalCount
         };
     }
 

@@ -5,8 +5,8 @@ namespace Cinema_System.Application.Interfaces;
 
 public interface IPriceService
 {
-    // Lấy toàn bộ cấu hình giá (4 nhóm) cho màn quản lý, mở sẵn tab chỉ định.
-    Task<PriceManagementViewModel> GetManagementAsync(string? tab);
+    // Lấy cấu hình giá cho màn quản lý: mở sẵn tab chỉ định + phân trang tab đó (badge các tab là tổng số).
+    Task<PriceManagementViewModel> GetManagementAsync(string? tab, int page, int pageSize);
 
     // Tạo form Thêm mới rỗng cho 1 loại giá (kèm dropdown phim/phòng/ghế).
     Task<PriceConfigFormViewModel> BuildCreateFormAsync(string kind);
