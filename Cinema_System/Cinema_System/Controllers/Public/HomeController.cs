@@ -24,7 +24,7 @@ namespace Cinema_System.Controllers.Public
             {
                 NowShowingMovies = await _movieService.GetNowShowingMoviesAsync(),
                 ComingSoonMovies = await _movieService.GetComingSoonMoviesAsync(),
-                SpecialMovies = await _movieService.GetSpecialMoviesAsync()
+                SpecialMovies = await _movieService.GetSpecialMoviesAsync() 
             };
 
             return View(homeViewModel);
@@ -35,12 +35,27 @@ namespace Cinema_System.Controllers.Public
             return View();
         }
 
+        public IActionResult Info()
+        {
+            ViewData["Title"] = "Thông tin rạp";
+            return View();
+        }
+
+        public IActionResult NotFoundPage(int statusCode = 404)
+        {
+            Response.StatusCode = statusCode;
+            ViewData["Title"] = "Trang không tìm thấy";
+            ViewData["StatusCode"] = statusCode;
+            return View("~/Views/Shared/NotFoundPage.cshtml");
+        }
+
         // Trang lỗi dùng để hiển thị thông tin request khi có ngoại lệ.
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]  
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier }); 
         }
+
     }
 }
  

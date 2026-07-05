@@ -51,10 +51,10 @@ builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<IRegistrationService, RegistrationService>();
 builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 builder.Services.AddScoped<IMovieService, MovieService>();
+builder.Services.AddScoped<IShowtimeService, ShowtimeService>();
 builder.Services.AddScoped<IFoodBeverageService, FoodBeverageService>();
 builder.Services.AddScoped<IPromotionService, PromotionService>();
 builder.Services.AddScoped<IPriceService, PriceService>();
-builder.Services.AddScoped<IShowtimeService, ShowtimeService>();
 // Cổng thanh toán VNPay (sandbox). Secret nạp từ .env: Vnpay__TmnCode, Vnpay__HashSecret.
 builder.Services.Configure<Cinema_System.Infrastructure.PaymentGateway.VnpaySettings>(builder.Configuration.GetSection("Vnpay"));
 builder.Services.AddScoped<IVnpayService, Cinema_System.Infrastructure.PaymentGateway.VnpayService>();
@@ -68,6 +68,11 @@ builder.Services.AddScoped<IPointConfigService, PointConfigService>();
 builder.Services.AddScoped<ISeatTypeService, SeatTypeService>();
 builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
+builder.Services.AddScoped<IReviewService, ReviewService>();
+builder.Services.AddScoped<IShowtimeScheduleService, ShowtimeScheduleService>();
+
+// Đăng ký Background Service tự động cập nhật trạng thái lịch chiếu
+builder.Services.AddHostedService<ShowtimeStatusBackgroundService>();
 
 // Session lưu thông tin đăng ký tạm thời (chờ xác nhận OTP).
 builder.Services.AddDistributedMemoryCache();
@@ -145,6 +150,8 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
 }
+
+app.UseStatusCodePagesWithReExecute("/Home/NotFoundPage", "?statusCode={0}");
 app.UseStaticFiles();
 
 app.UseRouting();
