@@ -17,7 +17,13 @@ DotNetEnv.Env.TraversePath().Load();
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+// Đăng ký SubfolderViewLocationExpander để controller trong các area con
+// (Admin / Manager / Staff) tìm được view ở /Views/{Area}/{Controller}/{Action}.cshtml.
+builder.Services.AddControllersWithViews()
+    .AddRazorOptions(options =>
+    {
+        options.ViewLocationExpanders.Add(new SubfolderViewLocationExpander());
+    });
 
 // Cho phép tìm view trong thư mục con /Views/Admin/{controller} và /Views/Manager/{controller}
 // (module quản trị của taido đặt view theo cấu trúc thư mục con).
@@ -110,6 +116,16 @@ if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(goo
             };
         });
 }
+
+// Inter2 (Staff) - luồng đặt vé tại quầy
+builder.Services.AddScoped<IStaffContextService, StaffContextService>();
+builder.Services.AddScoped<IPricingService, PricingService>();
+builder.Services.AddScoped<IMemberService, MemberService>();
+builder.Services.AddScoped<IBookingManagementService, BookingManagementService>();
+builder.Services.AddScoped<ICounterBookingService, CounterBookingService>();
+
+// Inter3 (Staff) - check-in vé
+builder.Services.AddScoped<ITicketCheckinService, TicketCheckinService>();
 
 var app = builder.Build();
 

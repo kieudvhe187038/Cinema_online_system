@@ -13,6 +13,7 @@ public class ShowtimeService : IShowtimeService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly IPricingService _pricingService;
 
     // Giá trị quy đổi 1 điểm thưởng khi dùng để giảm giá (₫).
     private const int PointValueVnd = 100;
@@ -21,10 +22,11 @@ public class ShowtimeService : IShowtimeService
     private const int MaxFoodPerItem = 20;
 
     // Nhận UnitOfWork + AutoMapper qua DI (mapping các mảnh phẳng; phần tính toán vẫn dựng tay).
-    public ShowtimeService(IUnitOfWork unitOfWork, IMapper mapper)
+    public ShowtimeService(IUnitOfWork unitOfWork, IMapper mapper, IPricingService pricingService)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _pricingService = pricingService;
     }
 
     // Lấy dữ liệu trang lịch chiếu: lọc theo phim/thể loại/độ tuổi/loại phòng + ngày + tùy chọn dropdown.
@@ -318,47 +320,11 @@ public class ShowtimeService : IShowtimeService
     }
 
     // Tạo hàm tính giá vé theo loại ghế cho 1 suất chiếu (base + phụ thu phòng/giờ/ghế).
+    // Dùng chung IPricingService (single source of truth) để khớp đúng giá với luồng bán tại quầy.
     private async Task<Func<Guid, decimal>> BuildSeatPricerAsync(Showtime showtime)
     {
-        var st = showtime.StartTime;
-        bool Active(string? s) => s == "Active";
-        bool Effective(DateTime from, DateTime? to) => from <= st && (to == null || to >= st);
-
-        // Giá gốc: ưu tiên cấu hình theo phim, không có thì lấy cấu hình chung (movie_id = null).
-        var baseConfigs = (await _unitOfWork.PriceBaseConfigs.GetAllAsync(
-            predicate: p => p.Status == "Active" && p.EffectiveFrom <= st && (p.EffectiveTo == null || p.EffectiveTo >= st)))
-            .ToList();
-        var basePrice = baseConfigs.Where(p => p.MovieId == showtime.MovieId).OrderByDescending(p => p.EffectiveFrom)
-                            .Select(p => (decimal?)p.BasePrice).FirstOrDefault()
-                        ?? baseConfigs.Where(p => p.MovieId == null).OrderByDescending(p => p.EffectiveFrom)
-                            .Select(p => (decimal?)p.BasePrice).FirstOrDefault()
-                        ?? 0m;
-
-        // Phụ thu loại phòng.
-        var roomTypeId = showtime.Room.RoomTypeId;
-        var roomSurcharge = (await _unitOfWork.PriceRoomTypeConfigs.GetAllAsync(
-            predicate: p => p.RoomTypeId == roomTypeId))
-            .Where(p => Active(p.Status) && Effective(p.EffectiveFrom, p.EffectiveTo))
-            .OrderByDescending(p => p.EffectiveFrom).Select(p => p.TypeSurcharge).FirstOrDefault();
-
-        // Phụ thu khung giờ: cộng mọi rule active khớp ngày trong tuần và/hoặc khung giờ.
-        var sqlDow = (int)st.DayOfWeek + 1;          // .NET CN=0 -> SQL 1 ... T7=6 -> 7
-        var timeOfDay = TimeOnly.FromDateTime(st);
-        var timeSurcharge = (await _unitOfWork.PriceTimeConfigs.GetAllAsync(
-            predicate: p => p.Status == "Active" && p.EffectiveFrom <= st && (p.EffectiveTo == null || p.EffectiveTo >= st)))
-            .Where(p => (p.DayOfWeek == null || p.DayOfWeek == sqlDow)
-                     && ((p.StartTime == null && p.EndTime == null)
-                         || (p.StartTime != null && p.EndTime != null && timeOfDay >= p.StartTime && timeOfDay <= p.EndTime)))
-            .Sum(p => p.TimeSurcharge);
-
-        // Phụ thu theo loại ghế (map seatTypeId -> surcharge).
-        var seatSurcharges = (await _unitOfWork.PriceSeatConfigs.GetAllAsync(
-            predicate: p => p.Status == "Active" && p.EffectiveFrom <= st && (p.EffectiveTo == null || p.EffectiveTo >= st)))
-            .GroupBy(p => p.SeatTypeId)
-            .ToDictionary(g => g.Key, g => g.OrderByDescending(p => p.EffectiveFrom).First().SeatSurcharge);
-
-        return seatTypeId => basePrice + roomSurcharge + timeSurcharge
-            + (seatSurcharges.TryGetValue(seatTypeId, out var s2) ? s2 : 0m);
+        var pricing = await _pricingService.GetPricingAsync(showtime);
+        return pricing.PriceForSeatType;
     }
 
     // Ghế đang giữ kèm giá, dùng cho trang thanh toán/xác nhận.

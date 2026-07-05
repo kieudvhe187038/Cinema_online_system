@@ -48,13 +48,14 @@ public class RoomTypeService : IRoomTypeService
 
     public async Task<Result> CreateAsync(RoomTypeFormViewModel model)
     {
-        var nameTaken = await _unitOfWork.RoomTypes.ExistsAsync(t => t.Name == model.Name);
+        var name = model.Name.Trim();
+        var nameTaken = await _unitOfWork.RoomTypes.ExistsAsync(t => t.Name == name);
         if (nameTaken)
             return Result.Failure("Tên loại phòng đã tồn tại.");
 
         var roomType = new RoomType
         {
-            Name = model.Name.Trim(),
+            Name = name,
             Description = string.IsNullOrWhiteSpace(model.Description) ? null : model.Description.Trim()
         };
 
@@ -70,12 +71,13 @@ public class RoomTypeService : IRoomTypeService
         if (roomType is null)
             return Result.Failure("Không tìm thấy loại phòng.");
 
+        var name = model.Name.Trim();
         var nameTaken = await _unitOfWork.RoomTypes.ExistsAsync(
-            t => t.Name == model.Name && t.Id != model.Id);
+            t => t.Name == name && t.Id != model.Id);
         if (nameTaken)
             return Result.Failure("Tên loại phòng đã tồn tại.");
 
-        roomType.Name = model.Name.Trim();
+        roomType.Name = name;
         roomType.Description = string.IsNullOrWhiteSpace(model.Description) ? null : model.Description.Trim();
 
         _unitOfWork.RoomTypes.Update(roomType);

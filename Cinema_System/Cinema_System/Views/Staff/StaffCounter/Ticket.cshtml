@@ -1,0 +1,117 @@
+@model TicketPrintViewModel
+@{
+    ViewData["Title"] = "In Vé";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/site.css" />
+    <style>
+        .tk-wrap { max-width: 720px; margin: 5.5rem auto 3rem; padding: 0 1.5rem; }
+        .tk-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; gap: 1rem; }
+        .tk-toolbar h1 { font-family: var(--font-head); font-size: 1.5rem; font-weight: 800; color: var(--on-surface); }
+        .tk-btn { padding: .55rem 1.1rem; border: none; border-radius: var(--radius); font-weight: 600; cursor: pointer; font-family: var(--font-body); text-decoration: none; }
+        .tk-btn-primary { background: var(--primary); color: #fff; }
+        .tk-btn-ghost { background: var(--surface-container); color: var(--on-surface); }
+        .tk-paper { background: #fff; border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); padding: 2rem; }
+        .tk-brand { text-align: center; font-family: var(--font-head); font-size: 1.4rem; font-weight: 800; color: var(--primary); letter-spacing: .05em; }
+        .tk-sub { text-align: center; color: var(--on-surface-variant); font-size: .82rem; margin-bottom: 1.2rem; }
+        .tk-code { text-align: center; font-family: monospace; font-weight: 800; font-size: 1.25rem; letter-spacing: .1em; margin: .5rem 0 1.2rem; padding: .5rem; border: 2px dashed var(--outline-variant); border-radius: var(--radius); }
+        .tk-meta { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem 1rem; font-size: .9rem; margin-bottom: 1.2rem; }
+        .tk-meta div span { color: var(--on-surface-variant); }
+        .tk-ticket { border: 1px solid var(--outline-variant); border-radius: var(--radius); padding: .7rem 1rem; margin-bottom: .6rem; display: flex; justify-content: space-between; align-items: center; }
+        .tk-seat { font-size: 1.3rem; font-weight: 800; color: var(--on-surface); }
+        .tk-tcode { font-family: monospace; font-size: .78rem; color: var(--on-surface-variant); }
+        .tk-table { width: 100%; border-collapse: collapse; font-size: .88rem; margin-top: .8rem; }
+        .tk-table td { padding: .35rem 0; }
+        .tk-table td:last-child { text-align: right; font-weight: 600; }
+        .tk-grand { display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: 800; color: var(--primary); border-top: 2px solid var(--surface-container); margin-top: .6rem; padding-top: .6rem; }
+        .tk-foot { text-align: center; color: var(--on-surface-variant); font-size: .78rem; margin-top: 1.5rem; }
+        @@media print {
+            .tk-toolbar, #main-header, .site-footer { display: none !important; }
+            .tk-wrap { margin: 0; max-width: 100%; }
+            .tk-paper { box-shadow: none; padding: 0; }
+            body { background: #fff; }
+        }
+    </style>
+}
+
+<div class="tk-wrap">
+    <div class="tk-toolbar">
+        <h1>Vé đã đặt</h1>
+        <div style="display:flex; gap:.5rem;">
+            <button class="tk-btn tk-btn-primary" onclick="window.print()">In vé (PDF)</button>
+            <a class="tk-btn tk-btn-ghost" href="@Url.Action("Index", "StaffCounter")">Đơn mới</a>
+            <a class="tk-btn tk-btn-ghost" href="@Url.Action("Index", "StaffBooking")">Danh sách đơn</a>
+        </div>
+    </div>
+
+    <div class="tk-paper">
+        <div class="tk-brand">CineStar</div>
+        <div class="tk-sub">Vé xem phim — @(Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "")</div>
+
+        <div class="tk-code">@Model.BookingCode</div>
+
+        <div class="tk-meta">
+            <div><span>Phim:</span> <strong>@Model.MovieTitle</strong></div>
+            <div><span>Rạp:</span> @Model.CinemaName</div>
+            <div><span>Phòng:</span> @Model.RoomName</div>
+            <div><span>Suất:</span> @Model.ShowStartTime.ToString("dd/MM/yyyy HH:mm")</div>
+            <div><span>Khách:</span> @Model.CustomerName</div>
+            <div><span>Nhân viên:</span> @(Model.StaffName ?? "—")</div>
+        </div>
+
+        @foreach (var t in Model.Tickets)
+        {
+            <div class="tk-ticket">
+                <div>
+                    <div class="tk-seat">@t.SeatLabel</div>
+                    <div class="tk-tcode">@t.SeatType · @t.TicketCode</div>
+                </div>
+                <div style="font-weight:700;">@t.Price.ToString("#,##0") đ</div>
+            </div>
+        }
+
+        @if (Model.Foods.Any())
+        {
+            <table class="tk-table">
+                <tbody>
+                    @foreach (var f in Model.Foods)
+                    {
+                        <tr>
+                            <td>@f.Name x @f.Quantity</td>
+                            <td>@f.LineTotal.ToString("#,##0") đ</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        <table class="tk-table">
+            <tbody>
+                <tr><td>Tạm tính</td><td>@Model.TotalAmount.ToString("#,##0") đ</td></tr>
+                @if (Model.DiscountAmount > 0)
+                {
+                    <tr><td>Giảm giá</td><td>-@Model.DiscountAmount.ToString("#,##0") đ</td></tr>
+                }
+                <tr><td>VAT</td><td>@Model.VatAmount.ToString("#,##0") đ</td></tr>
+            </tbody>
+        </table>
+        <div class="tk-grand"><span>Tổng cộng</span><span>@Model.FinalAmount.ToString("#,##0") đ</span></div>
+
+        @if (Model.Payment != null)
+        {
+            <table class="tk-table">
+                <tbody>
+                    <tr><td>Thanh toán (@Model.Payment.Method)</td><td>@Model.Payment.Amount.ToString("#,##0") đ</td></tr>
+                    @if (Model.Payment.CashReceived.HasValue)
+                    {
+                        <tr><td>Khách đưa</td><td>@Model.Payment.CashReceived.Value.ToString("#,##0") đ</td></tr>
+                        <tr><td>Tiền thối</td><td>@((Model.Payment.ChangeAmount ?? 0).ToString("#,##0")) đ</td></tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        <div class="tk-foot">Cảm ơn quý khách! Vui lòng giữ vé để vào cửa. Vé không hoàn lại sau khi suất chiếu bắt đầu.</div>
+    </div>
+</div>

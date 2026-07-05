@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Cinema_System.Application.Common;
 using Cinema_System.Application.DTOs;
 
 namespace Cinema_System.Application.ViewModels;
@@ -25,6 +26,7 @@ public class UserEditViewModel
 
     [Required(ErrorMessage = "Vui lòng chọn ngày sinh")]
     [DataType(DataType.Date)]
+    [NotInFuture(ErrorMessage = "Ngày sinh không được nằm trong tương lai")]
     [Display(Name = "Ngày sinh")]
     public DateOnly DateOfBirth { get; set; }
 

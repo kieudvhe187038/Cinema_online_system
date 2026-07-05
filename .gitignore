@@ -65,3 +65,7 @@ publish/
 **/Properties/PublishProfiles/
 
 .claude/
+
+# Individual agent entry-point (cá nhân, không commit)
+HD.md
+taido/
