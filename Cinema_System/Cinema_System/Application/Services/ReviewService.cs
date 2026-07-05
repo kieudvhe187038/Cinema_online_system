@@ -3,6 +3,7 @@ using Cinema_System.Application.Common;
 using Cinema_System.Application.DTOs;
 using Cinema_System.Application.Interfaces;
 using Cinema_System.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace Cinema_System.Application.Services;
 
@@ -25,23 +26,20 @@ public class ReviewService : IReviewService
     /// </summary>
     public async Task<PagedResult<ReviewDTO>> GetMovieReviewsAsync(Guid movieId, int page = 1, int pageSize = 10)
     {
-        var reviews = await _unitOfWork.Reviews
-            .GetAllAsync(
-                predicate: r => r.MovieId == movieId && r.Status == "approved",
-                includeProperties: new[] { "User", "Movie" },
-                orderBy: r => r.OrderByDescending(x => x.CreatedAt)
-            );
-
-        var reviewList = reviews.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-        var total = reviews.Count();
+        var (items, totalCount) = await _unitOfWork.Reviews.GetPagedAsync(
+            page,
+            pageSize,
+            predicate: r => r.MovieId == movieId && r.Status == "approved",
+            include: q => q.Include(r => r.User).Include(r => r.Movie),
+            orderBy: q => q.OrderByDescending(x => x.CreatedAt));
 
         return new PagedResult<ReviewDTO>
         {
-            Items = _mapper.Map<List<ReviewDTO>>(reviewList),
+            Items = _mapper.Map<List<ReviewDTO>>(items),
             CurrentPage = page,
-            TotalPages = total == 0 ? 1 : (int)Math.Ceiling((double)total / pageSize),
+            TotalPages = totalCount == 0 ? 1 : (int)Math.Ceiling((double)totalCount / pageSize),
             PageSize = pageSize,
-            TotalCount = total
+            TotalCount = totalCount
         };
     }
 
@@ -50,29 +48,22 @@ public class ReviewService : IReviewService
     /// </summary>
     public async Task<bool> HasUserWatchedMovieAsync(Guid userId, Guid movieId)
     {
-        // Lấy tất cả booking của user đã thanh toán thành công
-        var bookings = await _unitOfWork.Bookings
-            .GetAllAsync(
-                predicate: b => b.UserId == userId && b.PaymentStatus == "completed"
-            );
+        return await _unitOfWork.Tickets.ExistsAsync(t =>
+            t.Booking.UserId == userId &&
+            t.Booking.PaymentStatus == "completed" &&
+            t.Showtime.MovieId == movieId);
+    }
 
-        if (!bookings.Any())
-            return false;
+    /// <summary>
+    /// Lấy tập ID các phim mà người dùng đã xem, trong 1 truy vấn duy nhất (thay vì kiểm tra từng phim một).
+    /// </summary>
+    public async Task<HashSet<Guid>> GetWatchedMovieIdsAsync(Guid userId)
+    {
+        var tickets = await _unitOfWork.Tickets.GetAllAsync(
+            predicate: t => t.Booking.UserId == userId && t.Booking.PaymentStatus == "completed",
+            include: q => q.Include(t => t.Showtime));
 
-        // Kiểm tra xem booking nào có chứa vé của phim này
-        foreach (var booking in bookings)
-        {
-            var tickets = await _unitOfWork.Tickets
-                .GetAllAsync(
-                    predicate: t => t.BookingId == booking.Id,
-                    includeProperties: new[] { "Showtime" }
-                );
-
-            if (tickets.Any(t => t.Showtime?.MovieId == movieId))
-                return true;
-        }
-
-        return false;
+        return tickets.Select(t => t.Showtime.MovieId).ToHashSet();
     }
 
     /// <summary>
@@ -125,23 +116,20 @@ public class ReviewService : IReviewService
     /// </summary>
     public async Task<PagedResult<ReviewDTO>> GetRecentReviewsAsync(int page = 1, int pageSize = 10)
     {
-        var reviews = await _unitOfWork.Reviews
-            .GetAllAsync(
-                predicate: r => r.Status == "approved",
-                includeProperties: new[] { "User", "Movie" },
-                orderBy: r => r.OrderByDescending(x => x.CreatedAt)
-            );
-
-        var list = reviews.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-        var total = reviews.Count();
+        var (items, totalCount) = await _unitOfWork.Reviews.GetPagedAsync(
+            page,
+            pageSize,
+            predicate: r => r.Status == "approved",
+            include: q => q.Include(r => r.User).Include(r => r.Movie),
+            orderBy: q => q.OrderByDescending(x => x.CreatedAt));
 
         return new PagedResult<ReviewDTO>
         {
-            Items = _mapper.Map<List<ReviewDTO>>(list),
+            Items = _mapper.Map<List<ReviewDTO>>(items),
             CurrentPage = page,
-            TotalPages = total == 0 ? 1 : (int)Math.Ceiling((double)total / pageSize),
+            TotalPages = totalCount == 0 ? 1 : (int)Math.Ceiling((double)totalCount / pageSize),
             PageSize = pageSize,
-            TotalCount = total
+            TotalCount = totalCount
         };
     }
 

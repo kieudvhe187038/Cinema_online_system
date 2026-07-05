@@ -19,7 +19,7 @@
 
 
     @* Form nhập liệu thông tin suất chiếu *@
-    <form method="post" action="@Url.Action("Create", "Showtime")">
+    <form method="post" action="@Url.Action("Create", "ManagerShowtime")">
         @Html.AntiForgeryToken()
         
         @* Card chứa các trường thông tin chính (Phim, Phòng, Giờ, Trạng thái) *@ 
@@ -90,7 +90,7 @@
 
         <div class="flex items-center gap-3">
             <button id="showtimeSubmit" type="submit" class="px-5 py-2.5 bg-primary text-white rounded-lg font-semibold hover:bg-primary-dark transition-colors">Lưu</button>
-            <a class="px-5 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50" href="@Url.Action("Calendar", "Showtime")">Hủy</a>
+            <a class="px-5 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50" href="@Url.Action("Calendar", "ManagerShowtime")">Hủy</a>
         </div>
     </form>
 </div>

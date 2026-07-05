@@ -19,7 +19,7 @@
 
 
     @* Form chỉnh sửa thông tin suất chiếu *@
-    <form id="editShowtimeForm" method="post" action="@Url.Action("Edit", "Showtime", new { id = Model.Id })">
+    <form id="editShowtimeForm" method="post" action="@Url.Action("Edit", "ManagerShowtime", new { id = Model.Id })">
         @Html.AntiForgeryToken()
         
         @* Card chứa các trường thông tin chính (Phim, Phòng, Giờ, Trạng thái) *@
@@ -159,19 +159,19 @@
             {
                 <button id="showtimeSubmit" form="editShowtimeForm" type="submit" class="px-5 py-2.5 bg-primary text-white rounded-lg font-semibold hover:bg-primary-dark transition-colors">Lưu</button>
             }
-            <a class="px-5 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50" href="@Url.Action("Calendar", "Showtime")">Quay lại</a>
+            <a class="px-5 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50" href="@Url.Action("Calendar", "ManagerShowtime")">Quay lại</a>
         </div>
 
         @if (Model.HasBookings)
         {
-            <form method="post" action="@Url.Action("Cancel", "Showtime", new { id = Model.Id })" onsubmit="return confirm('Bạn có chắc chắn muốn HỦY suất chiếu này không? Việc hủy suất chiếu sẽ hủy tất cả vé đã đặt.');">
+            <form method="post" action="@Url.Action("Cancel", "ManagerShowtime", new { id = Model.Id })" onsubmit="return confirm('Bạn có chắc chắn muốn HỦY suất chiếu này không? Việc hủy suất chiếu sẽ hủy tất cả vé đã đặt.');">
                 @Html.AntiForgeryToken()
                 <button type="submit" class="px-5 py-2.5 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors">Hủy suất chiếu</button>
             </form>
         }
         else
         {
-            <form method="post" action="@Url.Action("Delete", "Showtime", new { id = Model.Id })" onsubmit="return confirm('Bạn có chắc chắn muốn xóa suất chiếu này không?');">
+            <form method="post" action="@Url.Action("Delete", "ManagerShowtime", new { id = Model.Id })" onsubmit="return confirm('Bạn có chắc chắn muốn xóa suất chiếu này không?');">
                 @Html.AntiForgeryToken()
                 <button type="submit" class="px-5 py-2.5 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors">Xóa suất chiếu</button>
             </form>

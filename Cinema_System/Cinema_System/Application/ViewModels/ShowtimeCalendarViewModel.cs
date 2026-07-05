@@ -24,7 +24,7 @@ public class ShowtimeCalendarViewModel
     public IEnumerable<DateTime> WeekDays { get; set; } = new List<DateTime>();
     
     /// <summary>Danh sách suất chiếu của tuần</summary>
-    public IEnumerable<ShowtimeDTO> Showtimes { get; set; } = new List<ShowtimeDTO>();
+    public IEnumerable<ShowtimeScheduleDTO> Showtimes { get; set; } = new List<ShowtimeScheduleDTO>();
     
     /// <summary>Từ khóa tìm kiếm (phim hoặc phòng)</summary>
     public string? Search { get; set; }
