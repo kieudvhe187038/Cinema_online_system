@@ -52,6 +52,38 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
         return await query.ToListAsync();
     }
 
+    public async Task<(IReadOnlyList<T> Items, int TotalCount)> GetPagedAsync(
+        int page,
+        int pageSize,
+        Expression<Func<T, bool>>? predicate = null,
+        Func<IQueryable<T>, IQueryable<T>>? include = null,
+        Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null)
+    {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 10;
+
+        IQueryable<T> query = _dbSet.AsNoTracking();
+
+        if (predicate is not null)
+            query = query.Where(predicate);
+
+        // Đếm trước khi Include/Skip/Take để câu COUNT gọn (không kéo navigation).
+        var totalCount = await query.CountAsync();
+
+        if (include is not null)
+            query = include(query);
+
+        if (orderBy is not null)
+            query = orderBy(query);
+
+        var items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (items, totalCount);
+    }
+
     // Lấy 1 bản ghi theo điều kiện, dùng để kiểm tra tồn tại hoặc lấy chi tiết đơn lẻ
     public async Task<T?> FirstOrDefaultAsync(
         Expression<Func<T, bool>> predicate,

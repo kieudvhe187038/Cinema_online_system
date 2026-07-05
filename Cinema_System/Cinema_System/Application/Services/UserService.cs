@@ -1,11 +1,8 @@
-using System.Linq.Expressions;
 using AutoMapper;
 using Cinema_System.Application.Common;
 using Cinema_System.Application.DTOs;
 using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
-using Cinema_System.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace Cinema_System.Application.Services;
 
@@ -26,27 +23,15 @@ public class UserService : IUserService
     public async Task<UserListViewModel> GetUsersAsync(
         string? search, Guid? roleId, string? status, int page, int pageSize)
     {
-        Expression<Func<User, bool>> predicate = u =>
-            (search == null || u.FullName.Contains(search) || u.Email.Contains(search)
-                || (u.Phone != null && u.Phone.Contains(search)))
-            && (roleId == null || u.RoleId == roleId)
-            && (status == null || u.Status == status);
+        // Lọc + phân trang tại SQL (Skip/Take) — chỉ tải đúng 1 trang, tránh kéo cả bảng.
+        var (rows, totalCount) = await _unitOfWork.Users.GetPagedWithRoleAsync(
+            search, roleId, status, page, pageSize);
 
-        var users = (await _unitOfWork.Users.GetAllAsync(
-            predicate,
-            include: q => q.Include(u => u.Role),
-            orderBy: q => q.OrderByDescending(u => u.CreatedAt))).ToList();
-
-        var totalCount = users.Count;
         var totalPages = totalCount == 0 ? 1 : (int)Math.Ceiling(totalCount / (double)pageSize);
         if (page < 1) page = 1;
         if (page > totalPages) page = totalPages;
 
-        var pageItems = users
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToList();
-        var items = _mapper.Map<List<UserDTO>>(pageItems);
+        var items = _mapper.Map<List<UserDTO>>(rows);
 
         return new UserListViewModel
         {
@@ -64,9 +49,7 @@ public class UserService : IUserService
 
     public async Task<UserDTO?> GetUserByIdAsync(Guid id)
     {
-        var user = await _unitOfWork.Users.FirstOrDefaultAsync(
-            u => u.Id == id,
-            include: q => q.Include(u => u.Role));
+        var user = await _unitOfWork.Users.GetByIdWithRoleAsync(id);
 
         return user is null ? null : _mapper.Map<UserDTO>(user);
     }
@@ -95,15 +78,19 @@ public class UserService : IUserService
         if (user is null)
             return Result.Failure("Không tìm thấy người dùng.");
 
+        var fullName = model.FullName.Trim();
+        var email = model.Email.Trim();
+        var phone = string.IsNullOrWhiteSpace(model.Phone) ? null : model.Phone.Trim();
+
         var emailTaken = await _unitOfWork.Users.ExistsAsync(
-            u => u.Email == model.Email && u.Id != model.Id);
+            u => u.Email == email && u.Id != model.Id);
         if (emailTaken)
             return Result.Failure("Email đã được sử dụng bởi tài khoản khác.");
 
-        if (!string.IsNullOrWhiteSpace(model.Phone))
+        if (phone is not null)
         {
             var phoneTaken = await _unitOfWork.Users.ExistsAsync(
-                u => u.Phone == model.Phone && u.Id != model.Id);
+                u => u.Phone == phone && u.Id != model.Id);
             if (phoneTaken)
                 return Result.Failure("Số điện thoại đã được sử dụng bởi tài khoản khác.");
         }
@@ -112,9 +99,9 @@ public class UserService : IUserService
         if (!roleExists)
             return Result.Failure("Vai trò không hợp lệ.");
 
-        user.FullName = model.FullName;
-        user.Email = model.Email;
-        user.Phone = model.Phone;
+        user.FullName = fullName;
+        user.Email = email;
+        user.Phone = phone;
         user.DateOfBirth = model.DateOfBirth;
         user.RoleId = model.RoleId;
         user.UpdatedAt = DateTime.Now;
