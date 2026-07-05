@@ -90,29 +90,13 @@ namespace Cinema_System.Controllers.Public
         public async Task<IActionResult> SelectForReview(int page = 1)
         {
             var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "");
-            
-            // Lấy toàn bộ danh sách phim để lọc
-            var allMovies = await _movieService.GetAllMoviesAsync();
-            
-            // Lọc ra các phim mà người dùng đã xem
-            var watchedMovies = new List<MovieDTO>();
-            foreach (var movie in allMovies)
-            {
-                if (await _reviewService.HasUserWatchedMovieAsync(userId, movie.Id))
-                {
-                    watchedMovies.Add(movie);
-                }
-            }
 
-            // Phân trang thủ công danh sách phim đã xem
-            int pageSize = MoviePaging.DefaultPageSize;
-            var pagedMovies = new PagedResult<MovieDTO>
-            {
-                Items = watchedMovies.Skip((page - 1) * pageSize).Take(pageSize).ToList(),
-                CurrentPage = page,
-                TotalPages = (int)Math.Ceiling((double)watchedMovies.Count / pageSize),
-                PageSize = pageSize
-            };
+            // Lấy tập ID phim đã xem (1 truy vấn) rồi lọc trong danh sách phim
+            var watchedMovieIds = await _reviewService.GetWatchedMovieIdsAsync(userId);
+            var allMovies = await _movieService.GetAllMoviesAsync();
+            var watchedMovies = allMovies.Where(m => watchedMovieIds.Contains(m.Id)).ToList();
+
+            var pagedMovies = PagedResult<MovieDTO>.Create(watchedMovies, page, MoviePaging.DefaultPageSize);
 
             var viewModel = BuildViewModel(pagedMovies, selectedTab: "myWatched", searchKeyword: string.Empty);
             ViewData["Title"] = "Chọn phim để đánh giá";

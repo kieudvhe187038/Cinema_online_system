@@ -7,12 +7,12 @@ namespace Cinema_System.Controllers.Manager;
 /// <summary>
 /// Controller quản lý suất chiếu phim
 /// </summary>
-[Route("Manager/[controller]")]
-public class ShowtimeController : Controller
+[Route("Manager/Showtime")]
+public class ManagerShowtimeController : Controller
 {
-    private readonly IShowtimeService _showtimeService;
+    private readonly IShowtimeScheduleService _showtimeService;
 
-    public ShowtimeController(IShowtimeService showtimeService)
+    public ManagerShowtimeController(IShowtimeScheduleService showtimeService)
     {
         _showtimeService = showtimeService;
     }
@@ -29,7 +29,6 @@ public class ShowtimeController : Controller
     /// <summary>
     /// Hiển thị lịch chiếu tuần với các bộ lọc
     /// </summary>
-    
     [HttpGet("Calendar")]
     public async Task<IActionResult> Calendar(Guid? roomId, string? status, string? search, DateTime? weekStart)
     {
@@ -54,7 +53,6 @@ public class ShowtimeController : Controller
     /// <summary>
     /// Lưu thông tin suất chiếu mới
     /// </summary>
-   
     [HttpPost("Create")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(ShowtimeFormViewModel model)
@@ -81,7 +79,6 @@ public class ShowtimeController : Controller
     /// <summary>
     /// Trang chỉnh sửa suất chiếu
     /// </summary>
-   
     [HttpGet("Edit/{id}")]
     public async Task<IActionResult> Edit(Guid id)
     {
@@ -93,7 +90,6 @@ public class ShowtimeController : Controller
     /// <summary>
     /// Lưu các thay đổi đằng chỉnh sửa suất chiếu
     /// </summary>
-    
     [HttpPost("Edit/{id}")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(ShowtimeFormViewModel model)
@@ -120,7 +116,6 @@ public class ShowtimeController : Controller
     /// <summary>
     /// Xóa suất chiếu
     /// </summary>
-    
     [HttpPost("Delete/{id}")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(Guid id)

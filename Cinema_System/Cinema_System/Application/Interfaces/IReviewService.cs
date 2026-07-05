@@ -13,7 +13,12 @@ public interface IReviewService
     /// <summary>
     /// Kiểm tra xem user đã xem phim này chưa (có booking thành công)
     /// </summary>
-    Task<bool> HasUserWatchedMovieAsync(Guid userId, Guid movieId); 
+    Task<bool> HasUserWatchedMovieAsync(Guid userId, Guid movieId);
+
+    /// <summary>
+    /// Lấy tập ID các phim mà user đã xem (có vé, booking thanh toán thành công) — dùng để lọc danh sách chọn phim đánh giá.
+    /// </summary>
+    Task<HashSet<Guid>> GetWatchedMovieIdsAsync(Guid userId);
 
     /// <summary>
     /// Kiểm tra xem user đã đánh giá phim này chưa

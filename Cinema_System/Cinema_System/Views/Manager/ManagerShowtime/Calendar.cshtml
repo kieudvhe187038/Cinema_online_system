@@ -21,7 +21,7 @@
     /// </summary>
     public class ShowtimeBlock
     {
-        public ShowtimeDTO Show { get; set; } 
+        public ShowtimeScheduleDTO Show { get; set; }
         public DateTime Start { get; set; }
         public DateTime End { get; set; }
         public int Column { get; set; }
@@ -45,7 +45,7 @@
     @* Nút thêm suất chiếu *@
     <div class="flex items-center gap-3">
         <a class="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-bold tracking-wide whitespace-nowrap transition-colors"
-           href="@Url.Action("Create", "Showtime")">
+           href="@Url.Action("Create", "ManagerShowtime")">
             <span class="material-symbols-outlined" style="font-size:18px">add_circle</span>
             THÊM SUẤT CHIẾU
         </a>
@@ -58,7 +58,7 @@
 <div class="w-full mb-6">
     <div class="mx-auto w-full max-w-[1300px]">
         <div class="bg-white rounded-2xl border border-[#e8eaed] px-5 py-4 shadow-sm">
-            <form method="get" action="@Url.Action("Calendar", "Showtime")">
+            <form method="get" action="@Url.Action("Calendar", "ManagerShowtime")">
                 <div class="flex gap-4 flex-wrap items-end">
                     <div class="flex flex-col gap-1">
                         <label class="text-xs font-bold uppercase tracking-[0.28em] text-gray-500">Phòng chiếu</label>
@@ -135,7 +135,7 @@
                         </button>
                         @if (!string.IsNullOrEmpty(Model.Search) || !string.IsNullOrEmpty(Model.StatusFilter) || (Model.AvailableRooms.Any() && Model.SelectedRoomId != Model.AvailableRooms.First().Id))
                         {
-                            <a class="text-sm font-semibold text-gray-600 hover:text-gray-900" href="@Url.Action("Calendar", "Showtime")">✕ Xóa bộ lọc</a>
+                            <a class="text-sm font-semibold text-gray-600 hover:text-gray-900" href="@Url.Action("Calendar", "ManagerShowtime")">✕ Xóa bộ lọc</a>
                         }
                     </div>
                 </div>
@@ -201,11 +201,11 @@
                 <div class="text-lg font-semibold text-gray-900">@Model.WeekStart.ToString("dd/MM/yyyy")</div>
             </div>
             <div class="flex items-center gap-2">
-                <a href="@Url.Action("Calendar", "Showtime", new { roomId = Model.SelectedRoomId, status = Model.StatusFilter, search = Model.Search, weekStart = Model.WeekStart.AddDays(-7).ToString("yyyy-MM-dd") })" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+                <a href="@Url.Action("Calendar", "ManagerShowtime", new { roomId = Model.SelectedRoomId, status = Model.StatusFilter, search = Model.Search, weekStart = Model.WeekStart.AddDays(-7).ToString("yyyy-MM-dd") })" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
                     <span class="material-symbols-outlined">chevron_left</span>
                     Tuần trước
                 </a>
-                <a href="@Url.Action("Calendar", "Showtime", new { roomId = Model.SelectedRoomId, status = Model.StatusFilter, search = Model.Search, weekStart = Model.WeekStart.AddDays(7).ToString("yyyy-MM-dd") })" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+                <a href="@Url.Action("Calendar", "ManagerShowtime", new { roomId = Model.SelectedRoomId, status = Model.StatusFilter, search = Model.Search, weekStart = Model.WeekStart.AddDays(7).ToString("yyyy-MM-dd") })" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
                     Tuần sau
                     <span class="material-symbols-outlined">chevron_right</span>
                 </a>
@@ -321,7 +321,7 @@
                                     var widthPercent = 100.0 / cols;
                                     var leftPercent = b.Column * widthPercent;
                                     var tooltipText = $"{b.Show.MovieTitle} — {b.Show.RoomName} {b.Show.StartTime:HH:mm}-{b.Show.EndTime:HH:mm}";
-                                    var editUrl = Url.Action("Edit","Showtime", new { id = b.Show.Id });
+                                    var editUrl = Url.Action("Edit","ManagerShowtime", new { id = b.Show.Id });
                                     var minHeightPx = 40;
                                     var blockHeightPx = Math.Max(minHeightPx, (heightPercent / 100.0) * totalHeight);
                                     <div class="show-block absolute rounded-lg shadow-md border border-l-4 overflow-hidden hover:shadow-lg transition-all" data-tooltip="@tooltipText" data-edit-url="@editUrl" style="top:@(topPercent)% ; left:@(leftPercent)% ; width:calc(@(widthPercent - 3)% - 4px) ; height:@(heightPercent)% ; min-height:@(minHeightPx)px; background:linear-gradient(135deg, #ffffff 0%, #f9fafb 100%); border-color:#e5e7eb; border-left-color:#3b82f6; padding:8px 10px; box-sizing:border-box; cursor:pointer;">
