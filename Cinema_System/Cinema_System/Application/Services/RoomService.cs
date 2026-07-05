@@ -24,7 +24,7 @@ public class RoomService : IRoomService
         _mapper = mapper;
     }
 
-    public async Task<IEnumerable<RoomDTO>> GetAllAsync()
+    public async Task<PagedResult<RoomDTO>> GetPagedAsync(int page, int pageSize)
     {
         var rooms = await _unitOfWork.Rooms.GetAllAsync(
             includeProperties: new[] { nameof(Room.RoomType) });
@@ -41,10 +41,12 @@ public class RoomService : IRoomService
 
         // Sắp xếp: phòng đang dùng/bảo trì lên trước, phòng lưu trữ (Ngừng dùng) xuống cuối;
         // trong mỗi nhóm theo tên dạng số tự nhiên (Phòng 2 trước Phòng 10).
-        return result
+        var sorted = result
             .OrderBy(d => StatusRank(d.Status))
             .ThenBy(d => NaturalKey(d.Name), StringComparer.OrdinalIgnoreCase)
             .ToList();
+
+        return PagedResult<RoomDTO>.Create(sorted, page, pageSize);
     }
 
     private static int StatusRank(string? status) => status switch

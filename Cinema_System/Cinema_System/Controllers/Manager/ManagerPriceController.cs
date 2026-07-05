@@ -16,10 +16,10 @@ public class ManagerPriceController : Controller
     }
 
     [HttpGet("")]
-    // Màn quản lý giá: 4 nhóm cấu hình (giá cơ bản / phụ thu phòng / ghế / giờ) theo tab.
-    public async Task<IActionResult> Index(string? tab)
+    // Màn quản lý giá: 4 nhóm cấu hình (giá cơ bản / phụ thu phòng / ghế / giờ) theo tab, có phân trang.
+    public async Task<IActionResult> Index(string? tab, int page = 1)
     {
-        var vm = await _priceService.GetManagementAsync(tab);
+        var vm = await _priceService.GetManagementAsync(tab, page, PricePaging.DefaultPageSize);
         return View(vm);
     }
 

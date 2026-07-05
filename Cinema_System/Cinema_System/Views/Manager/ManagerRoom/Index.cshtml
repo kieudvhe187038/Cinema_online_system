@@ -1,5 +1,5 @@
 @using Cinema_System.Application.Common
-@model IEnumerable<Cinema_System.Application.DTOs.RoomDTO>
+@model Cinema_System.Application.Common.PagedResult<Cinema_System.Application.DTOs.RoomDTO>
 @{
     ViewData["Title"] = "Quản Lý Phòng Chiếu";
     Layout = "~/Views/Shared/_ManagerLayout.cshtml";
@@ -35,7 +35,7 @@
 }
 
 <div class="bg-white rounded-xl border border-[#e8eaed] overflow-x-auto mb-5">
-    @if (Model.Any())
+    @if (Model.Items.Any())
     {
         <table class="w-full border-collapse">
             <thead>
@@ -49,7 +49,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var item in Model)
+                @foreach (var item in Model.Items)
                 {
                     var badge = StatusBadge(item.Status);
                     <tr class="hover:bg-gray-50">
@@ -119,5 +119,18 @@
         </div>
     }
 </div>
+
+@{
+    var pager = new Cinema_System.Application.ViewModels.PaginationViewModel
+    {
+        CurrentPage = Model.CurrentPage,
+        TotalPages = Model.TotalPages,
+        PageSize = Model.PageSize,
+        TotalCount = Model.TotalCount,
+        Controller = "ManagerRoom",
+        ItemLabel = "phòng"
+    };
+}
+<partial name="_Pagination" model="pager" />
 
 <partial name="_ConfirmModal" />

@@ -164,4 +164,18 @@
     }
 </div>
 
+@{
+    var pager = new Cinema_System.Application.ViewModels.PaginationViewModel
+    {
+        CurrentPage = Model.CurrentPage,
+        TotalPages = Model.TotalPages,
+        PageSize = Model.PageSize,
+        TotalCount = Model.TotalCount,
+        Controller = "ManagerPrice",
+        ItemLabel = "cấu hình giá",
+        RouteValues = new Dictionary<string, string?> { ["tab"] = tab }
+    };
+}
+<partial name="_Pagination" model="pager" />
+
 <partial name="_ConfirmModal" />

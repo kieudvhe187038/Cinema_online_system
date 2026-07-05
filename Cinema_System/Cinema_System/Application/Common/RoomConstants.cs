@@ -35,3 +35,8 @@ public static class RoomPolicy
     public const int MaxRows = 40;
     public const int MaxColumns = 40;
 }
+
+public static class RoomPaging
+{
+    public const int DefaultPageSize = 8;
+}

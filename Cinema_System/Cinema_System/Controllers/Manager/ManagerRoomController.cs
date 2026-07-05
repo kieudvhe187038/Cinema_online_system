@@ -1,3 +1,4 @@
+using Cinema_System.Application.Common;
 using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
 using Microsoft.AspNetCore.Mvc;
@@ -15,9 +16,9 @@ public class ManagerRoomController : Controller
     }
 
     [HttpGet("")]
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(int page = 1)
     {
-        var rooms = await _roomService.GetAllAsync();
+        var rooms = await _roomService.GetPagedAsync(page, RoomPaging.DefaultPageSize);
         return View(rooms);
     }
 

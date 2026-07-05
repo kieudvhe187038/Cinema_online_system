@@ -1,5 +1,10 @@
 namespace Cinema_System.Application.Common;
 
+public static class PricePaging
+{
+    public const int DefaultPageSize = 8;
+}
+
 /// <summary>
 /// Phân loại cấu hình giá — ứng với 4 bảng Price_*_Configs.
 /// Giá vé cuối = Giá cơ bản + Phụ thu phòng + Phụ thu ghế + Phụ thu theo giờ.

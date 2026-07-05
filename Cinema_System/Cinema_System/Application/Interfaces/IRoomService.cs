@@ -6,7 +6,7 @@ namespace Cinema_System.Application.Interfaces;
 
 public interface IRoomService
 {
-    Task<IEnumerable<RoomDTO>> GetAllAsync();
+    Task<PagedResult<RoomDTO>> GetPagedAsync(int page, int pageSize);
 
     /// <summary>Tạo VM rỗng cho form Thêm (đã nạp dropdown loại phòng + palette loại ghế).</summary>
     Task<RoomFormViewModel> BuildCreateFormAsync();
