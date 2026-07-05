@@ -8,6 +8,9 @@ public static class MovieStatus
 
     // Phim có suất chiếu đặc biệt (sự kiện, công chiếu sớm...).
     public const string Special = "Special";
+    
+    // Phim đã ngừng chiếu.
+    public const string Stopped = "Stopped";
 
     // So sánh "đã ngừng chiếu" không phân biệt hoa thường (data có thể là "Stopped").
     public const string StoppedLower = "stopped";

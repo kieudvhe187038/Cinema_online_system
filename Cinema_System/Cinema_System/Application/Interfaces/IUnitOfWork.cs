@@ -31,7 +31,7 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<Movie> Movies { get; }
 
-    IGenericRepository<Genre> Genres { get; }
+    IGenericRepository<Genre> Genres { get; } 
 
     IGenericRepository<RewardPointHistory> RewardPointHistories { get; }
 
@@ -48,6 +48,8 @@ public interface IUnitOfWork : IDisposable
     IShowtimeRepository Showtimes { get; }
 
     IGenericRepository<ShowtimeIncident> ShowtimeIncidents { get; }
+
+    IGenericRepository<Review> Reviews { get; }
 
     IGenericRepository<Ticket> Tickets { get; }
 

@@ -15,10 +15,11 @@ public interface IMovieService
     Task<IEnumerable<string>> GetAllGenresAsync();
     Task<IEnumerable<string>> GetAllAgeRatingsAsync();
     Task<MovieDTO?> GetMovieByIdAsync(Guid id);
+    Task<MovieDTO?> GetMovieBySlugAsync(string slug);
     // Lấy dữ liệu trang phim theo tab (now/coming/special), lọc thể loại/độ tuổi và phân trang.
     Task<PagedResult<MovieDTO>> GetMoviesPageAsync(string tab, int page, int pageSize, string? genre = null, string? ageRating = null);
-    // Tìm phim theo từ khóa và trả về kết quả phân trang.
-    Task<PagedResult<MovieDTO>> SearchMoviesAsync(string keyword, int page, int pageSize);
+    // Tìm phim theo từ khóa và trả về kết quả phân trang, giữ lại tab trạng thái hiện tại.
+    Task<PagedResult<MovieDTO>> SearchMoviesAsync(string keyword, string? tab, int page, int pageSize);
 
     // ── Quản lý (admin CRUD) ──
     // Lấy tất cả thể loại (dạng DTO) cho dropdown form quản lý.
@@ -30,7 +31,7 @@ public interface IMovieService
     // Tạo phim mới.
     Task<Result> CreateAsync(MovieFormViewModel model);
     // Cập nhật phim.
-    Task<Result> UpdateAsync(MovieFormViewModel model);
+    Task<Result> UpdateAsync(MovieFormViewModel model); 
     // Đổi trạng thái chiếu/ngừng chiếu.
     Task<Result> ToggleStatusAsync(Guid id);
 }

@@ -35,6 +35,7 @@ public class UnitOfWork : IUnitOfWork
     private IGenericRepository<Cinema>? _cinemas;
     private IShowtimeRepository? _showtimes;
     private IGenericRepository<ShowtimeIncident>? _showtimeIncidents;
+    private IGenericRepository<Review>? _reviews;
     private IGenericRepository<Ticket>? _tickets;
     private IGenericRepository<SeatHold>? _seatHolds;
     private IGenericRepository<Payment>? _payments;
@@ -107,6 +108,9 @@ public class UnitOfWork : IUnitOfWork
 
     public IGenericRepository<ShowtimeIncident> ShowtimeIncidents =>
         _showtimeIncidents ??= new GenericRepository<ShowtimeIncident>(_context);
+
+    public IGenericRepository<Review> Reviews =>
+        _reviews ??= new GenericRepository<Review>(_context);
 
     public IGenericRepository<Ticket> Tickets =>
         _tickets ??= new GenericRepository<Ticket>(_context);
