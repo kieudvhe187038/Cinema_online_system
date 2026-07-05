@@ -20,4 +20,7 @@ public class SeatTypeFormViewModel
     [Range(1, 10, ErrorMessage = "Số ô chiếm phải từ 1 đến 10")]
     [Display(Name = "Số ô chiếm trên sơ đồ")]
     public int ColumnSpan { get; set; } = 1;
+
+    /// <summary>Đã dùng trong sơ đồ ghế của phòng nào đó → khóa sửa "Số ô chiếm".</summary>
+    public bool InUse { get; set; }
 }
