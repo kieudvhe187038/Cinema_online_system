@@ -1,0 +1,106 @@
+@* Trang đặt vé thành công: tóm tắt vé + điểm thưởng đã cộng. *@
+@model Cinema_System.Application.ViewModels.PaymentSuccessViewModel
+@{
+    ViewData["Title"] = "Đặt vé thành công";
+}
+
+<div class="mx-auto max-w-lg px-4 py-10 sm:px-6">
+    <div class="rounded-2xl border border-slate-200 bg-white p-7 text-center shadow-sm">
+        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+            <span class="material-symbols-outlined text-4xl text-green-600">check_circle</span>
+        </div>
+        <h1 class="mt-4 font-heading text-2xl font-black text-tertiary">Đặt vé thành công!</h1>
+        <p class="mt-1 text-sm text-slate-500">Mã đơn: <span class="font-semibold text-slate-700">@(Model.BookingId.ToString("N")[..8].ToUpper())</span></p>
+
+        <div class="mt-6 space-y-3 rounded-xl bg-slate-50 p-4 text-left text-sm">
+            <div class="flex justify-between">
+                <span class="text-slate-500">Phim</span>
+                <span class="font-semibold text-slate-800">@Model.MovieTitle</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-slate-500">Suất chiếu</span>
+                <span class="font-semibold text-slate-800">@Model.StartTime.ToString("HH:mm dd/MM/yyyy")</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-slate-500">Phòng / Rạp</span>
+                <span class="text-right font-semibold text-slate-800">
+                    @Model.RoomName@(string.IsNullOrEmpty(Model.CinemaName) ? "" : $" · {Model.CinemaName}")
+                </span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-slate-500">Ghế</span>
+                <span class="font-semibold text-slate-800">@string.Join(", ", Model.SeatLabels)</span>
+            </div>
+            @if (Model.FoodLines.Any())
+            {
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Đồ ăn</span>
+                    <span class="text-right font-semibold text-slate-800">
+                        @string.Join(", ", Model.FoodLines.Select(f => $"{f.Name} × {f.Quantity}"))
+                    </span>
+                </div>
+            }
+            <div class="flex justify-between">
+                <span class="text-slate-500">Thanh toán</span>
+                <span class="font-semibold text-slate-800">@Model.PaymentMethod</span>
+            </div>
+            <div class="flex justify-between border-t border-slate-200 pt-3">
+                <span class="text-slate-500">Tạm tính</span>
+                <span class="font-semibold text-slate-800">@Model.Subtotal.ToString("N0") ₫</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-slate-500">VAT (@((Model.VatRate * 100).ToString("0.#"))%)</span>
+                <span class="font-semibold text-slate-800">@Model.VatAmount.ToString("N0") ₫</span>
+            </div>
+            @if (Model.PromoDiscount > 0)
+            {
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Giảm bằng mã@(string.IsNullOrEmpty(Model.PromoCode) ? "" : $" ({Model.PromoCode})")</span>
+                    <span class="font-semibold text-emerald-600">-@Model.PromoDiscount.ToString("N0") ₫</span>
+                </div>
+            }
+            @if (Model.DiscountAmount > 0)
+            {
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Giảm bằng điểm (@Model.PointsUsed đ)</span>
+                    <span class="font-semibold text-emerald-600">-@Model.DiscountAmount.ToString("N0") ₫</span>
+                </div>
+            }
+            <div class="flex justify-between border-t border-slate-200 pt-3">
+                <span class="font-semibold text-slate-700">Tổng cộng</span>
+                <span class="text-lg font-bold text-primary">@Model.GrandTotal.ToString("N0") ₫</span>
+            </div>
+        </div>
+
+        <!-- Mã QR vé: nhân viên quét để soát vé -->
+        <div class="mt-5 flex flex-col items-center rounded-xl border border-slate-200 p-4">
+            <div id="qrcode" class="rounded-lg bg-white p-2"></div>
+            <p class="mt-3 font-mono text-sm font-bold tracking-wider text-slate-700">@Model.BookingCode</p>
+            <p class="mt-1 text-xs text-slate-400">Đưa mã QR này cho nhân viên để soát vé vào rạp.</p>
+        </div>
+
+        <div class="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-700">
+            <span class="material-symbols-outlined align-middle text-[18px]">stars</span>
+            Bạn được cộng <span class="font-bold">+@Model.PointsEarned điểm</span> thưởng.
+            Tổng điểm hiện có: <span class="font-bold">@Model.RewardPointsTotal</span>.
+        </div>
+
+        <div class="mt-6 flex justify-center gap-3">
+            <a href="@Url.Action("Index", "Home")" class="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-dark">Về trang chủ</a>
+            <a href="@Url.Action("Index", "Movies")" class="rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-primary hover:text-primary">Đặt vé khác</a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+    <script>
+        // Sinh mã QR từ mã đơn để nhân viên quét soát vé.
+        new QRCode(document.getElementById("qrcode"), {
+            text: '@Model.BookingCode',
+            width: 160,
+            height: 160,
+            correctLevel: QRCode.CorrectLevel.M
+        });
+    </script>
+}
