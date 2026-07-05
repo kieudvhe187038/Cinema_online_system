@@ -47,9 +47,19 @@
 
             <div class="sf-field">
                 <label asp-for="ColumnSpan"></label>
-                <input asp-for="ColumnSpan" type="number" min="1" max="10" />
-                <span asp-validation-for="ColumnSpan" class="sf-error"></span>
-                <p class="sf-hint">Số ô loại ghế này chiếm trên sơ đồ ghế (thường bằng sức chứa).</p>
+                @if (Model.InUse)
+                {
+                    <input asp-for="ColumnSpan" type="number" min="1" max="10" readonly
+                           style="background:var(--surface-container);color:var(--on-surface-variant);cursor:not-allowed" />
+                    <p class="sf-hint">Loại ghế này đã dùng trong sơ đồ ghế của phòng nên không thể đổi số ô chiếm
+                        (sẽ làm lệch sơ đồ đã vẽ). Hãy tạo loại ghế mới nếu cần số ô chiếm khác.</p>
+                }
+                else
+                {
+                    <input asp-for="ColumnSpan" type="number" min="1" max="10" />
+                    <span asp-validation-for="ColumnSpan" class="sf-error"></span>
+                    <p class="sf-hint">Số ô loại ghế này chiếm trên sơ đồ ghế (thường bằng sức chứa).</p>
+                }
             </div>
 
             <div class="sf-actions">
