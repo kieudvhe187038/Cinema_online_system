@@ -18,6 +18,7 @@ public class MovieFormViewModel : IValidatableObject
     public string? Slug { get; set; }
 
     [Display(Name = "Mô tả")]
+    [StringLength(3000, ErrorMessage = "Mô tả tối đa 3000 ký tự")]
     public string? Description { get; set; }
 
     // Trailer nhập trực tiếp bằng URL (vd link YouTube), không upload file.

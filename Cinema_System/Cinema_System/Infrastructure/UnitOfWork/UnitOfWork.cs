@@ -19,11 +19,11 @@ public class UnitOfWork : IUnitOfWork
     private IGenericRepository<SeatType>? _seatTypes;
     private IGenericRepository<Seat>? _seats;
     private IGenericRepository<PriceSeatConfig>? _priceSeatConfigs;
-    private IGenericRepository<RoomType>? _roomTypes;
-    private IGenericRepository<Room>? _rooms;
     private IGenericRepository<PriceRoomTypeConfig>? _priceRoomTypeConfigs;
     private IGenericRepository<PriceBaseConfig>? _priceBaseConfigs;
     private IGenericRepository<PriceTimeConfig>? _priceTimeConfigs;
+    private IGenericRepository<RoomType>? _roomTypes;
+    private IGenericRepository<Room>? _rooms;
     private IGenericRepository<Movie>? _movies;
     private IGenericRepository<Genre>? _genres;
     private IGenericRepository<RewardPointHistory>? _rewardPointHistories;
@@ -35,6 +35,9 @@ public class UnitOfWork : IUnitOfWork
     private IGenericRepository<Showtime>? _showtimes;
     private IGenericRepository<ShowtimeIncident>? _showtimeIncidents;
     private IGenericRepository<Ticket>? _tickets;
+    private IGenericRepository<SeatHold>? _seatHolds;
+    private IGenericRepository<Payment>? _payments;
+    private IGenericRepository<Vat>? _vats;
 
     public UnitOfWork(CinemaWebDbContext context)
     {
@@ -59,12 +62,6 @@ public class UnitOfWork : IUnitOfWork
     public IGenericRepository<PriceSeatConfig> PriceSeatConfigs =>
         _priceSeatConfigs ??= new GenericRepository<PriceSeatConfig>(_context);
 
-    public IGenericRepository<RoomType> RoomTypes =>
-        _roomTypes ??= new GenericRepository<RoomType>(_context);
-
-    public IGenericRepository<Room> Rooms =>
-        _rooms ??= new GenericRepository<Room>(_context);
-
     public IGenericRepository<PriceRoomTypeConfig> PriceRoomTypeConfigs =>
         _priceRoomTypeConfigs ??= new GenericRepository<PriceRoomTypeConfig>(_context);
 
@@ -73,6 +70,12 @@ public class UnitOfWork : IUnitOfWork
 
     public IGenericRepository<PriceTimeConfig> PriceTimeConfigs =>
         _priceTimeConfigs ??= new GenericRepository<PriceTimeConfig>(_context);
+
+    public IGenericRepository<RoomType> RoomTypes =>
+        _roomTypes ??= new GenericRepository<RoomType>(_context);
+
+    public IGenericRepository<Room> Rooms =>
+        _rooms ??= new GenericRepository<Room>(_context);
 
     public IGenericRepository<Movie> Movies =>
         _movies ??= new GenericRepository<Movie>(_context);
@@ -106,6 +109,15 @@ public class UnitOfWork : IUnitOfWork
 
     public IGenericRepository<Ticket> Tickets =>
         _tickets ??= new GenericRepository<Ticket>(_context);
+
+    public IGenericRepository<SeatHold> SeatHolds =>
+        _seatHolds ??= new GenericRepository<SeatHold>(_context);
+
+    public IGenericRepository<Payment> Payments =>
+        _payments ??= new GenericRepository<Payment>(_context);
+
+    public IGenericRepository<Vat> Vats =>
+        _vats ??= new GenericRepository<Vat>(_context);
 
     // Lưu tất cả thay đổi của DbContext trong 1 transaction logic
     public async Task<int> SaveChangesAsync()

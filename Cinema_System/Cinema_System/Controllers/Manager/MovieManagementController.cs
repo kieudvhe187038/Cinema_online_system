@@ -1,17 +1,20 @@
 using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Cinema_System.Controllers.Manager;
 
 [Route("Manager/Movies")]
+[Authorize(Roles = "MANAGER")]   // Chỉ Quản lý rạp mới được quản lý phim.
 public class MovieManagementController : Controller
 {
     private readonly IMovieService _movieService;
     private readonly IWebHostEnvironment _env;
 
-    // Giới hạn upload: 10MB cho ảnh poster/banner
+    // Giới hạn request 10MB (đủ chỗ cho cả poster + banner); mỗi ảnh tối đa 2MB.
     private const long MaxUploadBytes = 10 * 1024 * 1024;
+    private const long MaxImageBytes = 2 * 1024 * 1024;
     private static readonly string[] ImageExts = { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
 
     public MovieManagementController(IMovieService movieService, IWebHostEnvironment env)
@@ -86,6 +89,7 @@ public class MovieManagementController : Controller
 
         if (!ModelState.IsValid)
         {
+            await RestoreLockedScheduleAsync(model);
             model.AvailableGenres = (await _movieService.GetGenreOptionsAsync()).ToList();
             return View(model);
         }
@@ -111,6 +115,17 @@ public class MovieManagementController : Controller
         TempData[result.Succeeded ? "Success" : "Error"] =
             result.Succeeded ? "Đã cập nhật trạng thái phim." : result.Error;
         return RedirectToAction(nameof(Index));
+    }
+
+    // Phim đang chiếu: form khóa thời lượng & ngày khởi chiếu nên 2 ô disabled không submit.
+    // Đổ lại giá trị gốc từ DB để khi re-render (lỗi validate) vẫn hiển thị đúng.
+    private async Task RestoreLockedScheduleAsync(MovieFormViewModel model)
+    {
+        if (model.Status != Cinema_System.Application.Common.MovieStatus.NowShowing) return;
+        var original = await _movieService.GetForEditAsync(model.Id);
+        if (original is null) return;
+        model.DurationMinutes = original.DurationMinutes;
+        model.ReleaseDate = original.ReleaseDate;
     }
 
     // ── File upload helpers ──────────────────────────────────────────────
@@ -160,6 +175,12 @@ public class MovieManagementController : Controller
         {
             ModelState.AddModelError(fieldKey,
                 $"Định dạng không hợp lệ. Cho phép: {string.Join(", ", allowedExts)}");
+            return null;
+        }
+
+        if (file.Length > MaxImageBytes)
+        {
+            ModelState.AddModelError(fieldKey, "Ảnh tối đa 2MB.");
             return null;
         }
 

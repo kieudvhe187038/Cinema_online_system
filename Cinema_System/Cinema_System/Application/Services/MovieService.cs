@@ -302,6 +302,9 @@ public class MovieService : IMovieService
         if (movie is null)
             return Result.Failure("Không tìm thấy phim.");
 
+        // Phim ĐANG CHIẾU: không cho đổi thời lượng & ngày khởi chiếu (giữ nguyên giá trị cũ trong DB).
+        var lockSchedule = movie.Status == MovieStatus.NowShowing;
+
         movie.Title = model.Title.Trim();
         movie.Description = string.IsNullOrWhiteSpace(model.Description) ? null : model.Description.Trim();
         movie.TrailerUrl = string.IsNullOrWhiteSpace(model.TrailerUrl) ? null : model.TrailerUrl.Trim();
@@ -311,8 +314,12 @@ public class MovieService : IMovieService
         movie.CastMembers = string.IsNullOrWhiteSpace(model.CastMembers) ? null : model.CastMembers.Trim();
         movie.Language = string.IsNullOrWhiteSpace(model.Language) ? null : model.Language.Trim();
         movie.Subtitle = string.IsNullOrWhiteSpace(model.Subtitle) ? null : model.Subtitle.Trim();
-        movie.DurationMinutes = model.DurationMinutes;
-        movie.ReleaseDate = model.ReleaseDate;
+        // Chỉ cập nhật thời lượng & ngày khởi chiếu khi phim KHÔNG ở trạng thái đang chiếu.
+        if (!lockSchedule)
+        {
+            movie.DurationMinutes = model.DurationMinutes;
+            movie.ReleaseDate = model.ReleaseDate;
+        }
         movie.AgeRating = model.AgeRating;
         movie.Status = model.Status;
         movie.UpdatedAt = DateTime.Now;
@@ -335,7 +342,18 @@ public class MovieService : IMovieService
         if (movie is null)
             return Result.Failure("Không tìm thấy phim.");
 
-        movie.Status = movie.Status == "Stopped" ? MovieStatus.NowShowing : "Stopped";
+        var stopping = movie.Status != "Stopped";   // đang chuyển sang Ngừng chiếu
+
+        // Không cho ngừng chiếu khi phim còn suất chiếu sắp/đang diễn ra (Scheduled hoặc Live).
+        if (stopping)
+        {
+            var hasActiveShowtimes = await _unitOfWork.Showtimes.ExistsAsync(
+                s => s.MovieId == id && (s.Status == "Scheduled" || s.Status == "Live"));
+            if (hasActiveShowtimes)
+                return Result.Failure("Phim đang có suất chiếu, không thể ngừng chiếu. Hãy hủy hoặc hoàn tất các suất trước.");
+        }
+
+        movie.Status = stopping ? "Stopped" : MovieStatus.NowShowing;
         movie.UpdatedAt = DateTime.Now;
         _unitOfWork.Movies.Update(movie);
         await _unitOfWork.SaveChangesAsync();

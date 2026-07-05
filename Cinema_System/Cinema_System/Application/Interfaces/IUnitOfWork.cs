@@ -19,15 +19,15 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<PriceSeatConfig> PriceSeatConfigs { get; }
 
-    IGenericRepository<RoomType> RoomTypes { get; }
-
-    IGenericRepository<Room> Rooms { get; }
-
     IGenericRepository<PriceRoomTypeConfig> PriceRoomTypeConfigs { get; }
 
     IGenericRepository<PriceBaseConfig> PriceBaseConfigs { get; }
 
     IGenericRepository<PriceTimeConfig> PriceTimeConfigs { get; }
+
+    IGenericRepository<RoomType> RoomTypes { get; }
+
+    IGenericRepository<Room> Rooms { get; }
 
     IGenericRepository<Movie> Movies { get; }
 
@@ -50,6 +50,12 @@ public interface IUnitOfWork : IDisposable
     IGenericRepository<ShowtimeIncident> ShowtimeIncidents { get; }
 
     IGenericRepository<Ticket> Tickets { get; }
+
+    IGenericRepository<SeatHold> SeatHolds { get; }
+
+    IGenericRepository<Payment> Payments { get; }
+
+    IGenericRepository<Vat> Vats { get; }
 
     Task<int> SaveChangesAsync();
 
