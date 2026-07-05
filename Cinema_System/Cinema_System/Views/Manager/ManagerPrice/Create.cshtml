@@ -1,0 +1,53 @@
+@using Cinema_System.Application.Common
+@model PriceConfigFormViewModel
+@{
+    ViewData["Title"] = "Thêm Cấu Hình Giá";
+    Layout = "~/Views/Shared/_ManagerLayout.cshtml";
+    var kindLabel = PriceKind.Label(Model.Kind);
+}
+
+<div class="max-w-[720px] mx-auto mb-8">
+    <div class="mb-6 flex items-center gap-3">
+        <a href="@Url.Action("Index", "ManagerPrice", new { tab = Model.Kind })"
+           class="w-9 h-9 rounded-lg flex items-center justify-center bg-white border border-[#e8eaed] text-gray-500 hover:text-primary hover:border-primary transition-colors">
+            <span class="material-symbols-outlined" style="font-size:20px">arrow_back</span>
+        </a>
+        <div>
+            <h1 class="font-head text-2xl font-extrabold text-[#191c1d] mb-0.5">Thêm @kindLabel.ToLower()</h1>
+            <p class="text-sm text-gray-500">Thiết lập một mức giá/phụ thu mới cho hệ thống bán vé</p>
+        </div>
+    </div>
+
+    <!-- Cảnh báo đặc biệt -->
+    <div class="flex items-start gap-3 px-4 py-3 rounded-lg mb-5 text-sm bg-amber-50 text-amber-800 border border-amber-200">
+        <span class="material-symbols-outlined shrink-0" style="font-size:20px">warning</span>
+        <div>
+            <strong>Cảnh báo:</strong> Cấu hình này sẽ ảnh hưởng <strong>trực tiếp đến giá vé</strong> mà khách hàng phải trả ngay khi có hiệu lực.
+            Hãy kiểm tra kỹ số tiền và khoảng thời gian áp dụng. Hệ thống sẽ yêu cầu bạn xác nhận lại trước khi lưu.
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-[#e8eaed] p-7">
+        <form id="priceForm" method="post" action="@Url.Action("Create", "ManagerPrice", new { kind = Model.Kind })">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-red-700 text-sm mb-4"></div>
+
+            <partial name="_FormFields" model="Model" />
+
+            <div class="flex gap-3 mt-6">
+                <button type="submit" class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-semibold transition-colors">
+                    <span class="material-symbols-outlined" style="font-size:18px">save</span>
+                    Lưu cấu hình
+                </button>
+                <a class="inline-flex items-center px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-[#191c1d] rounded-lg text-sm font-semibold transition-colors" href="@Url.Action("Index", "ManagerPrice", new { tab = Model.Kind })">Hủy</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<partial name="_ConfirmModal" />
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <partial name="_PriceFormScripts" />
+}
