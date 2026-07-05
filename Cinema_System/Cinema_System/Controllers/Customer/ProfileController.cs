@@ -176,7 +176,9 @@ public class ProfileController : Controller
     // Xem lịch sử điểm (phân trang 5 dòng/trang, dùng chung PagedResult)
     public async Task<IActionResult> PointHistory(int page = 1)
     {
-        var pointHistory = await _profileService.GetPointHistoryAsync(GetCurrentUserId());
+        var userId = GetCurrentUserId();
+        var profile = await _profileService.GetProfileAsync(userId);   // lấy tổng điểm hiện có
+        var pointHistory = await _profileService.GetPointHistoryAsync(userId);
         var allRecords = pointHistory.Select(record => _mapper.Map<PointHistoryViewModel>(record));
 
         var paged = PagedResult<PointHistoryViewModel>.Create(allRecords, page, PointHistoryPageSize);
@@ -186,7 +188,8 @@ public class ProfileController : Controller
             Items = paged.Items.ToList(),
             CurrentPage = paged.CurrentPage,
             TotalPages = paged.TotalPages,
-            TotalItems = paged.TotalCount
+            TotalItems = paged.TotalCount,
+            CurrentPoints = profile?.RewardPoints ?? 0
         };
         return View(pageModel);
     }
