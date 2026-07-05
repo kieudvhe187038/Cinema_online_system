@@ -189,7 +189,30 @@ public class RoomService : IRoomService
             return await VersionRoomAsync(room, name, roomTypeId, model, drafts);
         }
 
-        // KHÔNG có vé nào → sửa tại chỗ, thay toàn bộ ghế.
+        // KHÔNG có vé nào.
+        var existing = await _unitOfWork.Seats.GetAllAsync(s => s.RoomId == room.Id);
+        var dimsUnchanged = room.TotalRow == model.TotalRow && room.TotalColumns == model.TotalColumns;
+        var seatsUnchanged = SeatLayoutEquals(existing, drafts);
+
+        // Sơ đồ ghế không đổi → chỉ cập nhật tên/loại/trạng thái, GIỮ NGUYÊN ghế
+        // (tránh xóa mất trạng thái "Broken"/"Reserved" mà Staff đã đặt cho ghế).
+        if (dimsUnchanged && seatsUnchanged)
+        {
+            room.Name = name;
+            room.RoomTypeId = roomTypeId;
+            room.Status = model.Status;
+            _unitOfWork.Rooms.Update(room);
+            await _unitOfWork.SaveChangesAsync();
+            return Result<string>.Success("Cập nhật phòng chiếu thành công.");
+        }
+
+        // Sơ đồ ghế/kích thước đổi thật → phải xóa & tạo lại ghế. Chặn nếu đang có khách
+        // giữ ghế tạm (SeatHold) trong phòng, vì Seat_Holds.seat_id không có FK cascade
+        // (xóa ghế đang bị giữ sẽ ném SqlException giữa lúc khách thanh toán).
+        if (await HasActiveSeatHoldAsync(room.Id))
+            return Result<string>.Failure(
+                "Không thể đổi sơ đồ ghế: đang có khách giữ ghế chờ thanh toán trong phòng này. Vui lòng thử lại sau.");
+
         room.Name = name;
         room.RoomTypeId = roomTypeId;
         room.Status = model.Status;
@@ -198,7 +221,6 @@ public class RoomService : IRoomService
         room.TotalSeats = drafts.Count > 0 ? drafts.Count : null;
         _unitOfWork.Rooms.Update(room);
 
-        var existing = await _unitOfWork.Seats.GetAllAsync(s => s.RoomId == room.Id);
         foreach (var seat in existing)
             _unitOfWork.Seats.Remove(seat);
         foreach (var d in drafts)
@@ -266,6 +288,8 @@ public class RoomService : IRoomService
             return Result.Failure("Không thể xóa: phòng đang có suất chiếu.");
         if (await HasBookedTicketsAsync(id))
             return Result.Failure("Không thể xóa: phòng đã có vé được đặt.");
+        if (await HasActiveSeatHoldAsync(id))
+            return Result.Failure("Không thể xóa: đang có khách giữ ghế chờ thanh toán trong phòng này.");
 
         var seats = await _unitOfWork.Seats.GetAllAsync(s => s.RoomId == id);
         foreach (var seat in seats)
@@ -364,6 +388,18 @@ public class RoomService : IRoomService
         if (seatIds.Count == 0) return false;
 
         return await _unitOfWork.Tickets.ExistsAsync(t => seatIds.Contains(t.SeatId));
+    }
+
+    /// <summary>
+    /// Phòng có ghế đang được khách giữ tạm (chưa hết hạn) hay không — vd khách đang ở
+    /// bước chọn đồ ăn/thanh toán. <c>Seat_Holds.seat_id</c> không có FK cascade nên xóa
+    /// ghế lúc này sẽ ném lỗi ràng buộc dữ liệu.
+    /// </summary>
+    private async Task<bool> HasActiveSeatHoldAsync(Guid roomId)
+    {
+        var now = DateTime.Now;
+        return await _unitOfWork.SeatHolds.ExistsAsync(
+            h => h.Status == "Holding" && h.ExpiresAt > now && h.Seat.RoomId == roomId);
     }
 
     /// <summary>Phòng có suất chiếu đang/sẽ diễn ra (chưa kết thúc) → đang được cam kết cho khách.</summary>
