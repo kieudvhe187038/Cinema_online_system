@@ -1,0 +1,233 @@
+@using Cinema_System.Application.Common
+@model PromotionListViewModel
+@{
+    ViewData["Title"] = "Quản Lý Khuyến Mãi";
+    Layout = "~/Views/Shared/_ManagerLayout.cshtml";
+
+    string TargetLabel(string? t) => t switch
+    {
+        PromotionTarget.TicketOnly => "Chỉ vé",
+        PromotionTarget.FoodOnly => "Chỉ bắp nước",
+        _ => "Toàn bộ đơn"
+    };
+}
+
+<div class="flex justify-between items-start mb-6 gap-4 flex-wrap">
+    <div>
+        <h1 class="font-head text-2xl font-extrabold text-[#191c1d] mb-0.5">Danh sách khuyến mãi / voucher</h1>
+        <p class="text-sm text-gray-500">Quản lý mã giảm giá áp dụng cho vé và bắp nước toàn hệ thống</p>
+    </div>
+    <a class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg text-xs font-bold tracking-wide whitespace-nowrap transition-colors"
+       href="@Url.Action("Create", "ManagerPromotion")">
+        <span class="material-symbols-outlined" style="font-size:18px">add_circle</span>
+        TẠO VOUCHER MỚI
+    </a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="px-4 py-3 rounded-lg mb-4 text-sm bg-green-50 text-green-700 border border-green-200">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="px-4 py-3 rounded-lg mb-4 text-sm bg-red-50 text-red-700 border border-red-200">@TempData["Error"]</div>
+}
+
+<div class="bg-white rounded-xl p-5 mb-5 border border-[#e8eaed]">
+    <form method="get" action="@Url.Action("Index", "ManagerPromotion")">
+        <div class="flex gap-3.5 flex-wrap items-end">
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">Trạng thái</label>
+                <select name="status"
+                        class="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white min-w-[155px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20">
+                    @{
+                        var sf = Model.StatusFilter ?? "";
+                        var statusOpts = new[] {
+                            ("", "Tất cả trạng thái"),
+                            (PromotionStatus.Active, "Đang áp dụng"),
+                            (PromotionStatus.Disabled, "Đã tắt"),
+                            (PromotionStatus.Expired, "Hết hạn"),
+                        };
+                        foreach (var (val, text) in statusOpts)
+                        {
+                            if (val == sf)
+                            {
+                                <option value="@val" selected>@text</option>
+                            }
+                            else
+                            {
+                                <option value="@val">@text</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-bold text-gray-500 uppercase tracking-wide">Tìm kiếm</label>
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" style="font-size:18px">search</span>
+                    <input type="text" name="search" value="@Model.Search" placeholder="Tìm theo mã voucher..."
+                           class="pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm bg-white min-w-[220px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                </div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+                <button type="submit"
+                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-secondary-dark hover:bg-[#002f6c] text-white rounded-lg text-sm font-semibold whitespace-nowrap transition-colors">
+                    <span class="material-symbols-outlined" style="font-size:18px">filter_list</span>
+                    Áp dụng bộ lọc
+                </button>
+            </div>
+            @if (!string.IsNullOrEmpty(Model.Search) || !string.IsNullOrEmpty(Model.StatusFilter))
+            {
+                <a class="text-sm text-gray-500 hover:text-primary py-2 self-end" href="@Url.Action("Index", "ManagerPromotion")">✕ Xóa bộ lọc</a>
+            }
+        </div>
+    </form>
+</div>
+
+<div class="bg-white rounded-xl border border-[#e8eaed] overflow-x-auto mb-5">
+    @if (Model.Items.Any())
+    {
+        <table class="w-full border-collapse">
+            <thead>
+                <tr class="bg-gray-900">
+                    <th class="px-4 py-3.5 text-left text-gray-300 text-xs font-bold tracking-wide uppercase whitespace-nowrap">Mã Voucher</th>
+                    <th class="px-4 py-3.5 text-left text-gray-300 text-xs font-bold tracking-wide uppercase whitespace-nowrap">Giảm Giá</th>
+                    <th class="px-4 py-3.5 text-left text-gray-300 text-xs font-bold tracking-wide uppercase whitespace-nowrap">Áp Dụng</th>
+                    <th class="px-4 py-3.5 text-left text-gray-300 text-xs font-bold tracking-wide uppercase whitespace-nowrap">Hiệu Lực</th>
+                    <th class="px-4 py-3.5 text-left text-gray-300 text-xs font-bold tracking-wide uppercase whitespace-nowrap">Lượt Dùng</th>
+                    <th class="px-4 py-3.5 text-left text-gray-300 text-xs font-bold tracking-wide uppercase whitespace-nowrap">Trạng Thái</th>
+                    <th class="px-4 py-3.5 text-left text-gray-300 text-xs font-bold tracking-wide uppercase whitespace-nowrap">Hành Động</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    var isExpired = item.Status == PromotionStatus.Expired || item.ValidTo < DateTime.Now;
+                    var badge = item.Status switch
+                    {
+                        PromotionStatus.Disabled => ("bg-gray-100 text-gray-600", "bg-gray-400", "Đã tắt"),
+                        _ when isExpired         => ("bg-red-100 text-red-700", "bg-red-500", "Hết hạn"),
+                        PromotionStatus.Active    => ("bg-green-100 text-green-700", "bg-green-600", "Đang áp dụng"),
+                        _                         => ("bg-gray-100 text-gray-600", "bg-gray-400", item.Status ?? "—")
+                    };
+                    var discountText = item.DiscountType == PromotionDiscountType.Percent
+                        ? $"{item.DiscountAmount.ToString("0.##")}%"
+                        : $"{item.DiscountAmount.ToString("N0")} ₫";
+                    var isDisabled = item.Status == PromotionStatus.Disabled;
+                    var toggleMsg = isDisabled
+                        ? $"Bật lại voucher '{item.Code}'? Khách hàng sẽ có thể áp dụng mã này trở lại."
+                        : $"Tắt voucher '{item.Code}'? Khách hàng sẽ không thể áp dụng mã này cho tới khi bật lại.";
+                    var toggleTitle = isDisabled ? "Bật voucher" : "Tắt voucher";
+                    var toggleOk = isDisabled ? "Bật lại" : "Tắt voucher";
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3.5 border-b border-gray-100 text-sm align-middle">
+                            <span class="inline-block font-mono font-bold text-secondary bg-secondary/5 border border-secondary/20 rounded-md px-2.5 py-1 text-sm tracking-wider">@item.Code</span>
+                        </td>
+                        <td class="px-4 py-3.5 border-b border-gray-100 text-sm align-middle">
+                            <div class="font-bold text-primary whitespace-nowrap">@discountText</div>
+                            <div class="text-xs text-gray-500">
+                                @(item.DiscountType == PromotionDiscountType.Percent ? "Theo phần trăm" : "Số tiền cố định")
+                                @if (item.DiscountType == PromotionDiscountType.Percent && item.MaxDiscountAmount.HasValue)
+                                {
+                                    <text> · tối đa @item.MaxDiscountAmount.Value.ToString("N0") ₫</text>
+                                }
+                            </div>
+                        </td>
+                        <td class="px-4 py-3.5 border-b border-gray-100 text-sm align-middle">
+                            <div class="text-sm">@TargetLabel(item.ApplicableTarget)</div>
+                            @if (item.MinOrderValue > 0)
+                            {
+                                <div class="text-xs text-gray-500">Đơn từ @item.MinOrderValue.Value.ToString("N0") ₫</div>
+                            }
+                        </td>
+                        <td class="px-4 py-3.5 border-b border-gray-100 text-sm align-middle whitespace-nowrap">
+                            <div class="text-xs text-gray-600">@item.ValidFrom.ToString("dd/MM/yyyy HH:mm")</div>
+                            <div class="text-xs text-gray-400">→ @item.ValidTo.ToString("dd/MM/yyyy HH:mm")</div>
+                        </td>
+                        <td class="px-4 py-3.5 border-b border-gray-100 text-sm align-middle whitespace-nowrap">
+                            @(item.UsageLimit.HasValue ? $"{item.UsageLimit} lượt" : "Không giới hạn")
+                        </td>
+                        <td class="px-4 py-3.5 border-b border-gray-100 text-sm align-middle">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap @badge.Item1">
+                                <span class="w-[7px] h-[7px] rounded-full shrink-0 @badge.Item2"></span>
+                                @badge.Item3
+                            </span>
+                        </td>
+                        <td class="px-4 py-3.5 border-b border-gray-100 text-sm align-middle">
+                            <div class="flex items-center gap-1.5">
+                                <a class="w-8 h-8 rounded-md flex items-center justify-center bg-gray-100 text-amber-500 hover:bg-amber-100 transition-colors"
+                                   href="@Url.Action("Edit", "ManagerPromotion", new { id = item.Id })" title="Chỉnh sửa">
+                                    <span class="material-symbols-outlined" style="font-size:18px">edit</span>
+                                </a>
+
+                                <form method="post"
+                                      action="@Url.Action("ToggleStatus", "ManagerPromotion", new { id = item.Id })"
+                                      class="inline"
+                                      data-confirm="@toggleMsg" data-confirm-title="@toggleTitle"
+                                      data-confirm-type="warning" data-confirm-ok="@toggleOk">
+                                    @Html.AntiForgeryToken()
+                                    @if (isDisabled)
+                                    {
+                                        <button type="submit" class="w-8 h-8 rounded-md flex items-center justify-center bg-gray-100 text-green-500 hover:bg-green-100 transition-colors" title="Bật voucher">
+                                            <span class="material-symbols-outlined" style="font-size:18px">toggle_on</span>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="submit" class="w-8 h-8 rounded-md flex items-center justify-center bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors" title="Tắt voucher">
+                                            <span class="material-symbols-outlined" style="font-size:18px">toggle_off</span>
+                                        </button>
+                                    }
+                                </form>
+
+                                @if (!item.HasUsage)
+                                {
+                                    <form method="post"
+                                          action="@Url.Action("Delete", "ManagerPromotion", new { id = item.Id })"
+                                          class="inline"
+                                          data-confirm="Xóa vĩnh viễn voucher '@item.Code'? Hành động này KHÔNG thể hoàn tác."
+                                          data-confirm-title="Xóa voucher" data-confirm-type="danger" data-confirm-ok="Xóa vĩnh viễn">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="w-8 h-8 rounded-md flex items-center justify-center bg-gray-100 text-red-500 hover:bg-red-100 transition-colors" title="Xóa vĩnh viễn">
+                                            <span class="material-symbols-outlined" style="font-size:18px">delete</span>
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <button class="w-8 h-8 rounded-md flex items-center justify-center bg-gray-100 text-gray-300 cursor-not-allowed" title="Đã được áp dụng trong đơn đặt vé" disabled>
+                                        <span class="material-symbols-outlined" style="font-size:18px">delete</span>
+                                    </button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="text-center py-16 px-8 text-gray-400 text-sm">
+            <span class="material-symbols-outlined block mb-3" style="font-size:48px">sell</span>
+            Không tìm thấy voucher nào.
+        </div>
+    }
+</div>
+
+@{
+    var pager = new Cinema_System.Application.ViewModels.PaginationViewModel
+    {
+        CurrentPage = Model.CurrentPage,
+        TotalPages = Model.TotalPages,
+        PageSize = Model.PageSize,
+        TotalCount = Model.TotalCount,
+        Controller = "ManagerPromotion",
+        ItemLabel = "voucher",
+        RouteValues = new Dictionary<string, string?> { ["search"] = Model.Search, ["status"] = Model.StatusFilter }
+    };
+}
+<partial name="_Pagination" model="pager" />
+
+<partial name="_ConfirmModal" />

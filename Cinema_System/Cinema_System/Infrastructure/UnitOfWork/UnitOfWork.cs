@@ -2,6 +2,7 @@ using Cinema_System.Application.Interfaces;
 using Cinema_System.Domain.Entities;
 using Cinema_System.Infrastructure.Data;
 using Cinema_System.Infrastructure.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 namespace Cinema_System.Infrastructure.UnitOfWork;
 
@@ -17,21 +18,28 @@ public class UnitOfWork : IUnitOfWork
     private IGenericRepository<Role>? _roles;
     private IGenericRepository<SystemConfig>? _systemConfigs;
     private IGenericRepository<SeatType>? _seatTypes;
-    private IGenericRepository<Seat>? _seats;
+    private ISeatRepository? _seats;
     private IGenericRepository<PriceSeatConfig>? _priceSeatConfigs;
-    private IGenericRepository<RoomType>? _roomTypes;
-    private IGenericRepository<Room>? _rooms;
     private IGenericRepository<PriceRoomTypeConfig>? _priceRoomTypeConfigs;
+    private IGenericRepository<PriceBaseConfig>? _priceBaseConfigs;
+    private IGenericRepository<PriceTimeConfig>? _priceTimeConfigs;
+    private IGenericRepository<RoomType>? _roomTypes;
+    private IRoomRepository? _rooms;
     private IGenericRepository<Movie>? _movies;
     private IGenericRepository<Genre>? _genres;
     private IGenericRepository<RewardPointHistory>? _rewardPointHistories;
     private IGenericRepository<FoodBeverage>? _foodBeverages;
     private IGenericRepository<BookingFood>? _bookingFoods;
-    private IGenericRepository<Booking>? _bookings;
-    private IGenericRepository<Showtime>? _showtimes;
-    private IGenericRepository<ShowtimeIncident>? _showtimeIncidents;
     private IGenericRepository<Promotion>? _promotions;
+    private IBookingRepository? _bookings;
+    private IGenericRepository<Cinema>? _cinemas;
+    private IShowtimeRepository? _showtimes;
+    private IGenericRepository<ShowtimeIncident>? _showtimeIncidents;
+    private IGenericRepository<Review>? _reviews;
     private IGenericRepository<Ticket>? _tickets;
+    private IGenericRepository<SeatHold>? _seatHolds;
+    private IGenericRepository<Payment>? _payments;
+    private IGenericRepository<Vat>? _vats;
 
     public UnitOfWork(CinemaWebDbContext context)
     {
@@ -50,20 +58,26 @@ public class UnitOfWork : IUnitOfWork
     public IGenericRepository<SeatType> SeatTypes =>
         _seatTypes ??= new GenericRepository<SeatType>(_context);
 
-    public IGenericRepository<Seat> Seats =>
-        _seats ??= new GenericRepository<Seat>(_context);
+    public ISeatRepository Seats =>
+        _seats ??= new SeatRepository(_context);
 
     public IGenericRepository<PriceSeatConfig> PriceSeatConfigs =>
         _priceSeatConfigs ??= new GenericRepository<PriceSeatConfig>(_context);
 
+    public IGenericRepository<PriceRoomTypeConfig> PriceRoomTypeConfigs =>
+        _priceRoomTypeConfigs ??= new GenericRepository<PriceRoomTypeConfig>(_context);
+
+    public IGenericRepository<PriceBaseConfig> PriceBaseConfigs =>
+        _priceBaseConfigs ??= new GenericRepository<PriceBaseConfig>(_context);
+
+    public IGenericRepository<PriceTimeConfig> PriceTimeConfigs =>
+        _priceTimeConfigs ??= new GenericRepository<PriceTimeConfig>(_context);
+
     public IGenericRepository<RoomType> RoomTypes =>
         _roomTypes ??= new GenericRepository<RoomType>(_context);
 
-    public IGenericRepository<Room> Rooms =>
-        _rooms ??= new GenericRepository<Room>(_context);
-
-    public IGenericRepository<PriceRoomTypeConfig> PriceRoomTypeConfigs =>
-        _priceRoomTypeConfigs ??= new GenericRepository<PriceRoomTypeConfig>(_context);
+    public IRoomRepository Rooms =>
+        _rooms ??= new RoomRepository(_context);
 
     public IGenericRepository<Movie> Movies =>
         _movies ??= new GenericRepository<Movie>(_context);
@@ -79,24 +93,66 @@ public class UnitOfWork : IUnitOfWork
 
     public IGenericRepository<BookingFood> BookingFoods =>
         _bookingFoods ??= new GenericRepository<BookingFood>(_context);
-    public IGenericRepository<Booking> Bookings =>
-        _bookings ??= new GenericRepository<Booking>(_context);
-    public IGenericRepository<Showtime> Showtimes =>
-        _showtimes ??= new GenericRepository<Showtime>(_context);
-
-    public IGenericRepository<ShowtimeIncident> ShowtimeIncidents =>
-        _showtimeIncidents ??= new GenericRepository<ShowtimeIncident>(_context);
 
     public IGenericRepository<Promotion> Promotions =>
         _promotions ??= new GenericRepository<Promotion>(_context);
 
+    public IBookingRepository Bookings =>
+        _bookings ??= new BookingRepository(_context);
+
+    public IGenericRepository<Cinema> Cinemas =>
+        _cinemas ??= new GenericRepository<Cinema>(_context);
+
+    public IShowtimeRepository Showtimes =>
+        _showtimes ??= new ShowtimeRepository(_context);
+
+    public IGenericRepository<ShowtimeIncident> ShowtimeIncidents =>
+        _showtimeIncidents ??= new GenericRepository<ShowtimeIncident>(_context);
+
+    public IGenericRepository<Review> Reviews =>
+        _reviews ??= new GenericRepository<Review>(_context);
+
     public IGenericRepository<Ticket> Tickets =>
         _tickets ??= new GenericRepository<Ticket>(_context);
+
+    public IGenericRepository<SeatHold> SeatHolds =>
+        _seatHolds ??= new GenericRepository<SeatHold>(_context);
+
+    public IGenericRepository<Payment> Payments =>
+        _payments ??= new GenericRepository<Payment>(_context);
+
+    public IGenericRepository<Vat> Vats =>
+        _vats ??= new GenericRepository<Vat>(_context);
 
     // Lưu tất cả thay đổi của DbContext trong 1 transaction logic
     public async Task<int> SaveChangesAsync()
     {
         return await _context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Lưu thay đổi nhưng trả về <c>false</c> khi vi phạm ràng buộc dữ liệu
+    /// (DbUpdateException) — backstop chống đặt trùng ghế khi có người đặt cùng lúc.
+    /// Các loại lỗi khác vẫn được ném ra như thường.
+    /// </summary>
+    public async Task<bool> TrySaveChangesAsync()
+    {
+        try
+        {
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateException)
+        {
+            // Backstop unique index (vd UX_Tickets_Showtime_Seat) khi đặt trùng ghế.
+            return false;
+        }
+    }
+
+    // Gỡ theo dõi toàn bộ entity đang tracked (xem IUnitOfWork.ClearTracking).
+    public void ClearTracking()
+    {
+        _context.ChangeTracker.Clear();
     }
 
     public void Dispose()

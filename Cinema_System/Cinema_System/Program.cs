@@ -17,7 +17,13 @@ DotNetEnv.Env.TraversePath().Load();
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+// Đăng ký SubfolderViewLocationExpander để controller trong các area con
+// (Admin / Manager / Staff) tìm được view ở /Views/{Area}/{Controller}/{Action}.cshtml.
+builder.Services.AddControllersWithViews()
+    .AddRazorOptions(options =>
+    {
+        options.ViewLocationExpanders.Add(new SubfolderViewLocationExpander());
+    });
 
 // Cho phép tìm view trong thư mục con /Views/Admin/{controller} và /Views/Manager/{controller}
 // (module quản trị của taido đặt view theo cấu trúc thư mục con).
@@ -45,7 +51,16 @@ builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<IRegistrationService, RegistrationService>();
 builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 builder.Services.AddScoped<IMovieService, MovieService>();
+builder.Services.AddScoped<IShowtimeService, ShowtimeService>();
 builder.Services.AddScoped<IFoodBeverageService, FoodBeverageService>();
+builder.Services.AddScoped<IPromotionService, PromotionService>();
+builder.Services.AddScoped<IPriceService, PriceService>();
+// Cổng thanh toán VNPay (sandbox). Secret nạp từ .env: Vnpay__TmnCode, Vnpay__HashSecret.
+builder.Services.Configure<Cinema_System.Infrastructure.PaymentGateway.VnpaySettings>(builder.Configuration.GetSection("Vnpay"));
+builder.Services.AddScoped<IVnpayService, Cinema_System.Infrastructure.PaymentGateway.VnpayService>();
+// VietQR (QR chuyển khoản). Thông tin TK nạp từ .env: VietQr__BankCode, VietQr__AccountNo, VietQr__AccountName.
+builder.Services.Configure<Cinema_System.Infrastructure.PaymentGateway.VietQrSettings>(builder.Configuration.GetSection("VietQr"));
+builder.Services.AddScoped<IVietQrService, Cinema_System.Infrastructure.PaymentGateway.VietQrService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 // Module quản trị của taido (quản lý người dùng, tỉ lệ điểm, loại phòng/ghế).
 builder.Services.AddScoped<IUserService, UserService>();
@@ -54,6 +69,12 @@ builder.Services.AddScoped<IShowtimeIncidentService, ShowtimeIncidentService>();
 builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 builder.Services.AddScoped<ISeatTypeService, SeatTypeService>();
 builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
+builder.Services.AddScoped<IRoomService, RoomService>();
+builder.Services.AddScoped<IReviewService, ReviewService>();
+builder.Services.AddScoped<IShowtimeScheduleService, ShowtimeScheduleService>();
+
+// Đăng ký Background Service tự động cập nhật trạng thái lịch chiếu
+builder.Services.AddHostedService<ShowtimeStatusBackgroundService>();
 
 // Session lưu thông tin đăng ký tạm thời (chờ xác nhận OTP).
 builder.Services.AddDistributedMemoryCache();
@@ -103,6 +124,16 @@ if (!string.IsNullOrWhiteSpace(googleClientId) && !string.IsNullOrWhiteSpace(goo
         });
 }
 
+// Inter2 (Staff) - luồng đặt vé tại quầy
+builder.Services.AddScoped<IStaffContextService, StaffContextService>();
+builder.Services.AddScoped<IPricingService, PricingService>();
+builder.Services.AddScoped<IMemberService, MemberService>();
+builder.Services.AddScoped<IBookingManagementService, BookingManagementService>();
+builder.Services.AddScoped<ICounterBookingService, CounterBookingService>();
+
+// Inter3 (Staff) - check-in vé
+builder.Services.AddScoped<ITicketCheckinService, TicketCheckinService>();
+
 var app = builder.Build();
 
 // Dùng culture cố định (dấu "." cho số thập phân) để parse/format số nhất quán
@@ -121,6 +152,8 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
 }
+
+app.UseStatusCodePagesWithReExecute("/Home/NotFoundPage", "?statusCode={0}");
 app.UseStaticFiles();
 
 app.UseRouting();

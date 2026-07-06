@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using Cinema_System.Application.DTOs;
 using Cinema_System.Application.Interfaces;
-using Cinema_System.Domain.Entities;
 
 namespace Cinema_System.Application.Services
 {
@@ -40,44 +39,7 @@ namespace Cinema_System.Application.Services
                 });
             if (booking == null) return null;
 
-            return new BookingDetailDto
-            {
-                Id = booking.Id,
-                MovieTitle = booking.Showtime.Movie.Title,
-                PosterUrl = booking.Showtime.Movie.PosterUrl,
-                AgeRating = booking.Showtime.Movie.AgeRating,
-                DurationMinutes = booking.Showtime.Movie.DurationMinutes,
-                StartTime = booking.Showtime.StartTime,
-                EndTime = booking.Showtime.EndTime,
-                RoomName = booking.Showtime.Room.Name,
-                Seats = booking.Tickets
-                    .OrderBy(t => t.Seat.RowNumber).ThenBy(t => t.Seat.SeatNumber)
-                    .Select(t => new BookingSeatLineDto
-                    {
-                        SeatLabel = SeatLabel(t.Seat.RowNumber, t.Seat.SeatNumber),
-                        SeatTypeName = t.Seat.SeatType.Name,
-                        Price = t.PriceAtBooking
-                    }).ToList(),
-                Foods = booking.BookingFoods
-                    .Select(f => new BookingFoodLineDto
-                    {
-                        Name = f.Fb.Name,
-                        Quantity = f.Quantity,
-                        Price = f.PriceAtBooking
-                    }).ToList(),
-                TotalAmount = booking.TotalAmount,
-                DiscountAmount = booking.DiscountAmount,
-                VatAmount = booking.VatAmount,
-                FinalAmount = booking.FinalAmount,
-                PaymentStatus = booking.PaymentStatus,
-                BookingType = booking.BookingType,
-                CreatedAt = booking.CreatedAt,
-                QrCode = booking.QrCode
-            };
+            return _mapper.Map<BookingDetailDto>(booking);
         }
-
-        // Đổi (hàng, số ghế) thành nhãn kiểu "A5": hàng 1->A, 2->B...
-        private static string SeatLabel(int row, int num)
-            => (row >= 1 && row <= 26 ? ((char)('A' + row - 1)).ToString() : row.ToString()) + num;
     }
 }

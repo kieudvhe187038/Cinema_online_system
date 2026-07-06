@@ -13,6 +13,7 @@ public class FoodBeverageFormViewModel
     public string Name { get; set; } = null!;
 
     [Display(Name = "Mô tả")]
+    [StringLength(3000, ErrorMessage = "Mô tả tối đa 3000 ký tự")]
     public string? Description { get; set; }
 
     // Đường dẫn ảnh đã lưu (hiển thị ảnh hiện tại khi sửa, giữ lại nếu không upload mới)

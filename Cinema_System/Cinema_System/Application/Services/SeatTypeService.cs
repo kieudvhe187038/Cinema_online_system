@@ -43,18 +43,21 @@ public class SeatTypeService : ISeatTypeService
         var seatType = await _unitOfWork.SeatTypes.GetByIdAsync(id);
         if (seatType is null) return null;
 
-        return _mapper.Map<SeatTypeFormViewModel>(seatType);
+        var model = _mapper.Map<SeatTypeFormViewModel>(seatType);
+        model.InUse = await _unitOfWork.Seats.ExistsAsync(s => s.SeatTypeId == id);
+        return model;
     }
 
     public async Task<Result> CreateAsync(SeatTypeFormViewModel model)
     {
-        var nameTaken = await _unitOfWork.SeatTypes.ExistsAsync(t => t.Name == model.Name);
+        var name = model.Name.Trim();
+        var nameTaken = await _unitOfWork.SeatTypes.ExistsAsync(t => t.Name == name);
         if (nameTaken)
             return Result.Failure("Tên loại ghế đã tồn tại.");
 
         var seatType = new SeatType
         {
-            Name = model.Name.Trim(),
+            Name = name,
             Capacity = model.Capacity,
             ColumnSpan = model.ColumnSpan
         };
@@ -71,12 +74,24 @@ public class SeatTypeService : ISeatTypeService
         if (seatType is null)
             return Result.Failure("Không tìm thấy loại ghế.");
 
+        var name = model.Name.Trim();
         var nameTaken = await _unitOfWork.SeatTypes.ExistsAsync(
-            t => t.Name == model.Name && t.Id != model.Id);
+            t => t.Name == name && t.Id != model.Id);
         if (nameTaken)
             return Result.Failure("Tên loại ghế đã tồn tại.");
 
-        seatType.Name = model.Name.Trim();
+        // Đổi "Số ô chiếm" của loại ghế đã dùng trong sơ đồ ghế sẽ làm lệch hình học lưới
+        // (ghế rơi ra ngoài biên phòng hoặc chồng lấn ghế bên cạnh) vì span được suy ra
+        // từ ColumnSpan hiện tại, không lưu cố định theo từng ghế lúc đặt.
+        if (model.ColumnSpan != seatType.ColumnSpan
+            && await _unitOfWork.Seats.ExistsAsync(s => s.SeatTypeId == model.Id))
+        {
+            return Result.Failure(
+                "Không thể đổi số ô chiếm: loại ghế đã được dùng trong sơ đồ ghế của phòng. " +
+                "Hãy tạo loại ghế mới nếu cần số ô chiếm khác.");
+        }
+
+        seatType.Name = name;
         seatType.Capacity = model.Capacity;
         seatType.ColumnSpan = model.ColumnSpan;
 

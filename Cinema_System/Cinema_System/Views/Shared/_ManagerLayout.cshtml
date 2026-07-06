@@ -60,7 +60,13 @@
             <span class="material-symbols-outlined">movie</span>
             <span>Quản Lý Phim</span>
         </a>
-        <a class="@navBase @navIdle" href="#">
+        <a class="@navBase @(ctrl == "ManagerRoom" ? navActive : navIdle)"
+           asp-controller="ManagerRoom" asp-action="Index">
+            <span class="material-symbols-outlined">meeting_room</span>
+            <span>Phòng Chiếu</span>
+        </a>
+        <a class="@navBase @(ctrl == "ManagerShowtime" ? navActive : navIdle)"
+           asp-controller="ManagerShowtime" asp-action="Calendar">
             <span class="material-symbols-outlined">schedule</span>
             <span>Suất Chiếu</span>
         </a>
@@ -76,6 +82,16 @@
            asp-controller="FoodBeverages" asp-action="Index">
             <span class="material-symbols-outlined">restaurant</span>
             <span>Đồ Ăn &amp; Thức Uống</span>
+        </a>
+        <a class="@navBase @(ctrl == "ManagerPromotion" ? navActive : navIdle)"
+           asp-controller="ManagerPromotion" asp-action="Index">
+            <span class="material-symbols-outlined">sell</span>
+            <span>Khuyến Mãi</span>
+        </a>
+        <a class="@navBase @(ctrl == "ManagerPrice" ? navActive : navIdle)"
+           asp-controller="ManagerPrice" asp-action="Index">
+            <span class="material-symbols-outlined">payments</span>
+            <span>Quản Lý Giá</span>
         </a>
         <a class="@navBase @navIdle" href="#">
             <span class="material-symbols-outlined">settings</span>
@@ -101,6 +117,14 @@
 <!-- Main -->
 <div class="ml-60 pt-[60px] min-h-screen">
     <main class="p-7">
+        @if (TempData["Success"] != null)
+        {
+            <div class="px-4 py-3 rounded-lg mb-4 text-sm bg-green-50 text-green-700 border border-green-200">@TempData["Success"]</div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="px-4 py-3 rounded-lg mb-4 text-sm bg-red-50 text-red-700 border border-red-200">@TempData["Error"]</div>
+        }
         @RenderBody()
     </main>
 </div>

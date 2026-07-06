@@ -1,0 +1,218 @@
+@* Trang chọn đồ ăn & nước (bước sau khi chọn ghế): chọn món + số lượng, xem tổng đơn. *@
+@model Cinema_System.Application.ViewModels.FoodOrderViewModel
+@{
+    ViewData["Title"] = "Chọn đồ ăn & nước";
+}
+
+<div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+
+    <!-- Header -->
+    <div class="mb-6 flex items-start justify-between gap-4">
+        <div>
+            <h1 class="font-heading text-2xl font-black text-tertiary">Đồ ăn & Nước uống</h1>
+            <p class="mt-1 text-sm text-slate-600">
+                @Model.MovieTitle <span class="text-slate-400">·</span> @Model.RoomName
+                @if (!string.IsNullOrEmpty(Model.CinemaName)) { <span class="text-slate-400">· @Model.CinemaName</span> }
+                <span class="text-slate-400">·</span> @Model.StartTime.ToString("HH:mm dd/MM/yyyy")
+            </p>
+        </div>
+        <a href="@Url.Action("SelectSeats", "Showtime", new { id = Model.ShowtimeId })" id="back-link"
+           class="inline-flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-primary">
+            <span class="material-symbols-outlined text-[18px]">arrow_back</span> Chọn lại ghế
+        </a>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-[1fr_320px]">
+        <!-- Danh sách món -->
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            @if (Model.FoodItems.Any())
+            {
+                <div class="grid gap-4 sm:grid-cols-2">
+                    @foreach (var f in Model.FoodItems)
+                    {
+                        <div class="flex gap-3 rounded-xl border border-slate-200 p-3"
+                             data-food-id="@f.Id" data-food-name="@f.Name" data-food-price="@f.Price">
+                            <div class="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-slate-100">
+                                @if (!string.IsNullOrEmpty(f.ImageUrl))
+                                {
+                                    <img src="@f.ImageUrl" alt="@f.Name" class="h-full w-full object-cover" onerror="this.style.display='none'" />
+                                }
+                            </div>
+                            <div class="flex min-w-0 flex-1 flex-col">
+                                <p class="font-semibold text-slate-800">@f.Name</p>
+                                @if (!string.IsNullOrEmpty(f.Description))
+                                {
+                                    <p class="mt-0.5 line-clamp-2 text-xs text-slate-500">@f.Description</p>
+                                }
+                                <div class="mt-auto flex items-center justify-between pt-2">
+                                    <span class="font-bold text-primary">@f.Price.ToString("N0") ₫</span>
+                                    <div class="flex items-center gap-2">
+                                        <button type="button" class="qty-dec flex h-7 w-7 items-center justify-center rounded-full border border-slate-300 text-slate-600 hover:border-primary hover:text-primary">−</button>
+                                        <span class="qty w-6 text-center text-sm font-semibold" data-qty="0">0</span>
+                                        <button type="button" class="qty-inc flex h-7 w-7 items-center justify-center rounded-full border border-slate-300 text-slate-600 hover:border-primary hover:text-primary">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p class="py-10 text-center text-sm text-slate-400">Hiện chưa có món nào để bán.</p>
+            }
+        </div>
+
+        <!-- Tóm tắt đơn hàng -->
+        <div class="h-fit rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-28">
+            @Html.AntiForgeryToken()
+            <h2 class="font-heading text-lg font-bold text-tertiary">Đơn hàng</h2>
+
+            <!-- Đồng hồ giữ ghế (tiếp tục từ trang chọn ghế) -->
+            <div class="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                Thời gian còn lại: <span id="hold-countdown" class="font-bold">--:--</span>. Hết giờ sẽ tự quay về trang chủ.
+            </div>
+
+            <!-- Ghế -->
+            <div class="mt-4 border-t border-slate-100 pt-3">
+                <p class="text-xs font-bold uppercase tracking-wide text-slate-400">Ghế (@Model.Seats.Count)</p>
+                <div class="mt-2 flex flex-wrap gap-1.5">
+                    @foreach (var s in Model.Seats)
+                    {
+                        <span class="rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">@s.Label</span>
+                    }
+                </div>
+                <div class="mt-2 flex justify-between text-sm">
+                    <span class="text-slate-500">Tiền ghế</span>
+                    <span class="font-semibold text-slate-800">@Model.SeatTotal.ToString("N0") ₫</span>
+                </div>
+            </div>
+
+            <!-- Đồ ăn -->
+            <div class="mt-3 border-t border-slate-100 pt-3">
+                <div id="food-empty" class="text-sm text-slate-400">Chưa chọn món nào.</div>
+                <div id="food-list" class="hidden flex-col gap-1.5"></div>
+                <div class="mt-2 flex justify-between text-sm">
+                    <span class="text-slate-500">Tiền đồ ăn</span>
+                    <span id="food-total" class="font-semibold text-slate-800">0 ₫</span>
+                </div>
+            </div>
+
+            <!-- Tổng -->
+            <div class="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
+                <span class="font-semibold text-slate-700">Tổng cộng</span>
+                <span id="grand-total" class="text-lg font-bold text-primary">@Model.SeatTotal.ToString("N0") ₫</span>
+            </div>
+
+            <button id="pay-btn" type="button"
+                    class="mt-4 w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-white transition hover:bg-primary-dark">
+                Tiếp tục thanh toán
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const showtimeId = '@Model.ShowtimeId';
+            const homeUrl = '@Url.Action("Index", "Home")';
+            const releaseAllUrl = '@Url.Action("ReleaseAll", "Showtime")';
+            const paymentUrl = '@Url.Action("Payment", "Showtime")';
+            const seatTotal = @Model.SeatTotal;
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            let proceeding = false;
+
+            const vnd = n => n.toLocaleString('vi-VN') + ' ₫';
+            const cart = new Map();   // foodId -> { name, price, qty }
+
+            const foodEmpty = document.getElementById('food-empty');
+            const foodList = document.getElementById('food-list');
+            const foodTotalEl = document.getElementById('food-total');
+            const grandTotalEl = document.getElementById('grand-total');
+
+            // Cập nhật tóm tắt đồ ăn + tổng tiền.
+            function render() {
+                let foodTotal = 0;
+                cart.forEach(v => foodTotal += v.price * v.qty);
+                foodTotalEl.textContent = vnd(foodTotal);
+                grandTotalEl.textContent = vnd(seatTotal + foodTotal);
+
+                const lines = [...cart.values()].filter(v => v.qty > 0);
+                if (lines.length === 0) {
+                    foodEmpty.classList.remove('hidden');
+                    foodList.classList.add('hidden');
+                    foodList.innerHTML = '';
+                    return;
+                }
+                foodEmpty.classList.add('hidden');
+                foodList.classList.remove('hidden');
+                foodList.classList.add('flex');
+                foodList.innerHTML = lines.map(v =>
+                    `<div class="flex justify-between text-sm"><span class="text-slate-600">${v.name} × ${v.qty}</span>` +
+                    `<span class="font-semibold text-slate-800">${vnd(v.price * v.qty)}</span></div>`).join('');
+            }
+
+            const MAX_PER_ITEM = 20;   // tối đa 20 phần mỗi loại đồ ăn
+
+            // Tăng/giảm số lượng từng món (kẹp trong [0, 20]).
+            function changeQty(card, delta) {
+                const id = card.dataset.foodId;
+                const name = card.dataset.foodName;
+                const price = parseFloat(card.dataset.foodPrice) || 0;
+                const item = cart.get(id) || { name, price, qty: 0 };
+                item.qty = Math.max(0, Math.min(MAX_PER_ITEM, item.qty + delta));
+                cart.set(id, item);
+                card.querySelector('.qty').textContent = item.qty;
+                render();
+            }
+
+            document.querySelectorAll('[data-food-id]').forEach(card => {
+                card.querySelector('.qty-inc').addEventListener('click', () => changeQty(card, 1));
+                card.querySelector('.qty-dec').addEventListener('click', () => changeQty(card, -1));
+            });
+
+            // ── Đồng hồ đếm ngược, nối tiếp thời gian giữ ghế từ trang trước ──
+            let countdown = @Model.HoldSecondsLeft;
+            const countdownEl = document.getElementById('hold-countdown');
+            function fmt(s) { const m = Math.floor(s / 60), ss = s % 60; return m + ':' + (ss < 10 ? '0' : '') + ss; }
+            countdownEl.textContent = fmt(Math.max(0, countdown));
+            const tick = setInterval(() => {
+                countdown--;
+                countdownEl.textContent = fmt(Math.max(0, countdown));
+                if (countdown <= 0) { clearInterval(tick); window.location.href = homeUrl; }
+            }, 1000);
+
+            // Quay lại chọn ghế: vẫn trong luồng đặt -> không nhả ghế.
+            document.getElementById('back-link').addEventListener('click', () => { proceeding = true; });
+
+            // Rời trang (đóng tab) -> nhả ghế. Không nhả khi đang chuyển bước trong luồng.
+            window.addEventListener('pagehide', () => {
+                if (proceeding) return;
+                const fd = new FormData();
+                fd.append('__RequestVerificationToken', token);
+                fd.append('showtimeId', showtimeId);
+                navigator.sendBeacon(releaseAllUrl, fd);
+            });
+
+            // Sang trang thanh toán: gửi món đã chọn qua form POST (giữ nguyên ghế đang giữ).
+            document.getElementById('pay-btn').addEventListener('click', () => {
+                proceeding = true;
+                const form = document.createElement('form');
+                form.method = 'post';
+                form.action = paymentUrl;
+                const add = (name, value) => {
+                    const i = document.createElement('input');
+                    i.type = 'hidden'; i.name = name; i.value = value; form.appendChild(i);
+                };
+                add('__RequestVerificationToken', token);
+                add('id', showtimeId);
+                cart.forEach((v, id) => {
+                    if (v.qty > 0) { add('fbId', id); add('qty', v.qty); }
+                });
+                document.body.appendChild(form);
+                form.submit();
+            });
+        })();
+    </script>
+}

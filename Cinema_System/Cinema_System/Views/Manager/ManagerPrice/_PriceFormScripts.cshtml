@@ -1,0 +1,94 @@
+<script>
+    (function () {
+        // 1) Phụ thu theo giờ: hiện nhóm trường khớp với Nhóm quy tắc, rồi tới điều kiện con (DayType).
+        const ruleGroup = document.getElementById('ruleGroup');
+        const timeCondition = document.getElementById('timeCondition');
+
+        function syncTimeFields() {
+            if (!ruleGroup) return;
+            const rg = ruleGroup.value;
+            document.querySelectorAll('[data-rg]').forEach(function (el) {
+                el.style.display = el.getAttribute('data-rg') === rg ? '' : 'none';
+            });
+            // Trong nhóm DayType, chỉ hiện trường theo điều kiện con đang chọn.
+            if (timeCondition) {
+                const cond = timeCondition.value;
+                document.querySelectorAll('[data-cond]').forEach(function (el) {
+                    el.style.display = el.getAttribute('data-cond') === cond ? '' : 'none';
+                });
+            }
+        }
+        ruleGroup?.addEventListener('change', syncTimeFields);
+        timeCondition?.addEventListener('change', syncTimeFields);
+        syncTimeFields();
+
+        // 1b) Ô giờ 24h: tự chèn dấu ':' (HH:mm), chỉ nhận chữ số — chặn nhập kiểu 12h AM/PM.
+        document.querySelectorAll('[data-time24]').forEach(function (inp) {
+            inp.addEventListener('input', function () {
+                var v = inp.value.replace(/[^0-9]/g, '').slice(0, 4);
+                if (v.length >= 3) v = v.slice(0, 2) + ':' + v.slice(2);
+                inp.value = v;
+            });
+        });
+
+        // 1d) Ô nhập tiền: hiển thị dấu chấm phân cách hàng nghìn (75.000), lưu số nguyên vào field ẩn.
+        const groupDigits = (s) => s.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        document.querySelectorAll('[data-money]').forEach(function (vis) {
+            const hid = document.getElementById(vis.getAttribute('data-money-for'));
+            if (!hid) return;
+            const raw0 = (hid.value || '').replace(/[^0-9]/g, '');
+            vis.value = (raw0 && raw0 !== '0') ? groupDigits(raw0) : '';
+            vis.addEventListener('input', function () {
+                const raw = vis.value.replace(/[^0-9]/g, '');
+                hid.value = raw === '' ? '0' : raw;      // số trơn để bind decimal đúng
+                vis.value = raw ? groupDigits(raw) : '';
+            });
+        });
+
+        // 1c) "Áp dụng từ": tách ngày + giờ 24h ở giao diện, ghép lại vào field ẩn (yyyy-MM-ddTHH:mm).
+        const effDate = document.getElementById('effFromDate');
+        const effTime = document.getElementById('effFromTime');
+        const effHidden = document.getElementById('effFromHidden');
+        if (effDate && effTime && effHidden) {
+            // Tách giá trị hiện có (khi Sửa) ra 2 ô hiển thị.
+            const init = (effHidden.value || '').split('T');
+            if (init[0]) effDate.value = init[0];
+            if (init[1]) effTime.value = init[1].slice(0, 5);
+
+            const combine = function () {
+                if (effDate.value && /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(effTime.value)) {
+                    effHidden.value = effDate.value + 'T' + effTime.value;
+                } else {
+                    effHidden.value = '';
+                }
+            };
+            effDate.addEventListener('change', combine);
+            effTime.addEventListener('input', combine);
+            combine();
+        }
+
+        // 2) Cảnh báo đặc biệt: bắt buộc xác nhận trước khi lưu cấu hình giá.
+        const form = document.getElementById('priceForm');
+        if (form) {
+            form.addEventListener('submit', function (e) {
+                if (form.dataset.confirmed === '1') return; // đã xác nhận → submit thật
+                e.preventDefault();
+
+                // Để validation hiển thị lỗi trước, không bật popup nếu form chưa hợp lệ.
+                // Kiểm tra cả jQuery validate (asp-for) lẫn HTML5 (required/pattern của ô ngày–giờ),
+                // vì form.submit() lập trình sẽ bỏ qua kiểm tra HTML5 mặc định.
+                if (window.jQuery && jQuery.fn.valid && !jQuery(form).valid()) return;
+                if (typeof form.reportValidity === 'function' && !form.reportValidity()) return;
+
+                confirmPopup({
+                    title: 'Xác nhận thay đổi giá vé',
+                    message: 'Bạn sắp lưu thay đổi về cấu hình giá. Thay đổi này ảnh hưởng TRỰC TIẾP đến giá vé khách hàng phải trả, và sẽ tự động điều chỉnh thời hạn của các mức giá liền kề. Bạn có chắc chắn muốn tiếp tục?',
+                    type: 'warning',
+                    okText: 'Xác nhận lưu'
+                }).then(function (ok) {
+                    if (ok) { form.dataset.confirmed = '1'; form.submit(); }
+                });
+            });
+        }
+    })();
+</script>

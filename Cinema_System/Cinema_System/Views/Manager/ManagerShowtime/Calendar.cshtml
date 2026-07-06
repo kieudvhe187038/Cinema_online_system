@@ -1,0 +1,410 @@
+@model Cinema_System.Application.ViewModels.ShowtimeCalendarViewModel
+@{
+    ViewData["Title"] = "Quản lý suất chiếu";
+    Layout = "~/Views/Shared/_ManagerLayout.cshtml";
+}
+
+@functions {
+    /// <summary>
+    /// Xác định class CSS dựa trên trạng thái suất chiếu
+    /// </summary>
+    private string StatusClass(string status)
+    {
+        return status == "Cancelled" ? "bg-red-500" :
+               status == "Completed" ? "bg-green-500" :
+               status == "Live" ? "bg-sky-500" :
+               "bg-orange-400"; // Scheduled/default
+    }
+
+    /// <summary>
+    /// Class đại diện cho một khối suất chiếu trên timeline
+    /// </summary>
+    public class ShowtimeBlock
+    {
+        public ShowtimeScheduleDTO Show { get; set; }
+        public DateTime Start { get; set; }
+        public DateTime End { get; set; }
+        public int Column { get; set; }
+    }
+}
+
+<style>
+    .show-block { cursor: pointer; transition: all 0.2s; }
+    .show-block:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); transform: scale(1.02); z-index: 10; }
+    #show-tooltip { position: fixed; z-index: 60; display: none; max-width:280px; background: #1f2937; color:#fff; padding:10px 12px; border-radius:8px; font-size:14px; box-shadow:0 6px 18px rgba(15,23,42,0.3);} 
+    @@media (max-width:1024px){ .timeline-container { display:none !important } .mobile-list { display:block !important } }
+    @@media (min-width:1025px){ .mobile-list { display:none !important } }
+</style>
+
+@* Phần tiêu đề trang và nút chức năng thêm mới *@
+<div class="flex flex-col gap-4 mb-6 md:flex-row md:items-center md:justify-between">
+    <div class="min-w-0">
+        <h1 class="font-head text-3xl font-extrabold text-[#191c1d] mb-1">Quản lý suất chiếu</h1>
+        <p class="text-sm text-gray-500">Quản lý suất chiếu tuần và trạng thái suất chiếu trên hệ thống</p>
+    </div>
+    @* Nút thêm suất chiếu *@
+    <div class="flex items-center gap-3">
+        <a class="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-bold tracking-wide whitespace-nowrap transition-colors"
+           href="@Url.Action("Create", "ManagerShowtime")">
+            <span class="material-symbols-outlined" style="font-size:18px">add_circle</span>
+            THÊM SUẤT CHIẾU
+        </a>
+    </div>
+</div>
+
+
+
+@* Khu vực form chứa các bộ lọc (phòng chiếu, trạng thái, từ khóa) *@
+<div class="w-full mb-6">
+    <div class="mx-auto w-full max-w-[1300px]">
+        <div class="bg-white rounded-2xl border border-[#e8eaed] px-5 py-4 shadow-sm">
+            <form method="get" action="@Url.Action("Calendar", "ManagerShowtime")">
+                <div class="flex gap-4 flex-wrap items-end">
+                    <div class="flex flex-col gap-1">
+                        <label class="text-xs font-bold uppercase tracking-[0.28em] text-gray-500">Phòng chiếu</label>
+                        <select name="roomId" onchange="this.form.submit()" class="h-12 min-w-[180px] rounded-xl border border-gray-300 bg-white px-4 text-sm text-gray-700 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20">
+                            @foreach (var room in Model.AvailableRooms)
+                            {
+                                if (room.Id == Model.SelectedRoomId)
+                                {
+                                    <option value="@room.Id" selected>@room.Name</option>
+                                }
+                                else
+                                {
+                                    <option value="@room.Id">@room.Name</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-xs font-bold uppercase tracking-[0.28em] text-gray-500">Trạng thái</label>
+                        <select name="status" class="h-12 min-w-[180px] rounded-xl border border-gray-300 bg-white px-4 text-sm text-gray-700 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20">
+                            @if (string.IsNullOrEmpty(Model.StatusFilter))
+                            {
+                                <option value="" selected>Tất cả trạng thái</option>
+                            }
+                            else
+                            {
+                                <option value="">Tất cả trạng thái</option>
+                            }
+                            @if (Model.StatusFilter == "Scheduled")
+                            {
+                                <option value="Scheduled" selected>Scheduled</option>
+                            }
+                            else
+                            {
+                                <option value="Scheduled">Scheduled</option>
+                            }
+                            @if (Model.StatusFilter == "Live")
+                            {
+                                <option value="Live" selected>Live</option>
+                            }
+                            else
+                            {
+                                <option value="Live">Live</option>
+                            }
+                            @if (Model.StatusFilter == "Completed")
+                            {
+                                <option value="Completed" selected>Completed</option>
+                            }
+                            else
+                            {
+                                <option value="Completed">Completed</option>
+                            }
+                            @if (Model.StatusFilter == "Cancelled")
+                            {
+                                <option value="Cancelled" selected>Cancelled</option>
+                            }
+                            else
+                            {
+                                <option value="Cancelled">Cancelled</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="flex flex-col gap-1 min-w-0 flex-1">
+                        <label class="text-xs font-bold uppercase tracking-[0.28em] text-gray-500">Tìm kiếm</label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" style="font-size:18px">search</span>
+                            <input type="text" name="search" value="@Model.Search" placeholder="Tìm kiếm phim hoặc phòng..." class="h-12 w-full rounded-xl border border-gray-300 bg-white pl-12 pr-4 text-sm text-gray-700 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                        </div>
+                    </div>
+                    <div class="flex gap-3 items-center self-end">
+                        <button type="submit" class="inline-flex h-12 items-center gap-2 rounded-xl bg-slate-950 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-900">
+                            <span class="material-symbols-outlined" style="font-size:18px">filter_list</span>
+                            Áp dụng bộ lọc
+                        </button>
+                        @if (!string.IsNullOrEmpty(Model.Search) || !string.IsNullOrEmpty(Model.StatusFilter) || (Model.AvailableRooms.Any() && Model.SelectedRoomId != Model.AvailableRooms.First().Id))
+                        {
+                            <a class="text-sm font-semibold text-gray-600 hover:text-gray-900" href="@Url.Action("Calendar", "ManagerShowtime")">✕ Xóa bộ lọc</a>
+                        }
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@* Khu vực Dashboard thống kê *@
+<div class="mx-auto w-full max-w-[1300px] mb-6">
+    <div class="grid grid-cols-1 @(string.IsNullOrEmpty(Model.Search) ? "md:grid-cols-2" : "md:grid-cols-3") gap-5">
+        @* Card 1: Thống kê tuần này *@
+        <div class="bg-white rounded-2xl border border-[#e8eaed] p-5 shadow-sm hover:shadow-md transition-all duration-300 flex items-start gap-4">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-sm">
+                <span class="material-symbols-outlined" style="font-size:24px">calendar_view_week</span>
+            </div>
+            <div class="min-w-0 flex-1">
+                <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Suất chiếu tuần này</span>
+                <div class="text-3xl font-extrabold text-[#191c1d] mt-1">@Model.WeekTotalShowtimes</div>
+                <div class="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs text-gray-500">
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-orange-400"></span> @Model.WeekScheduledShowtimes Sched</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span> @Model.WeekLiveShowtimes Live</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-green-500"></span> @Model.WeekCompletedShowtimes Comp</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> @Model.WeekCancelledShowtimes Canc</span>
+                </div>
+            </div>
+        </div>
+
+        @* Card 2: Thống kê tháng này *@
+        <div class="bg-white rounded-2xl border border-[#e8eaed] p-5 shadow-sm hover:shadow-md transition-all duration-300 flex items-start gap-4">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-gradient-to-br from-purple-500 to-pink-600 text-white shadow-sm">
+                <span class="material-symbols-outlined" style="font-size:24px">calendar_month</span>
+            </div>
+            <div class="min-w-0 flex-1">
+                <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Suất chiếu tháng này</span>
+                <div class="text-3xl font-extrabold text-[#191c1d] mt-1">@Model.MonthTotalShowtimes</div>
+                <span class="text-xs text-gray-500 mt-2 block font-medium">Tháng @Model.WeekStart.ToString("MM/yyyy") (theo phòng đang chọn)</span>
+            </div>
+        </div>
+
+        @* Card 3: Kết quả tìm kiếm *@
+        @if (!string.IsNullOrEmpty(Model.Search))
+        {
+            <div class="bg-white rounded-2xl border border-[#e8eaed] p-5 shadow-sm hover:shadow-md transition-all duration-300 flex items-start gap-4 border-l-4 border-l-primary">
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-gradient-to-br from-orange-400 to-red-500 text-white shadow-sm">
+                    <span class="material-symbols-outlined" style="font-size:24px">search</span>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Kết quả tìm kiếm phim</span>
+                    <div class="text-3xl font-extrabold text-primary mt-1">@Model.SearchMovieTotalShowtimes</div>
+                    <span class="text-xs text-gray-500 mt-2 block font-medium">Tổng lịch chiếu chứa phim "<span class="text-primary font-semibold">@Model.Search</span>" (theo phòng đang chọn)</span>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@* Khu vực chính hiển thị lịch chiếu tuần dưới dạng timeline lưới *@
+<div class="bg-white rounded-xl border border-[#e8eaed] shadow-sm overflow-hidden mx-auto max-w-[1300px]">
+    <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+        <div>
+            <div class="text-sm text-gray-500">Tuần từ</div>
+                <div class="text-lg font-semibold text-gray-900">@Model.WeekStart.ToString("dd/MM/yyyy")</div>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="@Url.Action("Calendar", "ManagerShowtime", new { roomId = Model.SelectedRoomId, status = Model.StatusFilter, search = Model.Search, weekStart = Model.WeekStart.AddDays(-7).ToString("yyyy-MM-dd") })" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+                    <span class="material-symbols-outlined">chevron_left</span>
+                    Tuần trước
+                </a>
+                <a href="@Url.Action("Calendar", "ManagerShowtime", new { roomId = Model.SelectedRoomId, status = Model.StatusFilter, search = Model.Search, weekStart = Model.WeekStart.AddDays(7).ToString("yyyy-MM-dd") })" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+                    Tuần sau
+                    <span class="material-symbols-outlined">chevron_right</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="px-5 py-4 border-b border-gray-100 bg-[#fbfcfe]">
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 text-sm text-gray-600">
+                    <span class="inline-block w-3 h-3 rounded-full bg-orange-400"></span>
+                    Scheduled
+                </div>
+                <div class="flex items-center gap-2 text-sm text-gray-600">
+                    <span class="inline-block w-3 h-3 rounded-full bg-sky-500"></span>
+                    Live
+                </div>
+                <div class="flex items-center gap-2 text-sm text-gray-600">
+                    <span class="inline-block w-3 h-3 rounded-full bg-green-500"></span>
+                    Completed
+                </div>
+                <div class="flex items-center gap-2 text-sm text-gray-600">
+                    <span class="inline-block w-3 h-3 rounded-full bg-red-500"></span>
+                    Cancelled
+                </div>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <div class="min-w-[1100px]">
+                <div class="grid grid-cols-[120px_repeat(7,minmax(0,1fr))] border-b border-gray-200">
+                    <div class="px-4 py-3 bg-[#f8fafc] text-xs font-semibold uppercase text-gray-500">Thời gian</div>
+                    @foreach (var day in Model.WeekDays)
+                    {
+                        <div class="px-4 py-3 bg-[#f8fafc] text-xs font-semibold uppercase text-gray-600 border-l border-gray-200">
+                            <div>@day.ToString("dddd")</div>
+                            <div class="text-sm text-gray-500 mt-1">@day.ToString("dd/MM")</div>
+                        </div>
+                    }
+                </div>
+                <div class="grid grid-cols-[120px_repeat(7,minmax(0,1fr))]">
+                    <div class="py-3 border-r border-gray-200 bg-gradient-to-b from-[#fafbfc] to-[#f5f7fa]">
+                        @for (int hour = 0; hour <= 23; hour++)
+                        {
+                            <div class="px-4 text-sm font-medium text-gray-600 border-b border-gray-150" style="height:80px;display:flex;align-items:flex-start;padding-top:8px">@(hour.ToString("00")):00</div>
+                        }
+                    </div>
+                    @foreach (var day in Model.WeekDays)
+                    {
+                        <div class="border-l border-gray-200 min-h-[1920px] relative px-2 py-3 bg-white hover:bg-[#f9fafb] transition-colors">
+                            <div class="timeline-container relative w-full" style="height:1920px;border:1px solid #e5e7eb;border-radius:8px;background:#fbfcfe;overflow:hidden;box-shadow:inset 0 1px 3px rgba(0,0,0,0.05)">
+                                @* Tính toán và hiển thị các khối suất chiếu cho ngày hiện tại *@
+                                @{
+                                    // Timeline layout: 24 giờ liên tục.
+                                    var currentDayStart = day.Date;
+                                    var endOfDayLimit = currentDayStart.AddHours(24);
+
+                                    var dayShows = Model.Showtimes
+                                        .Where(s => s.EndTime > currentDayStart && s.StartTime < endOfDayLimit)
+                                        .OrderBy(s => s.StartTime)
+                                        .ToList();
+
+                                    var blocks = new List<ShowtimeBlock>();
+                                    foreach (var st in dayShows)
+                                    {
+                                        var blockStart = st.StartTime < currentDayStart ? currentDayStart : st.StartTime;
+                                        var blockEnd = st.EndTime > endOfDayLimit ? endOfDayLimit : st.EndTime;
+                                        if (blockEnd > blockStart)
+                                        {
+                                            blocks.Add(new ShowtimeBlock { Show = st, Start = blockStart, End = blockEnd, Column = 0 });
+                                        }
+                                    }
+
+                                    // Sắp xếp các suất chiếu vào các cột để tránh bị đè lên nhau nếu trùng giờ
+                                    var columnEnds = new List<DateTime>();
+                                    foreach (var b in blocks.OrderBy(b => b.Start))
+                                    {
+                                        var placed = false;
+                                        for (int i = 0; i < columnEnds.Count; i++)
+                                        {
+                                            if (b.Start >= columnEnds[i])
+                                            {
+                                                b.Column = i;
+                                                columnEnds[i] = b.End;
+                                                placed = true;
+                                                break;
+                                            }
+                                        }
+                                        if (!placed)
+                                        {
+                                            b.Column = columnEnds.Count;
+                                            columnEnds.Add(b.End);
+                                        }
+                                    }
+
+                                    var cols = Math.Max(1, columnEnds.Count);
+                                    var totalHeight = 1920.0;
+                                }
+
+                                @* render hour background lines *@
+                                @for (int h = 0; h <= 24; h++)
+                                {
+                                    var top = (h * 80.0) / totalHeight * 100.0;
+                                    <div style="position:absolute;left:0;right:0;top:@(top)% ;height:0.5px;background:rgba(0,0,0,0.04)"></div>
+                                }
+
+                                @* render blocks *@
+                                @foreach (var b in blocks)
+                                {
+                                    var dayStartOfDay = day.Date;
+                                    double topPercent = ((b.Start - dayStartOfDay).TotalMinutes) / (24 * 60.0) * 100.0;
+                                    double heightPercent = ((b.End - b.Start).TotalMinutes) / (24 * 60.0) * 100.0;
+
+                                    var widthPercent = 100.0 / cols;
+                                    var leftPercent = b.Column * widthPercent;
+                                    var tooltipText = $"{b.Show.MovieTitle} — {b.Show.RoomName} {b.Show.StartTime:HH:mm}-{b.Show.EndTime:HH:mm}";
+                                    var editUrl = Url.Action("Edit","ManagerShowtime", new { id = b.Show.Id });
+                                    var minHeightPx = 40;
+                                    var blockHeightPx = Math.Max(minHeightPx, (heightPercent / 100.0) * totalHeight);
+                                    <div class="show-block absolute rounded-lg shadow-md border border-l-4 overflow-hidden hover:shadow-lg transition-all" data-tooltip="@tooltipText" data-edit-url="@editUrl" style="top:@(topPercent)% ; left:@(leftPercent)% ; width:calc(@(widthPercent - 3)% - 4px) ; height:@(heightPercent)% ; min-height:@(minHeightPx)px; background:linear-gradient(135deg, #ffffff 0%, #f9fafb 100%); border-color:#e5e7eb; border-left-color:#3b82f6; padding:8px 10px; box-sizing:border-box; cursor:pointer;">
+                                        <div class="text-xs font-bold text-[#191c1d] truncate uppercase tracking-wide">@b.Show.MovieTitle</div>
+                                        <div class="text-xs text-gray-600 mt-0.5 font-medium">@b.Show.RoomName</div>
+                                        <div class="text-xs text-gray-500 mt-0.5">@b.Show.StartTime.ToString("HH:mm") - @b.Show.EndTime.ToString("HH:mm")</div>
+                                        <div class="inline-flex items-center gap-1 text-[9px] font-bold uppercase text-white px-2 py-0.5 rounded-full mt-1.5 @StatusClass(b.Show.Status)" style="width:fit-content;">
+                                            @b.Show.Status
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+                
+                @* Mobile fallback list for small screens *@
+                <div class="mobile-list px-3 py-4 lg:hidden">
+                    @foreach (var day in Model.WeekDays)
+                    {
+                        <div class="mb-4">
+                            <div class="text-sm font-semibold text-gray-700 mb-2">@day.ToString("dddd, dd/MM")</div>
+                            <div class="space-y-2">
+                                @foreach (var st in Model.Showtimes.Where(s => s.StartTime < day.AddDays(1) && s.EndTime > day).OrderBy(s => s.StartTime))
+                                {
+                                    <div class="p-3 rounded-lg border border-gray-200 bg-white flex items-center justify-between">
+                                        <div>
+                                            <div class="font-semibold">@st.MovieTitle</div>
+                                            <div class="text-xs text-gray-500">@st.RoomName — @st.StartTime.ToString("HH:mm") - @st.EndTime.ToString("HH:mm")</div>
+                                        </div>
+                                        <div class="text-xs font-semibold px-2 py-1 rounded-full text-white @StatusClass(st.Status)">@st.Status</div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="show-tooltip"></div>
+
+<script>
+    // Xử lý các sự kiện tương tác trên giao diện lịch chiếu (hiển thị thông tin chi tiết và chuyển hướng chỉnh sửa)
+    document.addEventListener('DOMContentLoaded', function(){
+        const tooltip = document.getElementById('show-tooltip');
+        
+        // Lắng nghe sự kiện cho từng khối suất chiếu trên lịch
+        document.querySelectorAll('.show-block').forEach(b => {
+            
+            // Hiển thị tooltip khi di chuột vào khối suất chiếu
+            b.addEventListener('mouseenter', function(e){
+                const txt = this.getAttribute('data-tooltip');
+                tooltip.textContent = txt;
+                tooltip.style.display = 'block';
+                const rect = this.getBoundingClientRect();
+                
+                // Tránh lỗi tooltip bị cắt mất (ra khỏi màn hình)
+                const tooltipWidth = tooltip.offsetWidth;
+                const tooltipHeight = tooltip.offsetHeight;
+                
+                // Xử lý tràn viền phải
+                if (rect.right + 12 + tooltipWidth > window.innerWidth) {
+                    tooltip.style.left = (rect.left - 12 - tooltipWidth) + 'px';
+                } else {
+                    tooltip.style.left = (rect.right + 12) + 'px';
+                }
+                
+                // Xử lý tràn viền dưới
+                if (rect.top + tooltipHeight > window.innerHeight) {
+                    tooltip.style.top = (window.innerHeight - tooltipHeight - 12) + 'px';
+                } else {
+                    tooltip.style.top = (rect.top) + 'px';
+                }
+            });
+            
+            // Ẩn tooltip khi chuột rời khỏi khối suất chiếu
+            b.addEventListener('mouseleave', function(){ tooltip.style.display = 'none'; });
+            
+            // Khi nhấn vào một suất chiếu, chuyển sang trang Sửa suất chiếu đó
+            b.addEventListener('click', function(){ var u = this.getAttribute('data-edit-url'); if(u) window.location.href = u; });
+        });
+    });
+</script>
