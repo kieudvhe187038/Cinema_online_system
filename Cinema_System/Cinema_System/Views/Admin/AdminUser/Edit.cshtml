@@ -52,7 +52,7 @@
 
             <div class="ue-field">
                 <label asp-for="DateOfBirth"></label>
-                <input asp-for="DateOfBirth" type="date" />
+                <input asp-for="DateOfBirth" type="date" max="@DateTime.Today.ToString("yyyy-MM-dd")" />
                 <span asp-validation-for="DateOfBirth" class="ue-error"></span>
             </div>
 

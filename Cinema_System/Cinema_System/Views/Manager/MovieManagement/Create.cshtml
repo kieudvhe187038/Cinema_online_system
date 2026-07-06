@@ -87,7 +87,11 @@
 
                 <div class="mb-3.5 col-span-2">
                     <label asp-for="Description" class="@fieldLabel"></label>
-                    <textarea asp-for="Description" placeholder="Mô tả nội dung phim" class="@fieldInput min-h-[110px] resize-y"></textarea>
+                    <textarea asp-for="Description" placeholder="Mô tả nội dung phim" maxlength="3000" class="@fieldInput min-h-[110px] resize-y"></textarea>
+                    <div class="mt-1 flex justify-end">
+                        <span id="desc-counter" class="text-xs text-slate-400">0/3000 ký tự</span>
+                    </div>
+                    <span asp-validation-for="Description" class="@fieldError"></span>
                 </div>
             </div>
         </div>
@@ -153,4 +157,14 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Đếm ký tự mô tả theo maxlength của ô.
+        (function () {
+            var ta = document.getElementById('Description'), c = document.getElementById('desc-counter');
+            if (!ta || !c) return;
+            var max = ta.getAttribute('maxlength') || 3000;
+            function upd() { c.textContent = ta.value.length + '/' + max + ' ký tự'; }
+            ta.addEventListener('input', upd); upd();
+        })();
+    </script>
 }

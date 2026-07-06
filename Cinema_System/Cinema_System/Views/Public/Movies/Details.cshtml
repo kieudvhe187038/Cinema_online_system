@@ -1,0 +1,452 @@
+@model Cinema_System.Application.ViewModels.MovieDetailsViewModel
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment Env
+
+@{
+    // Thiết lập tiêu đề trang theo tên phim
+    ViewData["Title"] = Model.Movie.Title;
+    var rawTrailer = Model.Movie.TrailerUrl?.Trim() ?? "";
+
+    // Hàm helper: Phân tích cú pháp YouTube URL để trích xuất Video ID
+    string? youtubeId = null;
+    if (!string.IsNullOrEmpty(rawTrailer))
+    {
+        // Trường hợp 1: Định dạng chuẩn https://www.youtube.com/watch?v=VIDEO_ID
+        var watchMatch = System.Text.RegularExpressions.Regex.Match(rawTrailer,
+            @"[?&]v=([A-Za-z0-9_\-]{11})");
+        if (watchMatch.Success)
+        {
+            youtubeId = watchMatch.Groups[1].Value;
+        }
+        else
+        {
+            // Trường hợp 2: Định dạng rút gọn https://youtu.be/VIDEO_ID
+            var shortMatch = System.Text.RegularExpressions.Regex.Match(rawTrailer,
+                @"youtu\.be/([A-Za-z0-9_\-]{11})");
+            if (shortMatch.Success)
+            {
+                youtubeId = shortMatch.Groups[1].Value;
+            }
+            else
+            {
+                // Trường hợp 3: Định dạng nhúng https://www.youtube.com/embed/VIDEO_ID
+                var embedMatch = System.Text.RegularExpressions.Regex.Match(rawTrailer,
+                    @"youtube\.com/embed/([A-Za-z0-9_\-]{11})");
+                if (embedMatch.Success)
+                {
+                    youtubeId = embedMatch.Groups[1].Value;
+                }
+                else if (rawTrailer.Length == 11 && System.Text.RegularExpressions.Regex.IsMatch(rawTrailer, @"^[A-Za-z0-9_\-]{11}$"))
+                {
+                    // Trường hợp 4: Người dùng nhập trực tiếp ID gồm 11 ký tự của YouTube
+                    youtubeId = rawTrailer;
+                }
+            }
+        }
+    }
+
+    // Tạo đường dẫn nhúng YouTube có cấu hình tự động phát (autoplay)
+    var embedUrl = youtubeId != null
+        ? $"https://www.youtube.com/embed/{youtubeId}?autoplay=1&rel=0&modestbranding=1"
+        : "";
+    // Lấy ảnh thumbnail chất lượng cao từ YouTube để làm ảnh nền trailer
+    var thumbUrl = youtubeId != null
+        ? $"https://img.youtube.com/vi/{youtubeId}/maxresdefault.jpg"
+        : "";
+
+    // Gom danh sách các thể loại phim
+    var genres = Model.Movie.GenreNames.Any() ? string.Join(" • ", Model.Movie.GenreNames) : "Chưa rõ thể loại";
+    var durationText = Model.Movie.DurationMinutes.HasValue ? $"{Model.Movie.DurationMinutes.Value} phút" : "Chưa rõ";
+
+    // Kiểm tra và sử dụng banner cục bộ nếu có
+    string heroBannerUrl = !string.IsNullOrEmpty(Model.Movie.BannerUrl) 
+        ? Model.Movie.BannerUrl 
+        : Model.Movie.PosterUrl ?? "";
+    
+    // Nếu db không có prefix '/', hãy thêm vào để trình duyệt không bị lỗi 404 (ví dụ trên trang chi tiết)
+    if (!string.IsNullOrEmpty(heroBannerUrl) && !heroBannerUrl.StartsWith("/") && !heroBannerUrl.StartsWith("http"))
+    {
+        heroBannerUrl = heroBannerUrl.Contains("banner") ? $"/banner/{heroBannerUrl}" : $"/images/{heroBannerUrl}";
+    }
+}
+
+<div class="min-h-screen bg-slate-50 text-slate-900 font-body antialiased">
+    <!-- Cinematic Hero Section -->
+    <div class="relative overflow-hidden bg-slate-950 min-h-[480px] lg:min-h-[560px] flex items-center border-b border-white/5">
+        <!-- Blurred backdrop background for ambiance -->
+        <div class="absolute inset-0 bg-cover bg-center opacity-30 blur-2xl scale-110" style="background-image: url('@heroBannerUrl');"></div>
+        <!-- High-res backdrop image with mask -->
+        <div class="absolute inset-0 bg-cover bg-center hidden md:block opacity-45 transition-opacity duration-700" style="background-image: url('@heroBannerUrl');"></div>
+        <!-- Cinematic Gradient Overlay -->
+        <div class="absolute inset-0 backdrop-shading"></div>
+        <!-- Radial Spotlight for premium glow -->
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_30%,rgba(2,6,23,0.8)_100%)]"></div>
+
+        <!-- Hero Content Wrapper -->
+        <div class="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 w-full z-10">
+            <div class="grid grid-cols-1 md:grid-cols-[260px_1fr] lg:grid-cols-[300px_1fr] gap-8 md:gap-12 items-center md:items-end">
+                <!-- Floating Poster Container -->
+                <div class="relative mx-auto md:mx-0 w-60 md:w-full aspect-[3/4.2] rounded-2xl overflow-hidden shadow-[0_24px_60px_-15px_rgba(0,0,0,0.8)] border border-white/10 group transition-transform duration-500 hover:scale-[1.03]">
+                    @{
+                        var rawPosterDetails = Model.Movie.PosterUrl;
+                        if (!string.IsNullOrEmpty(rawPosterDetails) && !rawPosterDetails.StartsWith("/") && !rawPosterDetails.StartsWith("http"))
+                        {
+                            rawPosterDetails = $"/images/{rawPosterDetails}";
+                        }
+                        var finalPosterUrl = string.IsNullOrEmpty(rawPosterDetails) 
+                            ? $"https://placehold.co/300x420?text={Uri.EscapeDataString(Model.Movie.Title)}" 
+                            : rawPosterDetails;
+                    }
+                    <img src="@finalPosterUrl" alt="@Model.Movie.Title" class="w-full h-full object-cover" />
+                    @if (youtubeId != null)
+                    {
+                        <!-- Quick hover overlay for play trailer -->
+                        <div id="trailerOverlay" class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer">
+                            <div class="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-white shadow-xl transform scale-75 group-hover:scale-100 transition-all duration-300">
+                                <svg class="ml-1 h-7 w-7" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M8 5v14l11-7z"/>
+                                </svg>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Meta Details -->
+                <div class="space-y-6 text-center md:text-left">
+                    <!-- Genres List -->
+                    <div class="flex flex-wrap justify-center md:justify-start gap-2">
+                        @if (Model.Movie.GenreNames.Any())
+                        {
+                            foreach (var genre in Model.Movie.GenreNames)
+                            {
+                                <span class="rounded-full bg-primary/20 border border-primary/30 px-4 py-1 text-xs font-extrabold uppercase tracking-wider text-primary backdrop-blur-md">@genre</span>
+                            }
+                        }
+                        else
+                        {
+                            <span class="rounded-full bg-slate-800 border border-slate-700 px-4 py-1 text-xs font-bold uppercase tracking-wider text-slate-400">Chưa rõ thể loại</span>
+                        }
+                    </div>
+
+                    <!-- Movie Title -->
+                    <h1 class="text-3xl sm:text-4xl lg:text-5xl font-heading font-black tracking-tight leading-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
+                        @Model.Movie.Title
+                    </h1>
+
+                    <!-- Badges Row -->
+                    <div class="flex flex-wrap justify-center md:justify-start items-center gap-3 text-xs sm:text-sm font-bold text-slate-200">
+                        @if (Model.Movie.DurationMinutes.HasValue)
+                        {
+                            <span class="flex items-center gap-1.5 bg-white/10 px-3.5 py-2 rounded-xl backdrop-blur-md border border-white/5">
+                                <span class="material-symbols-outlined text-sm text-primary">schedule</span>
+                                @Model.Movie.DurationMinutes.Value phút
+                            </span>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.Movie.AgeRating))
+                        {
+                            <span class="flex items-center gap-1.5 bg-orange-500/20 text-orange-400 border border-orange-500/30 px-3.5 py-1.5 rounded-xl backdrop-blur-md font-bold">
+                                @Model.Movie.AgeRating
+                            </span>
+                        }
+                        @if (Model.Movie.ReleaseDate.HasValue)
+                        {
+                            <span class="flex items-center gap-1.5 bg-white/10 px-3.5 py-2 rounded-xl backdrop-blur-md border border-white/5">
+                                <span class="material-symbols-outlined text-sm text-indigo-400">calendar_today</span>
+                                @Model.Movie.ReleaseDate.Value.ToString("dd/MM/yyyy")
+                            </span>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.Movie.Language))
+                        {
+                            <span class="flex items-center gap-1.5 bg-white/10 px-3.5 py-2 rounded-xl backdrop-blur-md border border-white/5">
+                                <span class="material-symbols-outlined text-sm text-teal-400">language</span>
+                                @Model.Movie.Language
+                            </span>
+                        }
+                    </div>
+
+                    <!-- Action Bar -->
+                    <div class="flex flex-wrap justify-center md:justify-start gap-4 pt-4">
+                        @if (youtubeId != null)
+                        {
+                            <button id="playTrailerBtn" class="group flex items-center gap-3 rounded-full bg-gradient-to-r from-primary to-orange-600 hover:from-primary hover:to-orange-500 px-8 py-4 text-base font-extrabold tracking-wide text-white shadow-lg shadow-primary/30 transition duration-300 hover:shadow-xl hover:shadow-primary/45 transform hover:-translate-y-0.5 active:translate-y-0">
+                                <span class="play-circle-small flex h-7 w-7 items-center justify-center rounded-full bg-white text-primary">
+                                    <svg class="ml-0.5 h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                </span>
+                                XEM TRAILER
+                            </button>
+                        }
+                        <a asp-controller="Movies" asp-action="Index" class="flex items-center gap-2 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 px-6 py-4 text-sm font-bold text-white transition-all backdrop-blur-md">
+                            <span class="material-symbols-outlined text-base">arrow_back</span>
+                            Quay lại danh sách
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Details Container -->
+    <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <!-- TempData Messages -->
+        @if (TempData["Error"] != null)
+        {
+            <div class="mb-8 rounded-2xl bg-red-50 border border-red-200 p-5 shadow-sm">
+                <div class="flex items-start gap-3">
+                    <span class="material-symbols-outlined text-red-500 text-[24px] flex-shrink-0">error</span>
+                    <div>
+                        <p class="text-sm font-bold text-red-800">Thông báo lỗi</p>
+                        <p class="text-sm text-red-600 mt-1">@TempData["Error"]</p>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (TempData["Success"] != null)
+        {
+            <div class="mb-8 rounded-2xl bg-emerald-50 border border-emerald-200 p-5 shadow-sm">
+                <div class="flex items-start gap-3">
+                    <span class="material-symbols-outlined text-emerald-500 text-[24px] flex-shrink-0">check_circle</span>
+                    <div>
+                        <p class="text-sm font-bold text-emerald-800">Thành công</p>
+                        <p class="text-sm text-emerald-600 mt-1">@TempData["Success"]</p>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+            <!-- LEFT COLUMN: Description & Reviews (2/3 width) -->
+            <div class="lg:col-span-2 space-y-10">
+                <!-- Description Card -->
+                <section class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm hover:shadow-md transition-all">
+                    <h2 class="flex items-center gap-3 text-2xl font-bold text-slate-800">
+                        <span class="material-symbols-outlined text-primary">movie</span>
+                        Nội Dung Phim
+                    </h2>
+                    <div class="mt-6 text-slate-600 leading-relaxed text-base prose max-w-none">
+                        @Html.Raw(Model.Movie.Description ?? "<p class='text-slate-400 italic'>Chưa có mô tả chi tiết cho bộ phim này.</p>")
+                    </div>
+                </section>
+
+                <!-- Reviews Card -->
+                <section id="reviews" class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm hover:shadow-md transition-all">
+                    <div class="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-slate-100">
+                        <div>
+                            <h2 class="flex items-center gap-3 text-2xl font-bold text-slate-800">
+                                <span class="material-symbols-outlined text-primary">stars</span>
+                                Đánh Giá Khán Giả
+                            </h2>
+                            <p class="mt-2 text-sm text-slate-500">Lắng nghe cảm nhận thực tế từ những người đã trải nghiệm phim.</p>
+                        </div>
+                        @if (User.Identity?.IsAuthenticated ?? false)
+                        {
+                            <a asp-controller="Reviews" asp-action="Create" asp-route-movieId="@Model.Movie.Id" class="inline-flex items-center rounded-full bg-gradient-to-r from-primary to-orange-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-primary/25 transition hover:scale-105 active:scale-95">Viết đánh giá</a>
+                        }
+                        else
+                        {
+                            <a href="~/login?returnUrl=@Url.Action("Details", "Movies", new { id = Model.Movie.Slug })" class="inline-flex items-center rounded-full border border-slate-200 bg-white hover:bg-slate-50 px-6 py-3 text-sm font-bold text-slate-700 transition shadow-sm">Đăng nhập để đánh giá</a>
+                        }
+                    </div>
+
+                    <!-- Reviews List Ajax Container -->
+                    <div id="reviews-container">
+                        <partial name="_ReviewList" model="Model.Reviews" />
+                    </div>
+                </section>
+            </div>
+
+            <!-- RIGHT COLUMN: Sidebar Specifications (1/3 width) -->
+            <div class="space-y-8">
+                <!-- Info Details Card -->
+                <div class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm hover:shadow-md transition-all">
+                    <h3 class="flex items-center gap-2 text-xl font-bold text-slate-800 border-b border-slate-100 pb-4 mb-6">
+                        <span class="material-symbols-outlined text-primary">info</span>
+                        Thông Tin Chi Tiết
+                    </h3>
+
+                    <div class="space-y-6">
+                        @if (!string.IsNullOrEmpty(Model.Movie.Director))
+                        {
+                            <div class="flex items-start gap-3.5">
+                                <span class="material-symbols-outlined text-slate-500 mt-0.5">person</span>
+                                <div>
+                                    <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Đạo diễn</p>
+                                    <p class="text-sm font-bold text-slate-800 mt-0.5">@Model.Movie.Director</p>
+                                </div>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(Model.Movie.CastMembers))
+                        {
+                            <div class="flex items-start gap-3.5 border-t border-slate-100 pt-4">
+                                <span class="material-symbols-outlined text-slate-500 mt-0.5">group</span>
+                                <div class="w-full">
+                                    <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Diễn viên chính</p>
+                                    <div class="flex flex-wrap gap-1.5 mt-2.5">
+                                        @foreach (var cast in Model.Movie.CastMembers.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                                        {
+                                            <span class="rounded-lg bg-slate-100 border border-slate-200 px-2.5 py-1.5 text-xs text-slate-700 font-bold hover:bg-slate-200 transition">@cast.Trim()</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        @if (Model.Movie.ReleaseDate.HasValue)
+                        {
+                            <div class="flex items-start gap-3.5 border-t border-slate-100 pt-4">
+                                <span class="material-symbols-outlined text-slate-500 mt-0.5">event</span>
+                                <div>
+                                    <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Ngày khởi chiếu</p>
+                                    <p class="text-sm font-bold text-slate-800 mt-0.5">@Model.Movie.ReleaseDate.Value.ToString("dd/MM/yyyy")</p>
+                                </div>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(Model.Movie.Language))
+                        {
+                            <div class="flex items-start gap-3.5 border-t border-slate-100 pt-4">
+                                <span class="material-symbols-outlined text-slate-500 mt-0.5">language</span>
+                                <div>
+                                    <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Ngôn ngữ</p>
+                                    <p class="text-sm font-bold text-slate-800 mt-0.5">@Model.Movie.Language</p>
+                                </div>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(Model.Movie.Subtitle))
+                        {
+                            <div class="flex items-start gap-3.5 border-t border-slate-100 pt-4">
+                                <span class="material-symbols-outlined text-slate-500 mt-0.5">closed_caption</span>
+                                <div>
+                                    <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Phụ đề</p>
+                                    <p class="text-sm font-bold text-slate-800 mt-0.5">@Model.Movie.Subtitle</p>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="flex items-start gap-3.5 border-t border-slate-100 pt-4">
+                            <span class="material-symbols-outlined text-slate-500 mt-0.5">info</span>
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Trạng thái phát hành</p>
+                                <p class="inline-flex items-center gap-2 text-sm font-bold text-emerald-600 mt-1">
+                                    <span class="relative flex h-2 w-2">
+                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                    </span>
+                                    @(string.IsNullOrEmpty(Model.Movie.Status) ? "Đang cập nhật" : Model.Movie.Status)
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (youtubeId != null)
+{
+    <!-- Trailer Iframe Popup Modal -->
+    <div id="trailerModal" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 hidden">
+        <div class="relative w-full max-w-5xl">
+            <!-- Close Modal Trigger -->
+            <button onclick="closeTrailer()" class="absolute -top-12 right-0 flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-white/80 hover:bg-white/20 hover:text-white transition text-sm font-semibold backdrop-blur-sm">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+                Đóng
+            </button>
+            <!-- Embedded YouTube video iframe player -->
+            <div class="aspect-[16/9] w-full overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/10">
+                <iframe id="trailerIframe" src="" title="Trailer @Model.Movie.Title" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen class="h-full w-full"></iframe>
+            </div>
+            <p class="mt-3 text-center text-white/50 text-sm font-medium">@Model.Movie.Title — Trailer chính thức</p>
+        </div>
+    </div>
+}
+
+<style>
+    /* Backdrop gradient shade */
+    .backdrop-shading {
+        background: linear-gradient(180deg, rgba(2, 6, 23, 0.25) 0%, rgba(2, 6, 23, 0.8) 65%, rgba(2, 6, 23, 0.98) 100%);
+    }
+
+    /* Small pulsing ring animation for Play icon in header button */
+    .play-circle-small {
+        animation: pulse-ring-small 2s ease-in-out infinite;
+    }
+    @@keyframes pulse-ring-small {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(243, 112, 33, 0.4); }
+        50%       { box-shadow: 0 0 0 6px rgba(243, 112, 33, 0.2); }
+    }
+</style>
+
+<script>
+    // YouTube Trailer Video popups handler
+    (function () {
+        var playBtn = document.getElementById('playTrailerBtn');
+        var overlay = document.getElementById('trailerOverlay');
+        var modal = document.getElementById('trailerModal');
+        var iframe = document.getElementById('trailerIframe');
+        var embedSrc = '@embedUrl';
+
+        function openTrailer() {
+            if (iframe) iframe.src = embedSrc;
+            if (modal) modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        if (playBtn) {
+            playBtn.addEventListener('click', openTrailer);
+        }
+        if (overlay) {
+            overlay.addEventListener('click', openTrailer);
+        }
+
+        // Close trailer when clicking outside video frame
+        if (modal) {
+            modal.addEventListener('click', function (e) {
+                if (e.target === modal) closeTrailer();
+            });
+        }
+
+        // Close trailer when pressing Escape keyboard key
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeTrailer();
+        });
+    })();
+
+    function closeTrailer() {
+        var modal = document.getElementById('trailerModal');
+        var iframe = document.getElementById('trailerIframe');
+        if (iframe) iframe.src = '';
+        if (modal) modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+
+    // Ajax pagination for reviews
+    function loadReviews(page) {
+        var container = document.getElementById('reviews-container');
+        var movieId = '@Model.Movie.Id';
+        
+        container.style.opacity = '0.5';
+        container.style.pointerEvents = 'none';
+
+        fetch(`/Movies/LoadReviewsPartial?id=${movieId}&page=${page}`)
+            .then(response => response.text())
+            .then(html => {
+                container.innerHTML = html;
+                container.style.opacity = '1';
+                container.style.pointerEvents = 'auto';
+                
+                document.getElementById('reviews').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            })
+            .catch(err => {
+                console.error("Lỗi khi load reviews: ", err);
+                container.style.opacity = '1';
+                container.style.pointerEvents = 'auto';
+            });
+    }
+</script>

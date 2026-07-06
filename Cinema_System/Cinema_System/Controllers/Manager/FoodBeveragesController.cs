@@ -1,16 +1,19 @@
 using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Cinema_System.Controllers.Manager;
 
 [Route("Manager/[controller]")]
+[Authorize(Roles = "MANAGER")]   // Chỉ Quản lý rạp mới được quản lý đồ ăn & nước.
 public class FoodBeveragesController : Controller
 {
     private readonly IFoodBeverageService _fbService;
     private readonly IWebHostEnvironment _env;
 
-    private const long MaxImageBytes = 10 * 1024 * 1024; // 10MB cho ảnh
+    private const long MaxUploadBytes = 10 * 1024 * 1024; // giới hạn request
+    private const long MaxImageBytes = 2 * 1024 * 1024;   // mỗi ảnh tối đa 2MB
     private static readonly string[] ImageExts = { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
 
     public FoodBeveragesController(IFoodBeverageService fbService, IWebHostEnvironment env)
@@ -36,8 +39,8 @@ public class FoodBeveragesController : Controller
 
     [HttpPost("Create")]
     [ValidateAntiForgeryToken]
-    [RequestSizeLimit(MaxImageBytes)]
-    [RequestFormLimits(MultipartBodyLengthLimit = MaxImageBytes)]
+    [RequestSizeLimit(MaxUploadBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = MaxUploadBytes)]
     // Xử lý submit form thêm món (upload ảnh + lưu DB).
     public async Task<IActionResult> Create(FoodBeverageFormViewModel model)
     {
@@ -68,8 +71,8 @@ public class FoodBeveragesController : Controller
 
     [HttpPost("Edit/{id}")]
     [ValidateAntiForgeryToken]
-    [RequestSizeLimit(MaxImageBytes)]
-    [RequestFormLimits(MultipartBodyLengthLimit = MaxImageBytes)]
+    [RequestSizeLimit(MaxUploadBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = MaxUploadBytes)]
     // Xử lý submit form sửa món (upload ảnh mới nếu có + cập nhật DB).
     public async Task<IActionResult> Edit(FoodBeverageFormViewModel model)
     {
@@ -133,6 +136,12 @@ public class FoodBeveragesController : Controller
         {
             ModelState.AddModelError(nameof(model.ImageFile),
                 $"Định dạng không hợp lệ. Cho phép: {string.Join(", ", ImageExts)}");
+            return;
+        }
+
+        if (file.Length > MaxImageBytes)
+        {
+            ModelState.AddModelError(nameof(model.ImageFile), "Ảnh tối đa 2MB.");
             return;
         }
 

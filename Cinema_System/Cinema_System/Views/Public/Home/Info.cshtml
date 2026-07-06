@@ -1,0 +1,113 @@
+@{
+    ViewData["Title"] = "Thông tin rạp CineStar";
+}
+
+<div class="bg-slate-50 text-slate-900 font-body">
+    <section class="relative overflow-hidden bg-slate-950 text-white">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(253,186,116,0.25),_transparent_20%),radial-gradient(circle_at_bottom_right,_rgba(248,113,21,0.18),_transparent_25%)]"></div>
+        <div class="absolute inset-0">
+            <img src="/images/banner1.png" alt="CineStar" class="h-full w-full object-cover opacity-30" />
+            <div class="absolute inset-0 bg-slate-950/85"></div>
+        </div>
+        <div class="relative mx-auto flex max-w-7xl flex-col gap-10 px-4 py-24 sm:px-6 lg:px-8">
+            <div class="grid gap-10 lg:grid-cols-[1.25fr_0.95fr] lg:items-center"> 
+                <div class="space-y-6">
+                    <span class="inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-white/80">Thông tin rạp CineStar</span>
+                    <h1 class="max-w-3xl text-5xl font-black tracking-tight text-white sm:text-6xl">CineStar — Nơi trải nghiệm điện ảnh trở nên đẳng cấp</h1>
+                    <p class="max-w-3xl text-lg leading-8 text-slate-200">Mang đến không gian thưởng lãm phim sang trọng, công nghệ hình ảnh sắc nét và âm thanh sống động, CineStar là điểm đến lý tưởng cho mọi hành trình giải trí.</p>
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div class="rounded-[1.75rem] border border-white/10 bg-white/10 p-6 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.4)] backdrop-blur-md">
+                            <span class="text-sm uppercase tracking-[0.24em] text-slate-200">Địa chỉ</span>
+                            <p class="mt-4 text-xl font-semibold text-white">Hà Nội</p>
+                            <p class="mt-2 text-sm text-slate-300">Trung tâm giải trí CineStar, thủ đô Hà Nội</p>
+                        </div>
+                        <div class="rounded-[1.75rem] border border-white/10 bg-white/10 p-6 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.4)] backdrop-blur-md">
+                            <span class="text-sm uppercase tracking-[0.24em] text-slate-200">Hotline</span>
+                            <p class="mt-4 text-xl font-semibold text-white">0971 669 301</p>
+                            <p class="mt-2 text-sm text-slate-300">Hỗ trợ vé & dịch vụ khách hàng 24/7</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+                        <a asp-area="" asp-controller="Home" asp-action="Index" class="inline-flex items-center justify-center rounded-full bg-primary px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition hover:bg-primary-dark">Xem phim ngay</a>
+                        <a asp-area="" asp-controller="Home" asp-action="Index" class="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-7 py-3 text-sm font-semibold text-white/90 transition hover:border-primary hover:bg-white/20 hover:text-white">Quay lại trang chủ</a>
+                    </div>
+                </div>
+                <div class="rounded-[2.5rem] border border-white/10 bg-white/5 p-6 shadow-[0_30px_90px_-40px_rgba(15,23,42,0.4)] backdrop-blur-md">
+                    <div class="overflow-hidden rounded-[2rem] border border-white/10 bg-slate-900/70">
+                        <img src="/images/banner3.png" alt="Rạp CineStar" class="h-[420px] w-full object-cover" />
+                        <div class="p-6">
+                            <p class="text-sm uppercase tracking-[0.24em] text-primary">Tại CineStar</p>
+                            <h2 class="mt-3 text-3xl font-bold text-white">Trải nghiệm điện ảnh đỉnh cao</h2>
+                            <p class="mt-4 text-sm leading-7 text-slate-300">Không gian rạp hiện đại, ghế êm ái và dịch vụ khách hàng chu đáo mang đến cảm giác thư thái kể từ phút đầu tiên.</p>
+                            <div class="mt-6 grid gap-3 sm:grid-cols-2">
+                                <div class="rounded-3xl bg-white/10 p-4 text-slate-100">
+                                    <p class="text-xs uppercase tracking-[0.24em] text-slate-300">Công nghệ</p>
+                                    <p class="mt-2 text-sm font-semibold">Hình ảnh sắc nét</p>
+                                </div>
+                                <div class="rounded-3xl bg-white/10 p-4 text-slate-100">
+                                    <p class="text-xs uppercase tracking-[0.24em] text-slate-300">Dịch vụ</p>
+                                    <p class="mt-2 text-sm font-semibold">Tiện ích cao cấp</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="mx-auto max-w-7xl space-y-12 px-4 py-20 sm:px-6 lg:px-8">
+        <div class="rounded-[2rem] bg-white px-8 py-10 shadow-[0_30px_90px_-45px_rgba(15,23,42,0.2)]">
+            <div class="grid gap-12 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+                <div class="space-y-4">
+                    <span class="text-xs uppercase tracking-[0.3em] text-primary">CineStar xịn sò</span>
+                    <h2 class="text-4xl font-black text-slate-950 sm:text-5xl">Hành trình giải trí điện ảnh được chăm chút từng chi tiết</h2>
+                    <p class="max-w-2xl text-base leading-8 text-slate-600">Từ phòng chiếu đến dịch vụ, CineStar mang đến không gian xem phim hiện đại, sang trọng và đầy cảm hứng. Mỗi chuyến đi là một trải nghiệm đáng nhớ với gia đình, bạn bè hoặc người thương.</p>
+                </div>
+                <div class="grid gap-4">
+                    <div class="rounded-[2rem] border border-slate-200 bg-slate-50 p-6">
+                        <p class="text-xs uppercase tracking-[0.3em] text-primary">Phòng chiếu</p>
+                        <h3 class="mt-3 text-xl font-semibold text-slate-950">Công nghệ tiên tiến</h3>
+                        <p class="mt-2 text-sm text-slate-600">Hình ảnh rõ nét, âm thanh sống động, chuẩn phòng chiếu cao cấp.</p>
+                    </div>
+                    <div class="rounded-[2rem] border border-slate-200 bg-slate-50 p-6">
+                        <p class="text-xs uppercase tracking-[0.3em] text-primary">Tiện nghi</p>
+                        <h3 class="mt-3 text-xl font-semibold text-slate-950">Khu vực hiện đại</h3>
+                        <p class="mt-2 text-sm text-slate-600">Ghế êm, lối đi rộng, quầy ăn uống phong phú và phục vụ nhanh chóng.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid gap-8 lg:grid-cols-3">
+            <article class="rounded-[2rem] bg-white p-8 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+                <p class="text-xs uppercase tracking-[0.28em] text-primary">Sứ mệnh</p>
+                <h3 class="mt-4 text-2xl font-semibold text-slate-950">Nâng cao trải nghiệm</h3>
+                <p class="mt-3 text-sm leading-7 text-slate-600">CineStar không ngừng đổi mới để mỗi buổi xem phim đều trở nên ấm cúng và trọn vẹn.</p>
+            </article>
+            <article class="rounded-[2rem] bg-white p-8 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+                <p class="text-xs uppercase tracking-[0.28em] text-primary">Đặc sắc</p>
+                <h3 class="mt-4 text-2xl font-semibold text-slate-950">Ưu đãi hấp dẫn</h3>
+                <p class="mt-3 text-sm leading-7 text-slate-600">Thường xuyên có giá vé tốt, combo bắp nước và chương trình thành viên dành riêng.</p>
+            </article>
+            <article class="rounded-[2rem] bg-white p-8 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+                <p class="text-xs uppercase tracking-[0.28em] text-primary">Cam kết</p>
+                <h3 class="mt-4 text-2xl font-semibold text-slate-950">Phục vụ tận tâm</h3>
+                <p class="mt-3 text-sm leading-7 text-slate-600">Đội ngũ nhân viên luôn tận tình hỗ trợ và đảm bảo chuyến đi của bạn suôn sẻ.</p>
+            </article>
+        </div>
+
+        <div class="rounded-[2rem] bg-gradient-to-r from-orange-100 via-white to-slate-100 p-8 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.12)]">
+            <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                    <p class="text-sm uppercase tracking-[0.28em] text-primary">Hãy đến với CineStar</p>
+                    <h3 class="mt-3 text-3xl font-semibold text-slate-950">Tận hưởng phim ảnh xịn sò cùng gia đình và bạn bè</h3>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <a href="tel:0971669301" class="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark">Gọi ngay 0971 669 301</a>
+                    <a asp-area="" asp-controller="Home" asp-action="Index" class="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:border-primary hover:text-primary">Về trang chủ</a>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>

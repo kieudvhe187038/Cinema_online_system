@@ -1,0 +1,399 @@
+@using Cinema_System.Application.Common
+@model Cinema_System.Application.ViewModels.RoomFormViewModel
+@{
+    var locked = Model.Locked;
+}
+
+<style>
+    .seatmap-grid { user-select: none; touch-action: none; width: max-content; margin: 0 auto; }
+    .sm-row { display: grid; gap: 5px; align-items: center; margin-bottom: 5px; }
+    .sm-rowlabel { font-size: .72rem; font-weight: 700; color: #6b7280; text-align: center; }
+    .sm-colhead { font-size: .68rem; font-weight: 700; color: #9ca3af; text-align: center; }
+    .sm-cell { height: 30px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: .62rem; font-weight: 700; cursor: pointer; transition: filter .1s, background .1s; border: 1.5px solid transparent; }
+    .sm-empty { background: #f1f3f5; border: 1.5px dashed #d1d5db; }
+    .sm-empty:hover { background: #ffe8d6; border-color: #f37021; }
+    .sm-seat { box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+    .sm-seat:hover { filter: brightness(.95); }
+    .sm-palette-btn { border: 2px solid transparent; }
+    .sm-palette-btn.active { border-color: #191c1d; box-shadow: 0 0 0 3px rgba(243,112,33,.25); }
+</style>
+
+<input type="hidden" asp-for="SeatsJson" id="SeatsJson" />
+
+<div class="flex items-center justify-between gap-3 flex-wrap mb-3">
+    <div>
+        <h2 class="font-head text-base font-bold text-[#191c1d]">Sơ đồ ghế</h2>
+        <p class="text-xs text-gray-500">
+            @if (locked)
+            {
+                <text>Phòng có suất chiếu sắp tới — sơ đồ chỉ ở chế độ xem.</text>
+            }
+            else
+            {
+                <text>Chọn loại ghế rồi <strong>nhấn giữ chuột trái và rê</strong> trên lưới. Ghế đôi/ba tự lát 2–3 ô liền kề.</text>
+            }
+        </p>
+    </div>
+    <div class="flex items-center gap-4 text-sm">
+        <span class="text-gray-500">Ghế: <strong id="cntSeats" class="text-[#191c1d]">0</strong></span>
+        <span class="text-gray-500">Sức chứa: <strong id="cntPeople" class="text-[#191c1d]">0</strong> người</span>
+    </div>
+</div>
+
+@if (locked)
+{
+    <div class="px-4 py-2.5 rounded-lg mb-3 text-sm bg-amber-50 text-amber-700 border border-amber-200 flex items-start gap-2">
+        <span class="material-symbols-outlined" style="font-size:18px">lock</span>
+        <span>Phòng đang có <strong>suất chiếu sắp tới</strong> nên không thể đổi sơ đồ ghế &amp; kích thước (chỉ sửa được tên/loại/trạng thái). Hãy hủy/đổi các suất chiếu đó trước nếu cần bố trí lại ghế.</span>
+    </div>
+}
+else if (Model.WillCreateNewVersion)
+{
+    <div class="px-4 py-2.5 rounded-lg mb-3 text-sm bg-blue-50 text-blue-700 border border-blue-200 flex items-start gap-2">
+        <span class="material-symbols-outlined" style="font-size:18px">history</span>
+        <span>Phòng này đã có vé ở các suất chiếu <strong>trước đây</strong>. Nếu bạn <strong>thay đổi sơ đồ ghế hoặc kích thước</strong>, hệ thống sẽ lưu trữ phòng cũ (đổi tên + ngừng dùng) và tạo phòng mới để giữ lịch sử vé. Nếu chỉ đổi tên / loại phòng / trạng thái thì cập nhật bình thường.</span>
+    </div>
+}
+
+@if (!Model.SeatTypes.Any())
+{
+    <div class="px-4 py-2.5 rounded-lg mb-3 text-sm bg-red-50 text-red-700 border border-red-200">
+        Chưa có loại ghế nào. Hãy tạo ở mục <a class="underline font-semibold" href="@Url.Action("Index", "ManagerSeatType")">Quản lý loại ghế</a> trước khi bố trí sơ đồ.
+    </div>
+}
+
+<div class="grid grid-cols-1 lg:grid-cols-[230px_1fr] gap-4 items-start">
+    @if (!locked)
+    {
+        <div class="bg-gray-50 rounded-xl border border-[#e8eaed] p-3">
+            <div id="palette" class="flex flex-col gap-2 mb-3"></div>
+            <button id="btnEraser" type="button"
+                    class="sm-palette-btn w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition-colors">
+                <span class="material-symbols-outlined" style="font-size:18px">ink_eraser</span>
+                Tẩy (xóa ghế)
+            </button>
+            <button id="btnClear" type="button"
+                    class="mt-2 w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-100 transition-colors">
+                <span class="material-symbols-outlined" style="font-size:18px">delete_sweep</span>
+                Xóa toàn bộ
+            </button>
+        </div>
+    }
+    else
+    {
+        <div></div>
+    }
+
+    <div class="bg-white rounded-xl border border-[#e8eaed] p-4 overflow-x-auto">
+        <div class="w-full">
+            <div class="text-center mb-3">
+                <div class="mx-auto h-2 rounded-full bg-gradient-to-b from-gray-300 to-transparent" style="max-width:520px"></div>
+                <div class="text-xs font-bold tracking-[.3em] text-gray-400 mt-1">MÀN HÌNH</div>
+            </div>
+            <div id="seatmap" class="seatmap-grid"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const MAXR = @RoomPolicy.MaxRows, MAXC = @RoomPolicy.MaxColumns;
+    const LOCKED = @(locked ? "true" : "false");
+    const IS_EDIT = @(Model.Id != Guid.Empty ? "true" : "false");
+    const WILL_VERSION = @(Model.WillCreateNewVersion ? "true" : "false");
+    const seatTypes = @Json.Serialize(Model.SeatTypes);
+
+    const rowInput = document.getElementById('TotalRow');
+    const colInput = document.getElementById('TotalColumns');
+    const hidden = document.getElementById('SeatsJson');
+    const form = document.getElementById('roomForm');
+    const grid = document.getElementById('seatmap');
+
+    const PALETTE = [
+        { bg: '#fde68a', br: '#d97706', fg: '#92400e' },
+        { bg: '#bfdbfe', br: '#2563eb', fg: '#1e3a8a' },
+        { bg: '#fbcfe8', br: '#db2777', fg: '#9d174d' },
+        { bg: '#bbf7d0', br: '#16a34a', fg: '#166534' },
+        { bg: '#ddd6fe', br: '#7c3aed', fg: '#5b21b6' },
+        { bg: '#fecaca', br: '#dc2626', fg: '#991b1b' },
+        { bg: '#a5f3fc', br: '#0891b2', fg: '#155e75' },
+    ];
+    const typeById = {}, colorById = {};
+    seatTypes.forEach((t, i) => { typeById[t.id] = t; colorById[t.id] = PALETTE[i % PALETTE.length]; });
+
+    let ROWS = clampInt(rowInput.value, 8, MAXR);
+    let COLS = clampInt(colInput.value, 10, MAXC);
+    let seats = [];   // {row, col, span, typeId}
+    let occ = [];
+
+    function clampInt(v, def, max) { let n = parseInt(v, 10); if (isNaN(n) || n < 1) n = def; return Math.min(n, max); }
+    function rowLetter(r) { return r <= 26 ? String.fromCharCode(64 + r) : ('H' + r); }
+
+    function hydrate() {
+        seats = [];
+        let raw = [];
+        try { raw = JSON.parse(hidden.value || '[]'); } catch (e) { raw = []; }
+        raw.forEach(s => {
+            const t = typeById[s.seatTypeId];
+            const span = t ? t.columnSpan : 1;
+            if (s.row < 1 || s.row > ROWS || s.startColumn < 1 || s.startColumn + span - 1 > COLS) return;
+            seats.push({ row: s.row, col: s.startColumn, span: span, typeId: s.seatTypeId });
+        });
+    }
+
+    function rebuildOcc() {
+        occ = Array.from({ length: ROWS + 1 }, () => Array(COLS + 1).fill(null));
+        seats = seats.filter(s => s.row <= ROWS && s.col + s.span - 1 <= COLS);
+        seats.forEach(s => { for (let c = s.col; c < s.col + s.span; c++) occ[s.row][c] = s; });
+    }
+
+    // ---- DOM lưới ----
+    const rowEls = [];
+    function colTemplate() { return '2rem repeat(' + COLS + ', 32px)'; }
+
+    function buildGrid() {
+        grid.innerHTML = '';
+        rowEls.length = 0;
+        const head = document.createElement('div');
+        head.className = 'sm-row';
+        head.style.gridTemplateColumns = colTemplate();
+        head.appendChild(document.createElement('div'));
+        for (let c = 1; c <= COLS; c++) {
+            const h = document.createElement('div');
+            h.className = 'sm-colhead'; h.textContent = c; head.appendChild(h);
+        }
+        grid.appendChild(head);
+        for (let r = 1; r <= ROWS; r++) {
+            const row = document.createElement('div');
+            row.className = 'sm-row';
+            row.style.gridTemplateColumns = colTemplate();
+            rowEls[r] = row; grid.appendChild(row); renderRow(r);
+        }
+    }
+
+    function renderRow(r) {
+        const row = rowEls[r];
+        row.innerHTML = '';
+        const label = document.createElement('div');
+        label.className = 'sm-rowlabel'; label.textContent = rowLetter(r);
+        row.appendChild(label);
+        let c = 1;
+        while (c <= COLS) {
+            const seat = occ[r][c];
+            if (seat && seat.col === c) {
+                const el = document.createElement('div');
+                const col = colorById[seat.typeId] || PALETTE[0];
+                el.className = 'sm-cell sm-seat';
+                el.style.gridColumn = 'span ' + seat.span;
+                el.style.background = col.bg; el.style.borderColor = col.br; el.style.color = col.fg;
+                el.textContent = rowLetter(r) + seat.col;
+                el.dataset.cell = '1'; el.dataset.row = r; el.dataset.col = seat.col; el.dataset.span = seat.span;
+                el.title = (typeById[seat.typeId] ? typeById[seat.typeId].name : '') + ' · ' + rowLetter(r) + seat.col;
+                row.appendChild(el); c += seat.span;
+            } else if (seat) { c += 1; }
+            else {
+                const el = document.createElement('div');
+                el.className = 'sm-cell sm-empty';
+                el.dataset.cell = '1'; el.dataset.row = r; el.dataset.col = c;
+                row.appendChild(el); c += 1;
+            }
+        }
+    }
+
+    function updateCount() {
+        let people = 0;
+        seats.forEach(s => { const t = typeById[s.typeId]; people += t ? t.capacity : 1; });
+        document.getElementById('cntSeats').textContent = seats.length;
+        document.getElementById('cntPeople').textContent = people;
+    }
+
+    // ---- thao tác lưới ----
+    function removeSeatCovering(r, c) {
+        const seat = occ[r][c]; if (!seat) return false;
+        for (let x = seat.col; x < seat.col + seat.span; x++) occ[r][x] = null;
+        const i = seats.indexOf(seat); if (i >= 0) seats.splice(i, 1);
+        return true;
+    }
+    function placeSingle(r, c, typeId) {
+        if (occ[r][c] && occ[r][c].typeId === typeId && occ[r][c].span === 1) return false;
+        removeSeatCovering(r, c);
+        const seat = { row: r, col: c, span: 1, typeId: typeId };
+        seats.push(seat); occ[r][c] = seat; return true;
+    }
+    function placeBlock(r, start, span, typeId) {
+        if (start < 1 || start + span - 1 > COLS) return false;
+        for (let c = start; c < start + span; c++) if (occ[r][c]) return false;
+        const seat = { row: r, col: start, span: span, typeId: typeId };
+        seats.push(seat); for (let c = start; c < start + span; c++) occ[r][c] = seat; return true;
+    }
+
+    // ---- công cụ ----
+    let tool = null, dragging = false, tileRow = 0, tileAnchor = 0, lastKey = '';
+    function setTool(t) {
+        tool = t;
+        document.querySelectorAll('#palette .sm-palette-btn').forEach(b => b.classList.toggle('active', b.dataset.type === t));
+        const er = document.getElementById('btnEraser'); if (er) er.classList.toggle('active', t === 'eraser');
+    }
+    function process(r, c) {
+        let changed = false;
+        if (tool === 'eraser') changed = removeSeatCovering(r, c);
+        else if (tool) {
+            const span = (typeById[tool] && typeById[tool].columnSpan) || 1;
+            if (span === 1) changed = placeSingle(r, c, tool);
+            else {
+                let start;
+                if (r !== tileRow) { tileRow = r; tileAnchor = c; start = c; }
+                else { const k = Math.floor((c - tileAnchor) / span); start = tileAnchor + k * span; }
+                changed = placeBlock(r, start, span, tool);
+            }
+        }
+        if (changed) { renderRow(r); updateCount(); }
+    }
+    function cellAt(clientX, clientY) {
+        const el = document.elementFromPoint(clientX, clientY);
+        const cell = el && el.closest ? el.closest('[data-cell]') : null;
+        if (!cell) return null;
+        const r = +cell.dataset.row; let c = +cell.dataset.col;
+        const span = +cell.dataset.span || 1;
+        if (span > 1) {
+            const rect = cell.getBoundingClientRect();
+            const rel = Math.floor((clientX - rect.left) / (rect.width / span));
+            c = +cell.dataset.col + Math.min(span - 1, Math.max(0, rel));
+        }
+        return { r, c };
+    }
+
+    if (!LOCKED) {
+        grid.addEventListener('pointerdown', e => {
+            const pos = cellAt(e.clientX, e.clientY); if (!pos || !tool) return;
+            e.preventDefault(); dragging = true; tileRow = pos.r; tileAnchor = pos.c;
+            lastKey = pos.r + ':' + pos.c; process(pos.r, pos.c);
+        });
+        window.addEventListener('pointermove', e => {
+            if (!dragging) return;
+            const pos = cellAt(e.clientX, e.clientY); if (!pos) return;
+            const key = pos.r + ':' + pos.c; if (key === lastKey) return;
+            lastKey = key; process(pos.r, pos.c);
+        });
+        window.addEventListener('pointerup', () => { dragging = false; lastKey = ''; });
+
+        const pal = document.getElementById('palette');
+        seatTypes.forEach(t => {
+            const col = colorById[t.id];
+            const btn = document.createElement('button');
+            btn.type = 'button'; btn.dataset.type = t.id;
+            btn.className = 'sm-palette-btn flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-semibold text-left transition-colors hover:brightness-95';
+            btn.style.background = col.bg; btn.style.color = col.fg;
+            btn.innerHTML =
+                '<span style="width:18px;height:18px;border-radius:5px;border:2px solid ' + col.br + ';background:' + col.bg + ';display:inline-block;flex:0 0 auto"></span>' +
+                '<span class="flex-1">' + t.name + '</span>' +
+                '<span style="font-size:.7rem;opacity:.8">' + (t.columnSpan > 1 ? (t.columnSpan + ' ô') : '1 ô') + '</span>';
+            btn.addEventListener('click', () => setTool(t.id));
+            pal.appendChild(btn);
+        });
+        document.getElementById('btnEraser').addEventListener('click', () => setTool('eraser'));
+        document.getElementById('btnClear').addEventListener('click', () => {
+            confirmPopup({
+                title: 'Xóa toàn bộ ghế',
+                message: 'Xóa tất cả ghế đã vẽ trên sơ đồ? Thay đổi chỉ được áp dụng khi bạn bấm "Lưu phòng".',
+                type: 'danger', okText: 'Xóa hết'
+            }).then(ok => {
+                if (!ok) return;
+                seats = []; rebuildOcc();
+                for (let r = 1; r <= ROWS; r++) renderRow(r); updateCount();
+            });
+        });
+        if (seatTypes.length) setTool(seatTypes[0].id);
+
+        // không cho nhập quá max ngay tại ô (type=number bỏ qua maxlength nên chặn bằng JS)
+        function capInput(inp, max) {
+            if (inp.value === '') return;            // cho phép trống tạm thời khi đang gõ
+            let n = parseInt(inp.value, 10);
+            if (isNaN(n)) { inp.value = ''; return; }
+            if (n > max) { n = max; inp.value = n; }
+            if (n < 0) { inp.value = ''; }
+        }
+        // chốt tối thiểu = 1 khi rời ô (tránh ép '1' ngay lúc đang gõ)
+        function floorInput(inp) {
+            let n = parseInt(inp.value, 10);
+            if (isNaN(n) || n < 1) { inp.value = 1; onDim(); }
+        }
+
+        // đổi kích thước lưới ngay khi sửa số hàng/cột
+        function onDim() {
+            capInput(rowInput, MAXR);
+            capInput(colInput, MAXC);
+            ROWS = clampInt(rowInput.value, ROWS, MAXR);
+            COLS = clampInt(colInput.value, COLS, MAXC);
+            rebuildOcc(); buildGrid(); updateCount();
+        }
+        rowInput.addEventListener('input', onDim);
+        colInput.addEventListener('input', onDim);
+        rowInput.addEventListener('blur', () => floorInput(rowInput));
+        colInput.addEventListener('blur', () => floorInput(colInput));
+    }
+
+    // ghi sơ đồ ghế hiện tại vào hidden field
+    function serialize() {
+        hidden.value = JSON.stringify(seats.map(s => ({ row: s.row, startColumn: s.col, seatTypeId: s.typeId })));
+    }
+
+    // chữ ký sơ đồ (kích thước + tập ghế) để phát hiện thay đổi
+    function signature() {
+        const dims = (rowInput.value || '') + 'x' + (colInput.value || '');
+        const arr = seats.map(s => s.row + ':' + s.col + ':' + s.typeId).sort();
+        return dims + '|' + arr.join(',');
+    }
+    let originalSig = '';
+
+    // cảnh báo xác nhận khi LƯU (đặc biệt khi Sửa: khóa do suất tương lai, hoặc đổi sơ đồ → tạo bản mới)
+    function confirmOpts(seatMapChanged) {
+        if (LOCKED) {
+            return {
+                title: 'Lưu thay đổi phòng',
+                message: 'Phòng đang có suất chiếu sắp tới nên chỉ cập nhật Tên / Loại phòng / Trạng thái — sơ đồ ghế và kích thước giữ nguyên. Tiếp tục lưu?',
+                type: 'warning', okText: 'Lưu thay đổi'
+            };
+        }
+        if (WILL_VERSION && seatMapChanged) {
+            return {
+                title: 'Lưu trữ phòng cũ & tạo phòng mới',
+                message: 'Bạn đã thay đổi sơ đồ ghế / kích thước của phòng đã từng bán vé. Khi lưu, phòng cũ sẽ được LƯU TRỮ (đổi tên + ngừng dùng) để giữ lịch sử vé, và hệ thống TẠO PHÒNG MỚI theo cấu hình bạn vừa chỉnh. Tiếp tục?',
+                type: 'warning', okText: 'Lưu trữ & tạo mới'
+            };
+        }
+        return {
+            title: 'Lưu thay đổi phòng',
+            message: seatMapChanged
+                ? 'Lưu các thay đổi cho phòng chiếu này? Sơ đồ ghế hiện tại trên lưới sẽ được áp dụng (thay cho sơ đồ cũ).'
+                : 'Lưu thay đổi thông tin phòng chiếu này?',
+            type: 'warning', okText: 'Lưu thay đổi'
+        };
+    }
+
+    if (form) {
+        let confirmed = false;
+        form.addEventListener('submit', function (e) {
+            if (confirmed) return;            // đã xác nhận → cho submit thật
+            if (!LOCKED) serialize();
+            if (!IS_EDIT) return;             // màn Tạo mới: lưu thẳng, không cảnh báo
+            e.preventDefault();
+            // qua kiểm tra hợp lệ phía client trước khi hỏi xác nhận
+            if (window.jQuery && jQuery(form).data('validator') && !jQuery(form).valid()) return;
+            const seatMapChanged = !LOCKED && (signature() !== originalSig);
+            confirmPopup(confirmOpts(seatMapChanged)).then(function (ok) {
+                if (!ok) return;
+                confirmed = true;
+                if (!LOCKED) serialize();
+                form.submit();
+            });
+        });
+    }
+
+    hydrate();
+    rebuildOcc();
+    buildGrid();
+    updateCount();
+    originalSig = signature();
+})();
+</script>
