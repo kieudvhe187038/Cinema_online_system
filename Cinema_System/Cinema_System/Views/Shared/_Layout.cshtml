@@ -56,6 +56,10 @@
                         {
                             <a class="text-sm font-semibold text-primary transition hover:text-primary-dark" asp-controller="ManagerIncident" asp-action="Index">Quản Lý Sự Cố</a>
                         }
+                        @if (User.IsInRole("ADMIN"))
+                        {
+                            <a class="text-sm font-semibold text-primary transition hover:text-primary-dark" asp-controller="AdminDashboard" asp-action="Index">Dashboard Quản Trị</a>
+                        }
 
                     </nav>
                 </div>
