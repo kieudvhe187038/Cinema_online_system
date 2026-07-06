@@ -1,3 +1,4 @@
+using AutoMapper;
 using Cinema_System.Application.Common;
 using Cinema_System.Application.DTOs;
 using Cinema_System.Application.Interfaces;
@@ -24,17 +25,20 @@ public class CounterBookingService : ICounterBookingService
     private readonly IPricingService _pricing;
     private readonly IStaffContextService _staffContext;
     private readonly IPointConfigService _pointConfig;
+    private readonly IMapper _mapper;
 
     public CounterBookingService(
         IUnitOfWork unitOfWork,
         IPricingService pricing,
         IStaffContextService staffContext,
-        IPointConfigService pointConfig)
+        IPointConfigService pointConfig,
+        IMapper mapper)
     {
         _unitOfWork = unitOfWork;
         _pricing = pricing;
         _staffContext = staffContext;
         _pointConfig = pointConfig;
+        _mapper = mapper;
     }
 
     public async Task<CounterBookingViewModel> GetCounterDataAsync(Guid staffId)
@@ -44,31 +48,18 @@ public class CounterBookingService : ICounterBookingService
 
         var showtimes = await _unitOfWork.Showtimes.GetUpcomingWithMovieAsync(now);
 
-        var movies = showtimes
-            .Where(s => s.Movie != null)
-            .Select(s => s.Movie)
-            .DistinctBy(m => m.Id)
-            .OrderBy(m => m.Title)
-            .Select(m => new MovieOptionDTO
-            {
-                Id = m.Id,
-                Title = m.Title,
-                DurationMinutes = m.DurationMinutes,
-                AgeRating = m.AgeRating
-            })
-            .ToList();
+        var movies = _mapper.Map<List<MovieOptionDTO>>(
+            showtimes
+                .Where(s => s.Movie != null)
+                .Select(s => s.Movie)
+                .DistinctBy(m => m.Id)
+                .OrderBy(m => m.Title)
+                .ToList());
 
-        var foods = (await _unitOfWork.FoodBeverages.GetAllAsync(
-            f => f.StockStatus != OutOfStock,
-            orderBy: q => q.OrderBy(f => f.Name)))
-            .Select(f => new FoodOptionDTO
-            {
-                Id = f.Id,
-                Name = f.Name,
-                Price = f.Price,
-                ImageUrl = f.ImageUrl
-            })
-            .ToList();
+        var foods = _mapper.Map<List<FoodOptionDTO>>(
+            await _unitOfWork.FoodBeverages.GetAllAsync(
+                f => f.StockStatus != OutOfStock,
+                orderBy: q => q.OrderBy(f => f.Name)));
 
         var vat = (await _unitOfWork.Vats.GetAllAsync(v => v.Status == StatusActive))
             .OrderByDescending(v => v.CreatedAt)

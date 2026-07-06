@@ -1,3 +1,4 @@
+using AutoMapper;
 using Cinema_System.Application.Common;
 using Cinema_System.Application.DTOs;
 using Cinema_System.Application.Interfaces;
@@ -14,11 +15,13 @@ public class TicketCheckinService : ITicketCheckinService
 
     private readonly IUnitOfWork _unitOfWork;
     private readonly IStaffContextService _staffContext;
+    private readonly IMapper _mapper;
 
-    public TicketCheckinService(IUnitOfWork unitOfWork, IStaffContextService staffContext)
+    public TicketCheckinService(IUnitOfWork unitOfWork, IStaffContextService staffContext, IMapper mapper)
     {
         _unitOfWork = unitOfWork;
         _staffContext = staffContext;
+        _mapper = mapper;
     }
 
     public async Task<TicketCheckinDTO?> LookupAsync(string? qrCode)
@@ -167,22 +170,12 @@ public class TicketCheckinService : ITicketCheckinService
         else
             message = $"Đơn có {lines.Count} vé, {checkedIn} đã check-in, {lines.Count - checkedIn} chưa.";
 
-        return new BookingCheckinDTO
-        {
-            BookingId = b.Id,
-            BookingCode = b.QrCode ?? string.Empty,
-            MovieTitle = b.Showtime?.Movie?.Title ?? string.Empty,
-            CinemaName = b.Showtime?.Room?.Cinema?.Name ?? string.Empty,
-            RoomName = b.Showtime?.Room?.Name ?? string.Empty,
-            ShowStartTime = b.Showtime?.StartTime ?? default,
-            ShowEndTime = b.Showtime?.EndTime ?? default,
-            CustomerName = b.User?.FullName ?? "Khách lẻ",
-            PaymentStatus = b.PaymentStatus ?? string.Empty,
-            Tickets = lines,
-            TotalTickets = lines.Count,
-            CheckedInCount = checkedIn,
-            Message = message
-        };
+        var dto = _mapper.Map<BookingCheckinDTO>(b);
+        dto.Tickets = lines;
+        dto.TotalTickets = lines.Count;
+        dto.CheckedInCount = checkedIn;
+        dto.Message = message;
+        return dto;
     }
 
     /// <summary>Tìm vé theo mã QR (Ticket.QrCode), kèm các navigation cần để hiển thị.</summary>
@@ -201,24 +194,12 @@ public class TicketCheckinService : ITicketCheckinService
                 .Include(t => t.ScanByNavigation));
     }
 
-    private static TicketCheckinDTO MapToDTO(Ticket t) => new()
+    private TicketCheckinDTO MapToDTO(Ticket t)
     {
-        TicketId = t.Id,
-        TicketCode = t.QrCode ?? string.Empty,
-        BookingCode = t.Booking?.QrCode ?? string.Empty,
-        MovieTitle = t.Showtime?.Movie?.Title ?? string.Empty,
-        CinemaName = t.Showtime?.Room?.Cinema?.Name ?? string.Empty,
-        RoomName = t.Showtime?.Room?.Name ?? string.Empty,
-        ShowStartTime = t.Showtime?.StartTime ?? default,
-        ShowEndTime = t.Showtime?.EndTime ?? default,
-        SeatLabel = t.Seat is null ? string.Empty : SeatLabelHelper.Build(t.Seat.RowNumber, t.Seat.SeatNumber),
-        SeatType = t.Seat?.SeatType?.Name ?? string.Empty,
-        CustomerName = t.Booking?.User?.FullName ?? "Khách lẻ",
-        Status = t.Status ?? string.Empty,
-        CheckedIn = string.Equals(t.Status, StatusCheckedIn, StringComparison.OrdinalIgnoreCase),
-        ScannedAt = t.ScannedAt,
-        ScanByName = t.ScanByNavigation?.FullName
-    };
+        var dto = _mapper.Map<TicketCheckinDTO>(t);
+        dto.CheckedIn = string.Equals(t.Status, StatusCheckedIn, StringComparison.OrdinalIgnoreCase);
+        return dto;
+    }
 
     /// <summary>Mô tả trạng thái hiện tại của vé (dùng cho lookup / thông báo lỗi).</summary>
     private static string DescribeState(Ticket t)

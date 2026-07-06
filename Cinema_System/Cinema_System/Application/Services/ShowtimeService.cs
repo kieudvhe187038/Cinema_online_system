@@ -58,22 +58,7 @@ public class ShowtimeService : IShowtimeService
                 .Include(s => s.Room).ThenInclude(r => r.Cinema),
             orderBy: q => q.OrderBy(s => s.StartTime));
 
-        var showtimeDtos = showtimes.Select(s => new ShowtimeDTO
-        {
-            Id = s.Id,
-            MovieId = s.MovieId,
-            MovieTitle = s.Movie.Title,
-            MoviePosterUrl = s.Movie.PosterUrl,
-            DurationMinutes = s.Movie.DurationMinutes,
-            AgeRating = s.Movie.AgeRating,
-            RoomId = s.RoomId,
-            RoomName = s.Room.Name,
-            RoomTypeName = s.Room.RoomType?.Name,
-            CinemaName = s.Room.Cinema?.Name ?? string.Empty,
-            StartTime = s.StartTime,
-            EndTime = s.EndTime,
-            Status = s.Status
-        }).ToList();
+        var showtimeDtos = _mapper.Map<List<ShowtimeDTO>>(showtimes);
 
         // Tùy chọn dropdown: phim, thể loại, độ tuổi, loại phòng.
         var movies = await _unitOfWork.Movies.GetAllAsync(
@@ -150,18 +135,16 @@ public class ShowtimeService : IShowtimeService
             {
                 RowNumber = g.Key,
                 RowLabel = RowLabel(g.Key),
-                Seats = g.OrderBy(s => s.SeatNumber).Select(s => new SeatDTO
+                Seats = g.OrderBy(s => s.SeatNumber).Select(s =>
                 {
-                    Id = s.Id,
-                    RowNumber = s.RowNumber,
-                    SeatNumber = s.SeatNumber,
-                    RowLabel = RowLabel(s.RowNumber),
-                    SeatTypeName = s.SeatType?.Name ?? string.Empty,
-                    Price = seatPrice(s.SeatTypeId),
-                    State = s.Status == "Broken" ? "Broken"
-                          : bookedSeatIds.Contains(s.Id) ? "Booked"
-                          : heldSeatIds.Contains(s.Id) ? "Held"
-                          : "Available"
+                    var dto = _mapper.Map<SeatDTO>(s);
+                    dto.RowLabel = RowLabel(s.RowNumber);
+                    dto.Price = seatPrice(s.SeatTypeId);
+                    dto.State = s.Status == "Broken" ? "Broken"
+                              : bookedSeatIds.Contains(s.Id) ? "Booked"
+                              : heldSeatIds.Contains(s.Id) ? "Held"
+                              : "Available";
+                    return dto;
                 }).ToList()
             })
             .ToList();

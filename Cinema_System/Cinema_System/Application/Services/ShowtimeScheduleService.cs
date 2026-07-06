@@ -1,3 +1,4 @@
+using AutoMapper;
 using Cinema_System.Application.Common;
 using Cinema_System.Application.DTOs;
 using Cinema_System.Application.Interfaces;
@@ -12,10 +13,12 @@ namespace Cinema_System.Application.Services;
 public class ShowtimeScheduleService : IShowtimeScheduleService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IMapper _mapper;
 
-    public ShowtimeScheduleService(IUnitOfWork unitOfWork)
+    public ShowtimeScheduleService(IUnitOfWork unitOfWork, IMapper mapper)
     {
         _unitOfWork = unitOfWork;
+        _mapper = mapper;
     }
 
     /// <summary>
@@ -35,7 +38,7 @@ public class ShowtimeScheduleService : IShowtimeScheduleService
         var weekEnd = weekBegin.AddDays(7);
 
         var rooms = await _unitOfWork.Rooms.GetAllAsync(orderBy: q => q.OrderBy(r => r.Name));
-        var availableRooms = rooms.Select(r => new ItemOptionDTO { Id = r.Id, Name = r.Name }).ToList();
+        var availableRooms = _mapper.Map<List<ItemOptionDTO>>(rooms);
 
         // Tự động chọn phòng đầu tiên nếu người dùng chưa chọn phòng cụ thể
         if (!roomId.HasValue && availableRooms.Any())
@@ -64,16 +67,9 @@ public class ShowtimeScheduleService : IShowtimeScheduleService
                               await _unitOfWork.Tickets.ExistsAsync(t => t.ShowtimeId == showtime.Id);
             if (hasBookings) bookedCount++;
 
-            showtimeDtos.Add(new ShowtimeScheduleDTO
-            {
-                Id = showtime.Id,
-                MovieTitle = showtime.Movie?.Title ?? "—",
-                RoomName = showtime.Room?.Name ?? "—",
-                StartTime = showtime.StartTime,
-                EndTime = showtime.EndTime,
-                Status = string.IsNullOrEmpty(showtime.Status) ? "Scheduled" : showtime.Status,
-                HasBookings = hasBookings
-            });
+            var dto = _mapper.Map<ShowtimeScheduleDTO>(showtime);
+            dto.HasBookings = hasBookings;
+            showtimeDtos.Add(dto);
         }
 
         var weekDays = Enumerable.Range(0, 7).Select(i => weekBegin.AddDays(i)).ToList();
@@ -138,18 +134,11 @@ public class ShowtimeScheduleService : IShowtimeScheduleService
         var hasBookings = await _unitOfWork.Bookings.ExistsAsync(b => b.ShowtimeId == id) ||
                           await _unitOfWork.Tickets.ExistsAsync(t => t.ShowtimeId == id);
 
-        return new ShowtimeFormViewModel
-        {
-            Id = showtime.Id,
-            MovieId = showtime.MovieId,
-            RoomId = showtime.RoomId,
-            StartTime = showtime.StartTime,
-            EndTime = showtime.EndTime,
-            Status = string.IsNullOrEmpty(showtime.Status) ? "Scheduled" : showtime.Status,
-            HasBookings = hasBookings,
-            AvailableMovies = movies,
-            AvailableRooms = rooms
-        };
+        var vm = _mapper.Map<ShowtimeFormViewModel>(showtime);
+        vm.HasBookings = hasBookings;
+        vm.AvailableMovies = movies;
+        vm.AvailableRooms = rooms;
+        return vm;
     }
 
     /// <summary>
@@ -159,7 +148,7 @@ public class ShowtimeScheduleService : IShowtimeScheduleService
     public async Task<IEnumerable<ItemOptionDTO>> GetMovieOptionsAsync()
     {
         var movies = await _unitOfWork.Movies.GetAllAsync(orderBy: q => q.OrderBy(m => m.Title));
-        return movies.Select(m => new ItemOptionDTO { Id = m.Id, Name = m.Title });
+        return _mapper.Map<List<ItemOptionDTO>>(movies);
     }
 
     /// <summary>
@@ -169,7 +158,7 @@ public class ShowtimeScheduleService : IShowtimeScheduleService
     public async Task<IEnumerable<ItemOptionDTO>> GetRoomOptionsAsync()
     {
         var rooms = await _unitOfWork.Rooms.GetAllAsync(orderBy: q => q.OrderBy(r => r.Name));
-        return rooms.Select(r => new ItemOptionDTO { Id = r.Id, Name = r.Name });
+        return _mapper.Map<List<ItemOptionDTO>>(rooms);
     }
 
     /// <summary>
