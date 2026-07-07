@@ -29,7 +29,7 @@ public class ReviewService : IReviewService
         var (items, totalCount) = await _unitOfWork.Reviews.GetPagedAsync(
             page,
             pageSize,
-            predicate: r => r.MovieId == movieId && r.Status == "approved",
+            predicate: r => r.MovieId == movieId && r.Status == "Approved",
             include: q => q.Include(r => r.User).Include(r => r.Movie),
             orderBy: q => q.OrderByDescending(x => x.CreatedAt));
 
@@ -50,7 +50,7 @@ public class ReviewService : IReviewService
     {
         return await _unitOfWork.Tickets.ExistsAsync(t =>
             t.Booking.UserId == userId &&
-            t.Booking.PaymentStatus == "completed" &&
+            t.Booking.PaymentStatus == "Paid" &&
             t.Showtime.MovieId == movieId);
     }
 
@@ -60,7 +60,7 @@ public class ReviewService : IReviewService
     public async Task<HashSet<Guid>> GetWatchedMovieIdsAsync(Guid userId)
     {
         var tickets = await _unitOfWork.Tickets.GetAllAsync(
-            predicate: t => t.Booking.UserId == userId && t.Booking.PaymentStatus == "completed",
+            predicate: t => t.Booking.UserId == userId && t.Booking.PaymentStatus == "Paid",
             include: q => q.Include(t => t.Showtime));
 
         return tickets.Select(t => t.Showtime.MovieId).ToHashSet();
@@ -80,6 +80,13 @@ public class ReviewService : IReviewService
     /// </summary>
     public async Task<ReviewDTO> CreateReviewAsync(Guid userId, CreateReviewDTO reviewDTO)
     {
+        // Kiểm tra lại lần cuối để tránh race condition / submit 2 lần
+        var alreadyReviewed = await _unitOfWork.Reviews
+            .ExistsAsync(r => r.UserId == userId && r.MovieId == reviewDTO.MovieId);
+
+        if (alreadyReviewed)
+            throw new InvalidOperationException("Bạn đã đánh giá phim này rồi.");
+
         var review = new Review
         {
             Id = Guid.NewGuid(),
@@ -87,7 +94,7 @@ public class ReviewService : IReviewService
             MovieId = reviewDTO.MovieId,
             Rating = reviewDTO.Rating,
             Comment = reviewDTO.Comment,
-            Status = "approved", // Đánh giá mới tạo sẽ hiển thị ngay mà không cần duyệt
+            Status = "Approved", // Khớp với HasDefaultValue("Approved") trong DbContext
             CreatedAt = DateTime.Now
         };
 
@@ -119,7 +126,7 @@ public class ReviewService : IReviewService
         var (items, totalCount) = await _unitOfWork.Reviews.GetPagedAsync(
             page,
             pageSize,
-            predicate: r => r.Status == "approved",
+            predicate: r => r.Status == "Approved",
             include: q => q.Include(r => r.User).Include(r => r.Movie),
             orderBy: q => q.OrderByDescending(x => x.CreatedAt));
 
@@ -140,7 +147,7 @@ public class ReviewService : IReviewService
     {
         var review = await _unitOfWork.Reviews
             .FirstOrDefaultAsync(r => r.Id == reviewId);
-        
+
         if (review == null)
             throw new KeyNotFoundException($"Không tìm thấy đánh giá với ID: {reviewId}");
 
@@ -160,7 +167,7 @@ public class ReviewService : IReviewService
     {
         var review = await _unitOfWork.Reviews
             .FirstOrDefaultAsync(r => r.Id == reviewId);
-        
+
         if (review == null)
             throw new KeyNotFoundException($"Không tìm thấy đánh giá với ID: {reviewId}");
 
