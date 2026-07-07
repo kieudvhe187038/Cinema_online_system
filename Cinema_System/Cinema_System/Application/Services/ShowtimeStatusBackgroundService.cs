@@ -8,7 +8,6 @@ namespace Cinema_System.Application.Services;
 
 /// <summary>
 /// Tự động đồng bộ trạng thái Suất chiếu (Scheduled -> Live -> Completed) và
-/// Phim (Coming Soon -> Now Showing, Now Showing -> Stopped) theo thời gian thực.
 /// </summary>
 public class ShowtimeStatusBackgroundService : BackgroundService
 {
@@ -79,10 +78,8 @@ public class ShowtimeStatusBackgroundService : BackgroundService
 
     /// <summary>
     /// Cập nhật trạng thái Phim: "Coming Soon" -> "Now Showing" khi đến/qua ngày khởi chiếu,
-    /// và "Now Showing" -> "Stopped" khi phim đã từng có suất chiếu nhưng không còn suất nào
     /// đang hoạt động (Scheduled/Live). Số phim đang "Coming Soon"/"Now Showing" luôn nhỏ
     /// (bị chặn bởi kích thước danh mục phim, không phình to như bảng Showtimes) nên quét toàn bộ
-    /// tập này mỗi phút là chấp nhận được.
     /// </summary>
     private async Task UpdateMovieStatusesAsync(IUnitOfWork unitOfWork, DateTime now)
     {
@@ -100,27 +97,6 @@ public class ShowtimeStatusBackgroundService : BackgroundService
             hasChanges = true;
             _logger.LogInformation("Updated Movie {MovieId} status from Coming Soon to Now Showing (release date reached)", movie.Id);
         }
-
-        var nowShowingMovies = await unitOfWork.Movies.GetAllAsync(
-            m => m.Status == MovieStatus.NowShowing,
-            includeProperties: ["Showtimes"]);
-
-        foreach (var movie in nowShowingMovies)
-        {
-            var hasAnyShowtimes = movie.Showtimes.Count > 0;
-            var hasActiveShowtimes = movie.Showtimes.Any(s =>
-                s.Status == "Scheduled" || s.Status == "Live" || string.IsNullOrEmpty(s.Status));
-
-            if (hasAnyShowtimes && !hasActiveShowtimes)
-            {
-                movie.Status = MovieStatus.Stopped;
-                movie.UpdatedAt = now;
-                unitOfWork.Movies.Update(movie);
-                hasChanges = true;
-                _logger.LogInformation("Updated Movie {MovieId} status from Now Showing to Stopped (no active showtimes remaining)", movie.Id);
-            }
-        }
-
         if (hasChanges)
         {
             await unitOfWork.SaveChangesAsync();
