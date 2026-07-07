@@ -147,5 +147,23 @@ namespace Cinema_System.Controllers.Public
                 return View(reviewDTO);
             }
         }
+
+        [Authorize(Roles = "MANAGER")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(Guid id, Guid movieId)
+        {
+            try
+            {
+                await _reviewService.DeleteReviewAsync(id);
+                TempData["Success"] = "Đã xóa bình luận thành công.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Không thể xóa bình luận: {ex.Message}";
+            }
+
+            return RedirectToAction("Details", "Movies", new { id = movieId });
+        }
     }
 }
