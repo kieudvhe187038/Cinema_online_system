@@ -1,0 +1,130 @@
+@model Cinema_System.Application.ViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "Tổng quan";
+    Layout = "~/Views/Shared/_ManagerLayout.cshtml";
+
+    string vnd(decimal v) => v.ToString("N0") + " ₫";
+
+    // (nhãn, icon, giá trị, màu nền icon, màu chữ icon)
+    var kpis = new (string Label, string Icon, string Value, string Bg, string Fg)[]
+    {
+        ("Doanh thu hôm nay",   "payments",            vnd(Model.RevenueToday),                  "bg-emerald-100", "text-emerald-600"),
+        ("Doanh thu tháng này", "trending_up",         vnd(Model.RevenueMonth),                  "bg-primary/10",  "text-primary"),
+        ("Vé bán tháng này",    "confirmation_number", Model.TicketsSoldMonth.ToString("N0"),    "bg-sky-100",     "text-sky-600"),
+        ("Phim đang chiếu",     "movie",               Model.NowShowingMovies.ToString(),        "bg-violet-100",  "text-violet-600"),
+        ("Suất chiếu sắp tới",  "schedule",            Model.UpcomingShowtimes.ToString("N0"),   "bg-amber-100",   "text-amber-600"),
+        ("Khách hàng",          "group",               Model.CustomerCount.ToString("N0"),       "bg-rose-100",    "text-rose-600"),
+    };
+
+    // (nhãn, icon, controller)
+    var modules = new (string Label, string Icon, string Ctrl)[]
+    {
+        ("Quản lý phim",   "movie",               "MovieManagement"),
+        ("Đồ ăn & Nước",   "restaurant",          "FoodBeverages"),
+        ("Phòng chiếu",    "meeting_room",        "ManagerRoom"),
+        ("Suất chiếu",     "schedule",            "ManagerShowtime"),
+        ("Giá vé",         "sell",                "ManagerPrice"),
+        ("Khuyến mãi",     "local_offer",         "ManagerPromotion"),
+        ("Điểm thưởng",    "stars",               "ManagerPoint"),
+        ("Loại phòng",     "category",            "ManagerRoomType"),
+        ("Loại ghế",       "event_seat",          "ManagerSeatType"),
+    };
+
+    string StatusBadge(string s) => s switch
+    {
+        "Paid"      => "bg-emerald-50 text-emerald-700",
+        "Pending"   => "bg-amber-50 text-amber-700",
+        "Refunded"  => "bg-sky-50 text-sky-700",
+        "Cancelled" => "bg-rose-50 text-rose-700",
+        _           => "bg-gray-100 text-gray-600",
+    };
+    string StatusText(string s) => s switch
+    {
+        "Paid"      => "Đã thanh toán",
+        "Pending"   => "Chờ thanh toán",
+        "Refunded"  => "Đã hoàn tiền",
+        "Cancelled" => "Đã hủy",
+        _           => s,
+    };
+}
+
+<div class="max-w-[1200px] mx-auto">
+    <div class="mb-6">
+        <h1 class="font-head text-2xl font-extrabold text-[#191c1d]">Tổng quan</h1>
+        <p class="text-sm text-gray-500 mt-1">Thống kê nhanh và quản lý hệ thống rạp.</p>
+    </div>
+
+    <!-- KPI cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        @foreach (var k in kpis)
+        {
+            <div class="bg-white rounded-xl shadow-sm p-5 flex items-center gap-4">
+                <span class="w-12 h-12 rounded-xl @k.Bg @k.Fg flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined" style="font-size:24px">@k.Icon</span>
+                </span>
+                <div class="min-w-0">
+                    <div class="text-xl font-extrabold text-[#191c1d] truncate">@k.Value</div>
+                    <div class="text-sm text-gray-500">@k.Label</div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Lối vào nhanh các module -->
+    <h2 class="font-head text-base font-bold text-[#191c1d] mb-3">Quản lý hệ thống</h2>
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 mb-8">
+        @foreach (var m in modules)
+        {
+            <a asp-controller="@m.Ctrl" asp-action="Index"
+               class="bg-white rounded-xl shadow-sm p-4 flex flex-col items-center gap-2 text-center hover:shadow-md hover:-translate-y-0.5 transition-all">
+                <span class="w-11 h-11 rounded-full bg-[#fff7f0] text-primary flex items-center justify-center">
+                    <span class="material-symbols-outlined" style="font-size:22px">@m.Icon</span>
+                </span>
+                <span class="text-sm font-semibold text-[#191c1d]">@m.Label</span>
+            </a>
+        }
+    </div>
+
+    <!-- Booking gần đây -->
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-[#f0f0f0]">
+            <h2 class="font-head text-base font-bold text-[#191c1d]">Đơn đặt vé gần đây</h2>
+        </div>
+        @if (Model.RecentBookings.Any())
+        {
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-left text-xs uppercase tracking-wide text-gray-500 bg-[#fafbfc]">
+                            <th class="px-5 py-3 font-semibold">Mã đơn</th>
+                            <th class="px-5 py-3 font-semibold">Phim</th>
+                            <th class="px-5 py-3 font-semibold">Khách hàng</th>
+                            <th class="px-5 py-3 font-semibold text-right">Số tiền</th>
+                            <th class="px-5 py-3 font-semibold">Trạng thái</th>
+                            <th class="px-5 py-3 font-semibold">Thời gian</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var b in Model.RecentBookings)
+                        {
+                            <tr class="border-t border-[#f4f5f6]">
+                                <td class="px-5 py-3 font-semibold text-[#191c1d]">@b.Code</td>
+                                <td class="px-5 py-3 text-gray-700">@b.MovieTitle</td>
+                                <td class="px-5 py-3 text-gray-700">@b.CustomerName</td>
+                                <td class="px-5 py-3 text-right font-semibold text-[#191c1d]">@vnd(b.FinalAmount)</td>
+                                <td class="px-5 py-3">
+                                    <span class="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold @StatusBadge(b.PaymentStatus)">@StatusText(b.PaymentStatus)</span>
+                                </td>
+                                <td class="px-5 py-3 text-gray-500">@(b.CreatedAt?.ToString("HH:mm dd/MM/yyyy") ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="px-5 py-10 text-center text-sm text-gray-500">Chưa có đơn đặt vé nào.</div>
+        }
+    </div>
+</div>
