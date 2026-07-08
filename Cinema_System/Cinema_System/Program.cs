@@ -69,6 +69,10 @@ builder.Services.AddScoped<ISeatTypeService, SeatTypeService>();
 builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
+
+// Đăng ký chatbot AI service và HTTP client dùng để gọi Google Gemini API.
+builder.Services.AddScoped<IChatbotService, ChatbotService>();
+builder.Services.AddHttpClient();
 builder.Services.AddScoped<IShowtimeScheduleService, ShowtimeScheduleService>();
 
 // Đăng ký Background Service tự động cập nhật trạng thái lịch chiếu

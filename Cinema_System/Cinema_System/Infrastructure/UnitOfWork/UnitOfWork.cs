@@ -36,6 +36,7 @@ public class UnitOfWork : IUnitOfWork
     private IShowtimeRepository? _showtimes;
     private IGenericRepository<ShowtimeIncident>? _showtimeIncidents;
     private IGenericRepository<Review>? _reviews;
+    private IGenericRepository<ChatbotLog>? _chatbotLogs;
     private IGenericRepository<Ticket>? _tickets;
     private IGenericRepository<SeatHold>? _seatHolds;
     private IGenericRepository<Payment>? _payments;
@@ -111,6 +112,9 @@ public class UnitOfWork : IUnitOfWork
 
     public IGenericRepository<Review> Reviews =>
         _reviews ??= new GenericRepository<Review>(_context);
+
+    public IGenericRepository<ChatbotLog> ChatbotLogs =>
+        _chatbotLogs ??= new GenericRepository<ChatbotLog>(_context);
 
     public IGenericRepository<Ticket> Tickets =>
         _tickets ??= new GenericRepository<Ticket>(_context);
