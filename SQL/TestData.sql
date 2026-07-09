@@ -128,7 +128,7 @@ BEGIN
     SET @movieId = NEWID();
     INSERT INTO Movies (id, title, slug, description, duration_minutes, age_rating, language, status, created_at)
     VALUES (@movieId, N'Phim Demo Quầy', 'seed-counter-demo', N'Phim seed để test đặt vé tại quầy',
-            120, 'P', N'Tiếng Việt', 'Showing', @now);
+            120, 'P', N'Tiếng Việt', 'Now Showing', @now);
 END
 IF NOT EXISTS (SELECT 1 FROM Price_Base_Configs WHERE movie_id = @movieId AND status = 'Active')
     INSERT INTO Price_Base_Configs (id, movie_id, base_price, effective_from, effective_to, status)

@@ -132,12 +132,18 @@ namespace Cinema_System.Application.Services
             {
                 var showtimeId = ticket.ShowtimeId;
 
-                // Ghế đã có người cho suất này
+                // Ghế đã có người cho suất này (đã bán vé)
                 var occupied = (await _unitOfWork.Tickets.GetAllAsync(x => x.ShowtimeId == showtimeId))
                     .Select(x => x.SeatId).ToHashSet();
                 occupied.Add(seat.Id);
                 if (assignedPerShowtime.TryGetValue(showtimeId, out var just))
                     foreach (var id in just) occupied.Add(id);
+
+                // Né cả ghế đang bị GIỮ TẠM (khách khác đang đặt dở) để không đổi khách vào ghế đó
+                var heldSeatIds = (await _unitOfWork.SeatHolds.GetAllAsync(
+                    h => h.ShowtimeId == showtimeId && h.Status == "Holding" && h.ExpiresAt > now))
+                    .Select(h => h.SeatId);
+                foreach (var id in heldSeatIds) occupied.Add(id);
 
                 // Ghế trống khả dụng: ưu tiên cùng loại, rồi theo vị trí
                 var chosen = roomSeats
