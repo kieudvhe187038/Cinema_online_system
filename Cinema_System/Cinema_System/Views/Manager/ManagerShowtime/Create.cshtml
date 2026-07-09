@@ -30,20 +30,17 @@
             <div class="grid grid-cols-2 gap-x-5 gap-y-4">
                 <div class="mb-3.5 col-span-2">
                     <label asp-for="MovieId" class="@fieldLabel"></label>
-                    <select asp-for="MovieId" class="@fieldInput">
-                        <option value="">-- Chọn phim --</option>
-                        @foreach (var movie in Model.AvailableMovies)
-                        {
-                            if (movie.Id == Model.MovieId)
+                    <div class="relative" data-combobox="movie">
+                        <input type="text" class="@fieldInput" data-combobox-input placeholder="-- Chọn phim --" autocomplete="off"
+                               value="@(Model.AvailableMovies.FirstOrDefault(m => m.Id == Model.MovieId)?.Name)" />
+                        <input type="hidden" asp-for="MovieId" data-combobox-value />
+                        <div class="absolute z-10 w-full mt-1 max-h-60 overflow-y-auto bg-white border border-[#e0c0b2] rounded-lg shadow-lg hidden" data-combobox-list>
+                            @foreach (var movie in Model.AvailableMovies)
                             {
-                                <option value="@movie.Id" selected>@movie.Name</option>
+                                <div class="px-3 py-2 text-sm cursor-pointer hover:bg-primary/10" data-combobox-option data-id="@movie.Id" data-name="@movie.Name">@movie.Name</div>
                             }
-                            else
-                            {
-                                <option value="@movie.Id">@movie.Name</option>
-                            }
-                        }
-                    </select>
+                        </div>
+                    </div>
                     <span asp-validation-for="MovieId" class="@fieldError"></span>
                 </div>
                 <div class="mb-3.5 col-span-2">
@@ -118,4 +115,44 @@
             if (el) el.addEventListener('change', syncHidden);
         });
     })();
+
+    // Combobox tìm kiếm phim: input hiển thị + danh sách thả xuống ngay bên dưới, input hidden giữ giá trị thật để submit/validate
+    document.querySelectorAll('[data-combobox]').forEach(function (box) {
+        var input = box.querySelector('[data-combobox-input]');
+        var hidden = box.querySelector('[data-combobox-value]');
+        var list = box.querySelector('[data-combobox-list]');
+        var options = Array.prototype.slice.call(box.querySelectorAll('[data-combobox-option]'));
+
+        function filter() {
+            var keyword = input.value.trim().toLowerCase();
+            options.forEach(function (opt) {
+                opt.classList.toggle('hidden', keyword !== '' && opt.dataset.name.toLowerCase().indexOf(keyword) === -1);
+            });
+        }
+
+        function open() {
+            filter();
+            list.classList.remove('hidden');
+        }
+
+        function close() {
+            list.classList.add('hidden');
+            // Nếu rời khỏi ô mà không chọn lại, khôi phục tên phim theo giá trị hidden hiện có
+            var selected = options.find(function (opt) { return opt.dataset.id === hidden.value; });
+            input.value = selected ? selected.dataset.name : '';
+        }
+
+        input.addEventListener('focus', open);
+        input.addEventListener('input', open);
+        options.forEach(function (opt) {
+            opt.addEventListener('mousedown', function (e) {
+                e.preventDefault(); // giữ focus để 'blur' không chạy trước khi gán giá trị
+                hidden.value = opt.dataset.id;
+                input.value = opt.dataset.name;
+                hidden.dispatchEvent(new Event('change', { bubbles: true }));
+                close();
+            });
+        });
+        input.addEventListener('blur', close);
+    });
 </script>
