@@ -128,7 +128,13 @@ public class ShowtimeScheduleService : IShowtimeScheduleService
         if (showtime is null)
             return null;
 
-        var movies = await GetMovieOptionsAsync();
+        var movies = (await GetMovieOptionsAsync()).ToList();
+        if (!movies.Any(m => m.Id == showtime.MovieId))
+        {
+            var currentMovie = await _unitOfWork.Movies.GetByIdAsync(showtime.MovieId);
+            if (currentMovie is not null)
+                movies.Insert(0, new ItemOptionDTO { Id = currentMovie.Id, Name = $"{currentMovie.Title} (Đã ngừng chiếu)" });
+        }
         var rooms = await GetRoomOptionsAsync();
 
         var hasBookings = await _unitOfWork.Bookings.ExistsAsync(b => b.ShowtimeId == id) ||
@@ -147,7 +153,9 @@ public class ShowtimeScheduleService : IShowtimeScheduleService
     /// <returns>Danh sách các phim với ID và tên</returns>
     public async Task<IEnumerable<ItemOptionDTO>> GetMovieOptionsAsync()
     {
-        var movies = await _unitOfWork.Movies.GetAllAsync(orderBy: q => q.OrderBy(m => m.Title));
+        var movies = await _unitOfWork.Movies.GetAllAsync(
+            predicate: m => m.Status != MovieStatus.Stopped,
+            orderBy: q => q.OrderBy(m => m.Title));
         return _mapper.Map<List<ItemOptionDTO>>(movies);
     }
 
