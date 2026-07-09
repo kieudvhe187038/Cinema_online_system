@@ -90,6 +90,11 @@
             <span class="material-symbols-outlined">payments</span>
             <span>Quản Lý Giá</span>
         </a>
+        <a class="@navBase @(ctrl == "ManagerVat" ? navActive : navIdle)"
+           asp-controller="ManagerVat" asp-action="Index">
+            <span class="material-symbols-outlined">receipt_long</span>
+            <span>Quản Lý VAT</span>
+        </a>
         <a class="@navBase @navIdle" href="#">
             <span class="material-symbols-outlined">settings</span>
             <span>Cài Đặt</span>

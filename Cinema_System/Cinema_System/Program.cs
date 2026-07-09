@@ -55,6 +55,7 @@ builder.Services.AddScoped<IShowtimeService, ShowtimeService>();
 builder.Services.AddScoped<IFoodBeverageService, FoodBeverageService>();
 builder.Services.AddScoped<IPromotionService, PromotionService>();
 builder.Services.AddScoped<IPriceService, PriceService>();
+builder.Services.AddScoped<IVatService, VatService>();
 // Cổng thanh toán VNPay (sandbox). Secret nạp từ .env: Vnpay__TmnCode, Vnpay__HashSecret.
 builder.Services.Configure<Cinema_System.Infrastructure.PaymentGateway.VnpaySettings>(builder.Configuration.GetSection("Vnpay"));
 builder.Services.AddScoped<IVnpayService, Cinema_System.Infrastructure.PaymentGateway.VnpayService>();

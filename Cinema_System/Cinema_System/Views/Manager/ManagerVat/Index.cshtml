@@ -1,0 +1,123 @@
+@using Cinema_System.Application.Common
+@model IEnumerable<VatDTO>
+@{
+    ViewData["Title"] = "Quản Lý VAT";
+    Layout = "~/Views/Shared/_ManagerLayout.cshtml";
+}
+
+<div class="flex justify-between items-start mb-6 gap-4 flex-wrap">
+    <div>
+        <h1 class="font-head text-2xl font-extrabold text-[#191c1d] mb-0.5">Cấu hình thuế VAT</h1>
+        <p class="text-sm text-gray-500">Quản lý tỷ lệ VAT áp dụng cho vé và bắp nước toàn hệ thống. Chỉ một cấu hình được Kích hoạt tại một thời điểm.</p>
+    </div>
+    <a class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg text-xs font-bold tracking-wide whitespace-nowrap transition-colors"
+       href="@Url.Action("Create", "ManagerVat")">
+        <span class="material-symbols-outlined" style="font-size:18px">add_circle</span>
+        THÊM CẤU HÌNH VAT
+    </a>
+</div>
+
+<div class="bg-white rounded-xl border border-[#e8eaed] overflow-x-auto mb-5">
+    @if (Model.Any())
+    {
+        <table class="w-full border-collapse">
+            <thead>
+                <tr class="bg-gray-900">
+                    <th class="px-4 py-3.5 text-left text-gray-300 text-xs font-bold tracking-wide uppercase whitespace-nowrap">Tỷ Lệ VAT</th>
+                    <th class="px-4 py-3.5 text-left text-gray-300 text-xs font-bold tracking-wide uppercase whitespace-nowrap">Mô Tả</th>
+                    <th class="px-4 py-3.5 text-left text-gray-300 text-xs font-bold tracking-wide uppercase whitespace-nowrap">Ngày Tạo</th>
+                    <th class="px-4 py-3.5 text-left text-gray-300 text-xs font-bold tracking-wide uppercase whitespace-nowrap">Trạng Thái</th>
+                    <th class="px-4 py-3.5 text-left text-gray-300 text-xs font-bold tracking-wide uppercase whitespace-nowrap">Hành Động</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    var isActive = item.Status == VatStatus.Active;
+                    var badgeClass = isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600";
+                    var dotClass = isActive ? "bg-green-600" : "bg-gray-400";
+                    var badgeText = isActive ? "Đang áp dụng" : "Đã tắt";
+                    var toggleMsg = isActive
+                        ? $"Tắt cấu hình VAT {item.VatRate * 100:0.##}%? Hệ thống sẽ không tính thuế cho đến khi bật một cấu hình khác."
+                        : $"Bật cấu hình VAT {item.VatRate * 100:0.##}%? Các cấu hình VAT đang bật khác sẽ tự động bị tắt.";
+                    var toggleTitle = isActive ? "Tắt cấu hình VAT" : "Bật cấu hình VAT";
+                    var toggleOk = isActive ? "Tắt" : "Bật";
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3.5 border-b border-gray-100 text-sm align-middle">
+                            <span class="font-bold text-primary text-base">@((item.VatRate * 100).ToString("0.##"))%</span>
+                        </td>
+                        <td class="px-4 py-3.5 border-b border-gray-100 text-sm align-middle text-gray-600">
+                            @(string.IsNullOrWhiteSpace(item.Description) ? "—" : item.Description)
+                        </td>
+                        <td class="px-4 py-3.5 border-b border-gray-100 text-sm align-middle whitespace-nowrap text-gray-500">
+                            @(item.CreatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "—")
+                        </td>
+                        <td class="px-4 py-3.5 border-b border-gray-100 text-sm align-middle">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap @badgeClass">
+                                <span class="w-[7px] h-[7px] rounded-full shrink-0 @dotClass"></span>
+                                @badgeText
+                            </span>
+                        </td>
+                        <td class="px-4 py-3.5 border-b border-gray-100 text-sm align-middle">
+                            <div class="flex items-center gap-1.5">
+                                <a class="w-8 h-8 rounded-md flex items-center justify-center bg-gray-100 text-amber-500 hover:bg-amber-100 transition-colors"
+                                   href="@Url.Action("Edit", "ManagerVat", new { id = item.Id })" title="Chỉnh sửa">
+                                    <span class="material-symbols-outlined" style="font-size:18px">edit</span>
+                                </a>
+
+                                <form method="post"
+                                      action="@Url.Action("ToggleStatus", "ManagerVat", new { id = item.Id })"
+                                      class="inline"
+                                      data-confirm="@toggleMsg" data-confirm-title="@toggleTitle"
+                                      data-confirm-type="warning" data-confirm-ok="@toggleOk">
+                                    @Html.AntiForgeryToken()
+                                    @if (isActive)
+                                    {
+                                        <button type="submit" class="w-8 h-8 rounded-md flex items-center justify-center bg-gray-100 text-green-600 hover:bg-green-100 transition-colors" title="Đang bật · bấm để tắt">
+                                            <span class="material-symbols-outlined" style="font-size:22px">toggle_on</span>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="submit" class="w-8 h-8 rounded-md flex items-center justify-center bg-gray-100 text-gray-400 hover:bg-gray-200 transition-colors" title="Đang tắt · bấm để bật">
+                                            <span class="material-symbols-outlined" style="font-size:22px">toggle_off</span>
+                                        </button>
+                                    }
+                                </form>
+
+                                @if (!item.HasUsage)
+                                {
+                                    <form method="post"
+                                          action="@Url.Action("Delete", "ManagerVat", new { id = item.Id })"
+                                          class="inline"
+                                          data-confirm="Xóa vĩnh viễn cấu hình VAT @((item.VatRate * 100).ToString("0.##"))%? Hành động này KHÔNG thể hoàn tác."
+                                          data-confirm-title="Xóa cấu hình VAT" data-confirm-type="danger" data-confirm-ok="Xóa vĩnh viễn">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="w-8 h-8 rounded-md flex items-center justify-center bg-gray-100 text-red-500 hover:bg-red-100 transition-colors" title="Xóa vĩnh viễn">
+                                            <span class="material-symbols-outlined" style="font-size:18px">delete</span>
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <button class="w-8 h-8 rounded-md flex items-center justify-center bg-gray-100 text-gray-300 cursor-not-allowed" title="Đã được áp dụng trong đơn đặt vé" disabled>
+                                        <span class="material-symbols-outlined" style="font-size:18px">delete</span>
+                                    </button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="text-center py-16 px-8 text-gray-400 text-sm">
+            <span class="material-symbols-outlined block mb-3" style="font-size:48px">receipt_long</span>
+            Chưa có cấu hình VAT nào. Bấm "Thêm cấu hình VAT" để tạo mới.
+        </div>
+    }
+</div>
+
+<partial name="_ConfirmModal" />
