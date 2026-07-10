@@ -231,6 +231,8 @@ namespace Cinema_System.Application.Services
             var showtime = await _unitOfWork.Showtimes.FirstOrDefaultAsync(s => s.Id == showtimeId);
             if (showtime is null) return Result.Failure("Không tìm thấy suất chiếu.");
             if (showtime.Status != "Cancelled") return Result.Failure("Suất chiếu không ở trạng thái đã hủy.");
+            // Chỉ khôi phục suất CHƯA qua giờ (khôi phục suất đã qua sẽ bị background service chuyển Completed ngay)
+            if (showtime.StartTime <= DateTime.Now) return Result.Failure("Suất chiếu đã qua giờ chiếu, không thể khôi phục để bán lại.");
 
             showtime.Status = "Scheduled";
             _unitOfWork.Showtimes.Update(showtime);
