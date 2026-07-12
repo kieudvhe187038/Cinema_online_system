@@ -31,6 +31,7 @@
         body { font-family: 'Be Vietnam Pro', sans-serif; }
         .material-symbols-outlined { font-size: 20px; line-height: 1; }
     </style>
+    <partial name="_DarkMode" />
 </head>
 <body class="bg-[#f4f6f8] text-[#191c1d]">
 
@@ -69,8 +70,9 @@
 </aside>
 
 <!-- Topbar -->
-<header class="fixed top-0 left-60 right-0 z-[90] flex h-[60px] items-center border-b border-[#e8eaed] bg-white px-7">
+<header class="fixed top-0 left-60 right-0 z-[90] flex h-[60px] items-center justify-between border-b border-[#e8eaed] bg-white px-7">
     <span class="font-head text-[1.05rem] font-bold tracking-wide text-secondary-dark">@(ViewData["Title"] ?? "Quản lý")</span>
+    <partial name="_DarkModeToggle" />
 </header>
 
 <div class="ml-60 min-h-screen pt-[60px]">

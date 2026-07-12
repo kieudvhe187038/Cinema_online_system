@@ -31,6 +31,7 @@
         body { font-family: 'Be Vietnam Pro', sans-serif; }
         .material-symbols-outlined { font-size: 20px; line-height: 1; }
     </style>
+    <partial name="_DarkMode" />
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body class="bg-[#f4f6f8] overflow-x-hidden text-[#191c1d]">
@@ -110,6 +111,7 @@
 <header class="fixed top-0 left-60 right-0 h-[60px] bg-white border-b border-[#e8eaed] flex items-center justify-between px-7 z-[90]">
     <span class="font-head text-[1.05rem] font-bold text-secondary-dark tracking-wide">@topTitle</span>
     <div class="flex items-center gap-2.5">
+        <partial name="_DarkModeToggle" />
         <button class="relative w-9 h-9 rounded-full bg-[#f4f6f8] hover:bg-[#ffe8d6] text-gray-700 hover:text-primary flex items-center justify-center transition-colors">
             <span class="material-symbols-outlined">notifications</span>
             <span class="absolute top-[7px] right-[7px] w-[7px] h-[7px] rounded-full bg-red-500 border-[1.5px] border-white"></span>
