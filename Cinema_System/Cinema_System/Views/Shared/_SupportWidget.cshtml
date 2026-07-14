@@ -1,0 +1,145 @@
+@* Floating AI Chat widget (bottom-right) *@
+<div id="support-widget" class="fixed bottom-6 right-6 z-50">
+    <button id="support-open-btn" type="button" aria-label="Mở Hỗ Trợ" class="group relative flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg ring-1 ring-primary/40 transition hover:scale-105">
+        <span class="material-symbols-outlined text-2xl">chat</span>
+        <span id="support-unread-dot" class="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-red-500 shadow-sm hidden"></span>
+    </button>
+
+    <div id="support-panel" class="hidden fixed right-6 bottom-20 z-50 w-[400px] max-h-[82vh] overflow-hidden rounded-3xl bg-white shadow-[0_35px_60px_-30px_rgba(15,23,42,0.4)] ring-1 ring-black/10">
+        <div class="flex items-center justify-between px-4 py-3 text-white" style="background: linear-gradient(135deg, #fb7185 0%, #f97316 100%);">
+            <div class="flex items-center gap-3">
+                <span class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 text-lg">🤖</span>
+                <div>
+                    <div class="font-semibold">CineStar Support</div>
+                    <div class="text-xs text-white/90">Trợ lý người dùng 24/7</div>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="support-minimize" class="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white/90 transition hover:bg-white/25 hover:text-white" aria-label="Thu nhỏ">
+                    <span class="material-symbols-outlined text-base">remove</span>
+                </button>
+                <button id="support-close" class="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white/90 transition hover:bg-white/25 hover:text-white" aria-label="Đóng">
+                    <span class="material-symbols-outlined text-base">close</span>
+                </button>
+            </div>
+        </div>
+        <div id="support-messages" class="flex h-[62vh] flex-col gap-3 overflow-y-auto bg-slate-50 p-4 text-sm text-slate-800">
+            <div class="self-start max-w-[86%] rounded-[28px] border border-slate-200 bg-white px-4 py-4 text-slate-900 shadow-sm">
+                Xin chào! Tôi là trợ lý hỗ trợ CineStar. Bạn có thể hỏi về đặt vé, lịch chiếu, khuyến mãi, tài khoản hoặc quy định xem phim.
+            </div>
+        </div>
+        <div class="border-t border-slate-100 bg-white p-3">
+            @Html.AntiForgeryToken()
+            <div class="flex gap-2">
+                <input id="support-input" type="text" placeholder="Nhập tin nhắn, nhấn Enter để gửi..." class="flex-1 rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-primary focus:bg-white" />
+                <button id="support-send" class="rounded-3xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-orange-600">Gửi</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="support-tooltip" class="pointer-events-none absolute bottom-16 right-0 hidden w-48 rounded-lg bg-white/90 p-3 text-sm text-slate-800 shadow-lg ring-1 ring-black/5">
+        <div class="font-semibold text-slate-900">Hỗ trợ AI</div>
+        <div class="mt-1 text-xs text-slate-600">Nhấp để trò chuyện với trợ lý hỗ trợ CineStar.</div>
+    </div>
+
+    <script>
+        (function () {
+            const btn = document.getElementById('support-open-btn');
+            const tooltip = document.getElementById('support-tooltip');
+            const panel = document.getElementById('support-panel');
+            const closeBtn = document.getElementById('support-close');
+            const minimizeBtn = document.getElementById('support-minimize');
+            const sendBtn = document.getElementById('support-send');
+            const input = document.getElementById('support-input');
+            const messages = document.getElementById('support-messages');
+
+            if (!btn) return;
+
+            let tooltipTimeout;
+            btn.addEventListener('mouseenter', () => {
+                tooltipTimeout = setTimeout(() => tooltip.classList.remove('hidden'), 150);
+            });
+            btn.addEventListener('mouseleave', () => {
+                clearTimeout(tooltipTimeout);
+                tooltip.classList.add('hidden');
+            });
+
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                panel.classList.toggle('hidden');
+                // focus input when opened
+                if (!panel.classList.contains('hidden')) input.focus();
+            });
+
+            closeBtn?.addEventListener('click', () => panel.classList.add('hidden'));
+            minimizeBtn?.addEventListener('click', () => panel.classList.toggle('hidden'));
+
+            function escapeHtml(unsafe) {
+                return unsafe.replace(/[&<>"]|'/g, function (match) {
+                    return {
+                        '&': '&amp;',
+                        '<': '&lt;',
+                        '>': '&gt;',
+                        '"': '&quot;',
+                        "'": '&#39;'
+                    }[match];
+                });
+            }
+
+            function formatMessageText(text) {
+                if (!text) return '';
+                let formatted = escapeHtml(text);
+                formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                formatted = formatted.replace(/\n\n+/g, '<br><br>');
+                formatted = formatted.replace(/\n/g, '<br>');
+                formatted = formatted.replace(/(^|<br>)\s*-\s+(.*?)(?=<br>|$)/g, '$1• $2');
+                formatted = formatted.replace(/(^|<br>)(\d+)\.\s+(.*?)(?=<br>|$)/g, '$1$2. $3');
+                return formatted;
+            }
+
+            function appendMessage(role, text) {
+                const el = document.createElement('div');
+                el.className = role === 'user'
+                    ? 'self-end max-w-[80%] rounded-[32px] bg-primary px-4 py-3 text-white shadow-lg'
+                    : 'self-start max-w-[80%] rounded-[28px] border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm';
+                el.style.whiteSpace = 'pre-wrap';
+                el.innerHTML = formatMessageText(text);
+                messages.appendChild(el);
+                messages.scrollTop = messages.scrollHeight;
+            }
+
+            async function sendMessage() {
+                const text = input.value.trim();
+                if (!text) return;
+                appendMessage('user', text);
+                input.value = '';
+
+                // read antiforgery token
+                const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+                const token = tokenInput ? tokenInput.value : '';
+
+                try {
+                    const res = await fetch('/Support/ApiSendMessage', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': token
+                        },
+                        body: JSON.stringify({ message: text })
+                    });
+                    const data = await res.json();
+                    if (data?.success) {
+                        appendMessage('assistant', data.bot.content);
+                    } else {
+                        appendMessage('assistant', data?.error || 'Lỗi khi gửi yêu cầu.');
+                    }
+                } catch (err) {
+                    appendMessage('assistant', 'Lỗi kết nối. Vui lòng thử lại.');
+                }
+            }
+
+            sendBtn?.addEventListener('click', sendMessage);
+            input?.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); sendMessage(); } });
+        })();
+    </script>
+</div>
