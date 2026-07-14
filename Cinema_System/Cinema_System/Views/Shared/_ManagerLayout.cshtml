@@ -45,10 +45,14 @@
 
 <!-- Sidebar -->
 <aside class="fixed inset-y-0 left-0 w-60 bg-white border-r border-[#e8eaed] flex flex-col z-[100]">
-    <div class="px-6 pt-5 pb-4 border-b border-[#f0f0f0] shrink-0">
-        <div class="font-head text-2xl font-extrabold text-primary tracking-tight leading-none">CineStar</div>
-        <div class="text-[.7rem] text-[#8a94a6] mt-0.5 font-medium uppercase tracking-wide">Quản Lý Rạp</div>
-    </div>
+    <a asp-controller="Home" asp-action="Index" title="Về trang chủ"
+       class="group flex items-center justify-between gap-2 px-6 pt-5 pb-4 border-b border-[#f0f0f0] shrink-0 hover:bg-[#fff7f0] transition-colors">
+        <div>
+            <div class="font-head text-2xl font-extrabold text-primary tracking-tight leading-none">CineStar</div>
+            <div class="text-[.7rem] text-[#8a94a6] mt-0.5 font-medium uppercase tracking-wide">Quản Lý Rạp</div>
+        </div>
+        <span class="material-symbols-outlined text-[#c0c6d0] group-hover:text-primary transition-colors">home</span>
+    </a>
 
     <nav class="flex-1 py-3 overflow-y-auto">
         <a class="@navBase @navIdle" href="#">
@@ -98,6 +102,18 @@
             <span>Cài Đặt</span>
         </a>
     </nav>
+
+    <!-- Về trang chủ + đăng xuất -->
+    <div class="border-t border-[#f0f0f0] p-4 shrink-0">
+        <a asp-controller="Home" asp-action="Index" class="mb-1 flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-[#f4f6f8] hover:text-primary transition-colors">
+            <span class="material-symbols-outlined">home</span> Về trang chủ
+        </a>
+        <form asp-controller="Login" asp-action="Logout" method="post">
+            <button type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors">
+                <span class="material-symbols-outlined">logout</span> Đăng xuất
+            </button>
+        </form>
+    </div>
 </aside>
 
 <!-- Topbar -->
