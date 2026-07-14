@@ -47,10 +47,6 @@
                         <a class="text-sm font-semibold transition hover:text-primary @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "text-primary border-b-2 border-primary pb-1" : "text-slate-700")" asp-area="" asp-controller="Home" asp-action="Index">Trang Chủ</a>
                         <a class="text-sm font-semibold transition hover:text-primary @(ViewContext.RouteData.Values["controller"]?.ToString() == "Movies" ? "text-primary border-b-2 border-primary pb-1" : "text-slate-700")" asp-area="" asp-controller="Movies" asp-action="Index">Phim</a>
                         <a class="text-sm font-semibold transition hover:text-primary @(ViewContext.RouteData.Values["controller"]?.ToString() == "Showtime" ? "text-primary border-b-2 border-primary pb-1" : "text-slate-700")" asp-area="" asp-controller="Showtime" asp-action="Index">Lịch Chiếu</a>
-                        <a class="text-sm font-semibold transition hover:text-primary text-slate-700" href="#">Giá Vé</a>
-                        <a class="text-sm font-semibold transition hover:text-primary text-slate-700" href="#">Khuyến Mãi</a>
-                        <a class="text-sm font-semibold transition hover:text-primary text-slate-700" href="#">Tin Điện Ảnh</a>
-                        <a class="text-sm font-semibold transition hover:text-primary text-slate-700">Hỗ Trợ</a>
                         <a class="text-sm font-semibold transition hover:text-primary @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" && ViewContext.RouteData.Values["action"]?.ToString() == "Info" ? "text-primary border-b-2 border-primary pb-1" : "text-slate-700")" asp-area="" asp-controller="Home" asp-action="Info">Thông tin rạp</a>
                     </nav>
                 </div>
@@ -113,14 +109,14 @@
                                 <nav class="py-1 text-sm">
                                     @if (User.IsInRole("MANAGER"))
                                     {
-                                        <a asp-controller="MovieManagement" asp-action="Index" class="flex items-center gap-3 border-b border-slate-100 px-4 py-2.5 font-semibold text-primary transition hover:bg-primary/5">
+                                        <a asp-controller="Dashboard" asp-action="Index" class="flex items-center gap-3 border-b border-slate-100 px-4 py-2.5 font-semibold text-primary transition hover:bg-primary/5">
                                             <span class="material-symbols-outlined text-[20px]">dashboard</span> Khu quản lý
                                         </a>
                                     }
                                     @if (User.IsInRole("ADMIN"))
                                     {
                                         <a asp-controller="AdminDashboard" asp-action="Index" class="flex items-center gap-3 border-b border-slate-100 px-4 py-2.5 font-semibold text-primary transition hover:bg-primary/5">
-                                            <span class="material-symbols-outlined text-[20px]">dashboard</span> Khu quản lý
+                                            <span class="material-symbols-outlined text-[20px]">dashboard</span> Khu quản trị
                                         </a>
                                     }
                                     @if (User.IsInRole("STAFF"))
