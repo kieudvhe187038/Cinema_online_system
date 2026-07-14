@@ -65,6 +65,11 @@
             <span class="material-symbols-outlined">grid_view</span>
             <span>Tổng Quan</span>
         </a>
+        <a class="@navBase @(ctrl == "Report" ? navActive : navIdle)"
+           asp-controller="Report" asp-action="Index">
+            <span class="material-symbols-outlined">bar_chart</span>
+            <span>Báo Cáo &amp; Thống Kê</span>
+        </a>
         <a class="@navBase @(ctrl == "MovieManagement" ? navActive : navIdle)"
            asp-controller="MovieManagement" asp-action="Index">
             <span class="material-symbols-outlined">movie</span>
