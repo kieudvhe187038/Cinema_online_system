@@ -60,7 +60,8 @@
     </div>
 
     <nav class="flex-1 py-3 overflow-y-auto">
-        <a class="@navBase @navIdle" href="#">
+        <a class="@navBase @(ctrl == "Dashboard" ? navActive : navIdle)"
+           asp-controller="Dashboard" asp-action="Index">
             <span class="material-symbols-outlined">grid_view</span>
             <span>Tổng Quan</span>
         </a>
