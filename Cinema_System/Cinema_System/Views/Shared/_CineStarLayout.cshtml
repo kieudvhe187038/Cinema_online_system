@@ -53,6 +53,7 @@
             }
         }
     </script>
+    <partial name="_DarkMode" />
 </head>
 <body class="bg-light font-body text-tertiary">
 <!-- Bố cục = 2 phần đặt cạnh nhau (flex): SIDEBAR trái + KHU NỘI DUNG phải -->
@@ -120,8 +121,9 @@
     <div class="flex-1">
 
         <!-- Thanh trên (chỉ tiêu đề; user đã hiển thị ở sidebar trái) -->
-        <header class="border-b border-gray-200 bg-white px-6 py-4">
+        <header class="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-4">
             <h1 class="text-xl font-bold font-heading text-tertiary">@heading</h1>
+            <partial name="_DarkModeToggle" />
         </header>
 
         <!-- Nội dung của trang con sẽ đổ vào đây -->
