@@ -1,0 +1,144 @@
+﻿@model Cinema_System.Application.ViewModels.AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "_AdminLayout";
+}
+
+<h1 class="mb-1 font-head text-2xl font-bold text-secondary-dark">Tổng quan hệ thống</h1>
+<p class="mb-6 text-sm text-gray-500">Số liệu thống kê toàn hệ thống CineStar.</p>
+
+<!-- 4 ô thống kê -->
+<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="rounded-2xl bg-white p-5 shadow-sm">
+        <div class="flex items-center gap-2 text-primary"><span class="material-symbols-outlined">groups</span><span class="text-xs uppercase tracking-wide text-gray-400">Người dùng tham gia</span></div>
+        <p class="mt-2 font-head text-2xl font-bold text-secondary-dark">@Model.TotalUsers.ToString("#,##0")</p>
+    </div>
+    <div class="rounded-2xl bg-white p-5 shadow-sm">
+        <div class="flex items-center gap-2 text-secondary"><span class="material-symbols-outlined">movie</span><span class="text-xs uppercase tracking-wide text-gray-400">Tổng số phim</span></div>
+        <p class="mt-2 font-head text-2xl font-bold text-secondary-dark">@Model.TotalMovies.ToString("#,##0")</p>
+    </div>
+    <div class="rounded-2xl bg-white p-5 shadow-sm">
+        <div class="flex items-center gap-2 text-green-600"><span class="material-symbols-outlined">group</span><span class="text-xs uppercase tracking-wide text-gray-400">Người dùng hoạt động</span></div>
+        <p class="mt-2 font-head text-2xl font-bold text-secondary-dark">@Model.ActiveUsers.ToString("#,##0")</p>
+    </div>
+    <div class="rounded-2xl bg-white p-5 shadow-sm">
+        <div class="flex items-center gap-2 text-amber-500"><span class="material-symbols-outlined">event_seat</span><span class="text-xs uppercase tracking-wide text-gray-400">Tỉ lệ lấp đầy</span></div>
+        <p class="mt-2 font-head text-2xl font-bold text-secondary-dark">@Model.OccupancyDisplay</p>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <!-- Biểu đồ tròn: doanh thu theo phim -->
+    <div class="lg:col-span-2 rounded-2xl bg-white p-6 shadow-sm">
+        <h2 class="mb-4 font-head font-bold text-secondary-dark">Doanh thu theo phim</h2>
+        @{
+            var pieMovies = Model.HotMovies.Where(m => m.Revenue > 0).ToList();
+            var pieTotal = pieMovies.Sum(m => m.Revenue);
+            var pieColors = new[] { "#f37021", "#004b8d", "#22c55e", "#eab308", "#a855f7" };
+        }
+        @if (pieTotal <= 0)
+        {
+            <p class="py-10 text-center text-gray-400">Chưa có doanh thu để thống kê.</p>
+        }
+        else
+        {
+            // Dựng chuỗi conic-gradient cho hình tròn
+            var pieCss = new System.Text.StringBuilder("conic-gradient(");
+            decimal cum = 0;
+            for (int i = 0; i < pieMovies.Count; i++)
+            {
+                var startPct = cum / pieTotal * 100;
+                cum += pieMovies[i].Revenue;
+                var endPct = cum / pieTotal * 100;
+                pieCss.Append($"{pieColors[i % pieColors.Length]} {startPct:0.##}% {endPct:0.##}%");
+                if (i < pieMovies.Count - 1) pieCss.Append(", ");
+            }
+            pieCss.Append(")");
+
+            <div class="flex flex-col items-center gap-8 sm:flex-row sm:justify-center sm:gap-12">
+                <!-- Hình tròn (donut) -->
+                <div class="relative h-44 w-44 shrink-0 rounded-full" style="background:@pieCss.ToString()">
+                    <div class="absolute inset-[24%] flex items-center justify-center rounded-full bg-white text-center">
+                        <div>
+                            <p class="text-[10px] uppercase tracking-wide text-gray-400">Tổng</p>
+                            <p class="text-sm font-bold text-secondary-dark">@pieTotal.ToString("#,##0")đ</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Chú thích -->
+                <ul class="space-y-2.5 text-sm">
+                    @for (int i = 0; i < pieMovies.Count; i++)
+                    {
+                        var pct = pieMovies[i].Revenue / pieTotal * 100;
+                        <li class="flex items-center gap-2">
+                            <span class="h-3 w-3 shrink-0 rounded-sm" style="background:@pieColors[i % pieColors.Length]"></span>
+                            <span class="font-medium text-secondary-dark">@pieMovies[i].MovieTitle</span>
+                            <span class="text-gray-400">— @pct.ToString("0.0")% · @pieMovies[i].RevenueDisplay</span>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+    </div>
+
+    <!-- Phim bán chạy -->
+    <div class="rounded-2xl bg-white p-6 shadow-sm">
+        <h2 class="mb-4 font-head font-bold text-secondary-dark">Phim bán chạy</h2>
+        @if (!Model.HotMovies.Any())
+        {
+            <p class="py-6 text-center text-gray-400">Chưa có dữ liệu.</p>
+        }
+        else
+        {
+            <ul class="space-y-3">
+                @foreach (var m in Model.HotMovies)
+                {
+                    <li class="flex items-center gap-3">
+                        <img src="@(string.IsNullOrEmpty(m.PosterUrl) ? "https://placehold.co/36x50?text=P" : m.PosterUrl)" class="h-12 w-9 rounded object-cover bg-gray-100" alt="poster" />
+                        <div class="min-w-0 flex-1">
+                            <p class="truncate text-sm font-semibold text-secondary-dark">@m.MovieTitle</p>
+                            <p class="text-xs text-gray-400">@m.TicketsSold vé · @m.RevenueDisplay</p>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+</div>
+
+<!-- Giao dịch gần đây -->
+<div class="mt-6 rounded-2xl bg-white p-6 shadow-sm">
+    <h2 class="mb-4 font-head font-bold text-secondary-dark">Giao dịch gần đây</h2>
+    @if (!Model.RecentBookings.Any())
+    {
+        <p class="py-6 text-center text-gray-400">Chưa có giao dịch.</p>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b text-left text-xs uppercase tracking-wide text-gray-400">
+                        <th class="py-3 font-semibold">Khách hàng</th>
+                        <th class="py-3 font-semibold">Phim</th>
+                        <th class="py-3 font-semibold">Thời gian</th>
+                        <th class="py-3 text-right font-semibold">Số tiền</th>
+                        <th class="py-3 text-center font-semibold">Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var b in Model.RecentBookings)
+                    {
+                        <tr class="border-b border-gray-50">
+                            <td class="py-3 font-medium text-secondary-dark">@b.CustomerName</td>
+                            <td class="py-3 text-gray-600">@b.MovieTitle</td>
+                            <td class="py-3 text-gray-500">@b.CreatedAt?.ToString("HH:mm dd/MM/yyyy")</td>
+                            <td class="py-3 text-right font-semibold text-secondary-dark">@b.AmountDisplay</td>
+                            <td class="py-3 text-center"><span class="rounded-full px-3 py-1 text-xs font-semibold @b.StatusClass">@b.StatusLabel</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

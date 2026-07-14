@@ -6,8 +6,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Cinema_System.Controllers.Staff
 {
-    // Nhân viên quản lý phòng chiếu + ghế. Chỉ STAFF/MANAGER/ADMIN vào được.
-    [Authorize(Roles = "STAFF,MANAGER,ADMIN")]
+    // Quản lý phòng chiếu + ghế: CHỈ STAFF (chủ sở hữu nghiệp vụ). Manager dùng trang Sự cố;
+    // Inter 2 & Inter 3 liên hệ qua trạng thái dùng chung (room status / showtime status), không cross-role.
+    [Authorize(Roles = "STAFF")]
     public class RoomManagementController : Controller
     {
         private readonly IRoomManagementService _roomService;
