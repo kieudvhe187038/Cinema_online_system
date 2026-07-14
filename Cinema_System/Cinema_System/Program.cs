@@ -53,6 +53,8 @@ builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 builder.Services.AddScoped<IMovieService, MovieService>();
 builder.Services.AddScoped<IShowtimeService, ShowtimeService>();
 builder.Services.AddScoped<IFoodBeverageService, FoodBeverageService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IPromotionService, PromotionService>();
 builder.Services.AddScoped<IPriceService, PriceService>();
 builder.Services.AddScoped<IVatService, VatService>();
