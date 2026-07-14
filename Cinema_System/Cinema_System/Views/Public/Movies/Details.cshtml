@@ -167,7 +167,7 @@
                     <div class="flex flex-wrap justify-center md:justify-start gap-4 pt-4">
                         @if (youtubeId != null)
                         {
-                            <button id="playTrailerBtn" class="group flex items-center gap-3 rounded-full bg-gradient-to-r from-primary to-orange-600 hover:from-primary hover:to-orange-500 px-8 py-4 text-base font-extrabold tracking-wide text-white shadow-lg shadow-primary/30 transition duration-300 hover:shadow-xl hover:shadow-primary/45 transform hover:-translate-y-0.5 active:translate-y-0">
+                            <button id="playTrailerBtn" class="action-button flex items-center gap-3">
                                 <span class="play-circle-small flex h-7 w-7 items-center justify-center rounded-full bg-white text-primary">
                                     <svg class="ml-0.5 h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M8 5v14l11-7z"/>
@@ -176,11 +176,43 @@
                                 XEM TRAILER
                             </button>
                         }
-                        <a asp-controller="Movies" asp-action="Index" class="flex items-center gap-2 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 px-6 py-4 text-sm font-bold text-white transition-all backdrop-blur-md">
+                        <a asp-controller="Showtime" asp-action="Index" asp-route-movieId="@Model.Movie.Id" class="action-button flex items-center gap-3">
+                            <span class="material-symbols-outlined text-base">local_movies</span>
+                            ĐẶT VÉ
+                        </a>
+                        <a asp-controller="Movies" asp-action="Index" class="action-button flex items-center gap-3">
                             <span class="material-symbols-outlined text-base">arrow_back</span>
                             Quay lại danh sách
                         </a>
                     </div>
+                    <style>
+                        .action-button {
+                            border-radius: 9999px;
+                            padding: 0.95rem 1.9rem;
+                            font-weight: 700;
+                            font-size: 1rem;
+                            line-height: 1.2;
+                            display: inline-flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 0.75rem;
+                            color: #ffffff;
+                            background: linear-gradient(90deg, #fb7d12 0%, #ea580c 100%);
+                            box-shadow: 0 18px 36px rgba(234, 88, 12, 0.22);
+                            transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+                            text-decoration: none;
+                        }
+                        .action-button:hover {
+                            transform: translateY(-2px);
+                            box-shadow: 0 22px 42px rgba(234, 88, 12, 0.24);
+                        }
+                        .action-button:active,
+                        .action-button:focus-visible {
+                            transform: translateY(0);
+                            outline: 2px solid rgba(255, 255, 255, 0.35);
+                            outline-offset: 2px;
+                        }
+                    </style>
                 </div>
             </div>
         </div>

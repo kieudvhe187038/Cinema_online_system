@@ -51,7 +51,7 @@
         <div class="mt-auto flex flex-wrap gap-2 pt-4">
             @if (!hideBuyButton)
             {
-                <button class="flex-1 rounded-full bg-gradient-to-r from-primary to-orange-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/30 transition hover:shadow-xl hover:scale-105 active:scale-95">MUA VÉ</button>
+                <a asp-controller="Showtime" asp-action="Index" asp-route-movieId="@Model.Id" class="flex-1 text-center rounded-full bg-gradient-to-r from-primary to-orange-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/30 transition hover:shadow-xl hover:scale-105 active:scale-95">MUA VÉ</a>
             }
             <a asp-controller="Movies" asp-action="Details" asp-route-id="@Model.Slug" class="flex-1 text-center rounded-full border-2 border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:border-primary hover:bg-primary hover:text-white">CHI TIẾT</a>
         </div>
