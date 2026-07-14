@@ -1,0 +1,65 @@
+@* Dark mode dùng chung: áp class "dark" lên <html>, lưu lựa chọn vào localStorage.
+   Đặt partial này trong <head> của mỗi layout để tránh nhấp nháy (FOUC) khi tải trang. *@
+
+@* Áp theme sớm nhất có thể (trước khi vẽ body) để không bị chớp sáng. *@
+<script>
+    (function () {
+        try {
+            if (localStorage.getItem('theme') === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
+        } catch (e) { }
+    })();
+
+    // Bấm nút [data-theme-toggle] ở bất kỳ đâu -> đổi sáng/tối (dùng event delegation).
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('[data-theme-toggle]')) return;
+        var isDark = document.documentElement.classList.toggle('dark');
+        try { localStorage.setItem('theme', isDark ? 'dark' : 'light'); } catch (e) { }
+    });
+</script>
+
+<style>
+    /* Nền & chữ nền chung */
+    html.dark, html.dark body { background-color: #0f172a !important; color: #e2e8f0 !important; }
+
+    /* Bề mặt thẻ/panel */
+    html.dark .bg-white { background-color: #1e293b !important; }
+    html.dark .bg-slate-50, html.dark .bg-slate-100,
+    html.dark .bg-gray-50, html.dark .bg-gray-100,
+    html.dark .bg-\[\#f4f6f8\], html.dark .bg-\[\#fafbfc\], html.dark .bg-\[\#fff7f0\],
+    html.dark .bg-light { background-color: #111c30 !important; }
+
+    /* Header bán trong suốt */
+    html.dark .bg-white\/95, html.dark .bg-white\/90, html.dark .bg-white\/80 { background-color: rgba(30, 41, 59, .95) !important; }
+
+    /* Chữ đậm */
+    html.dark .text-slate-900, html.dark .text-slate-800, html.dark .text-slate-700,
+    html.dark .text-gray-900, html.dark .text-gray-800, html.dark .text-gray-700,
+    html.dark .text-\[\#191c1d\], html.dark .text-tertiary, html.dark .text-secondary-dark { color: #e2e8f0 !important; }
+
+    /* Chữ phụ */
+    html.dark .text-slate-600, html.dark .text-slate-500, html.dark .text-slate-400,
+    html.dark .text-gray-600, html.dark .text-gray-500, html.dark .text-gray-400,
+    html.dark .text-\[\#8a94a6\], html.dark .text-\[\#584237\] { color: #94a3b8 !important; }
+
+    /* Viền */
+    html.dark .border-slate-200, html.dark .border-slate-100,
+    html.dark .border-gray-100, html.dark .border-gray-200,
+    html.dark .border-\[\#e8eaed\], html.dark .border-\[\#f0f0f0\], html.dark .border-\[\#e0c0b2\] { border-color: #334155 !important; }
+
+    /* Ô nhập liệu */
+    html.dark input, html.dark select, html.dark textarea {
+        background-color: #1e293b !important;
+        color: #e2e8f0 !important;
+        border-color: #334155 !important;
+    }
+
+    /* Chuyển màu mượt khi bật/tắt */
+    html.dark body * { transition: background-color .2s ease, border-color .2s ease, color .2s ease; }
+
+    /* Icon nút toggle: sáng hiện mặt trăng, tối hiện mặt trời */
+    [data-theme-icon="sun"] { display: none; }
+    html.dark [data-theme-icon="moon"] { display: none; }
+    html.dark [data-theme-icon="sun"] { display: inline; }
+</style>

@@ -56,7 +56,7 @@ public class ShowtimeService : IShowtimeService
                 .Include(s => s.Movie).ThenInclude(m => m.Genres)
                 .Include(s => s.Room).ThenInclude(r => r.RoomType)
                 .Include(s => s.Room).ThenInclude(r => r.Cinema),
-            orderBy: q => q.OrderBy(s => s.StartTime));
+            orderBy: q => q.OrderBy(s => s.StartTime).ThenBy(s => s.Movie.Title));
 
         var showtimeDtos = _mapper.Map<List<ShowtimeDTO>>(showtimes);
 
