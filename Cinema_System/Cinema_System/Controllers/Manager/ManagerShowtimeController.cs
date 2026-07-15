@@ -1,5 +1,6 @@
 using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Cinema_System.Controllers.Manager;
@@ -8,6 +9,7 @@ namespace Cinema_System.Controllers.Manager;
 /// Controller quản lý suất chiếu phim
 /// </summary>
 [Route("Manager/Showtime")]
+[Authorize(Roles = "MANAGER")]
 public class ManagerShowtimeController : Controller
 {
     private readonly IShowtimeScheduleService _showtimeService;

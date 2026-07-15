@@ -53,7 +53,7 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<ChatbotLog> ChatbotLogs { get; }
 
-    IGenericRepository<Ticket> Tickets { get; }
+    ITicketRepository Tickets { get; }
 
     IGenericRepository<SeatHold> SeatHolds { get; }
 
