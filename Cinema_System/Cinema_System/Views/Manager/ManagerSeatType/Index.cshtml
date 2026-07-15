@@ -1,11 +1,13 @@
 @model IEnumerable<SeatTypeDTO>
 @{
     ViewData["Title"] = "Quản Lý Loại Ghế";
+    Layout = "_ManagerLayout";
 }
 
 @section Styles {
+    <link rel="stylesheet" href="~/css/site.css" />
     <style>
-        .st-wrap { max-width: 1000px; margin: 6rem auto 3rem; padding: 0 1.5rem; }
+        .st-wrap { max-width: 1000px; margin: 0 auto 3rem; padding: 0; }
         .st-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
         .st-title { font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: var(--on-surface); }
         .st-alert { padding: .75rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: .9rem; }
