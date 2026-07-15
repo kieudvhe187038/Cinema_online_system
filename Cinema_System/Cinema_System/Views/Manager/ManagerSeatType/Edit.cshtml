@@ -1,11 +1,13 @@
 @model SeatTypeFormViewModel
 @{
     ViewData["Title"] = "Sửa Loại Ghế";
+    Layout = "_ManagerLayout";
 }
 
 @section Styles {
+    <link rel="stylesheet" href="~/css/site.css" />
     <style>
-        .sf-wrap { max-width: 560px; margin: 6rem auto 3rem; padding: 0 1.5rem; }
+        .sf-wrap { max-width: 560px; margin: 0 auto 3rem; padding: 0; }
         .sf-title { font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: var(--on-surface); margin-bottom: 1.5rem; }
         .sf-card { background: var(--white); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); padding: 1.75rem; }
         .sf-field { margin-bottom: 1.1rem; }
