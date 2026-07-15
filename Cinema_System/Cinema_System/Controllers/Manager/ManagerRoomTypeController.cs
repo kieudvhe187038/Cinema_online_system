@@ -1,10 +1,12 @@
 using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Cinema_System.Controllers.Manager;
 
 [Route("Manager/RoomType")]
+[Authorize(Roles = "MANAGER")]
 public class ManagerRoomTypeController : Controller
 {
     private readonly IRoomTypeService _roomTypeService;

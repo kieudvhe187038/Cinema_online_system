@@ -14,6 +14,14 @@ public class StaffContextService : IStaffContextService
 
     public async Task<User?> GetCurrentStaffAsync(Guid staffId)
     {
-        return await _unitOfWork.Users.GetByIdAsync(staffId);
+        var user = await _unitOfWork.Users.GetByIdAsync(staffId);
+
+        // Cookie đăng nhập có thể còn hiệu lực tới 15 ngày sau khi Admin đã khóa tài
+        // khoản — chặn ở đây để nhân viên bị vô hiệu hóa không thể tạo đơn/check-in
+        // dù session cũ chưa hết hạn.
+        if (user is null || !string.Equals(user.Status, "Active", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        return user;
     }
 }

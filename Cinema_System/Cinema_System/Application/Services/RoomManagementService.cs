@@ -106,10 +106,12 @@ namespace Cinema_System.Application.Services
                 return Result<string>.Success("Đã mở lại ghế cho sử dụng bình thường.");
             }
 
-            // Vé bị ảnh hưởng = suất chưa diễn ra + đơn đã thanh toán
+            // Vé bị ảnh hưởng = suất chưa diễn ra + đơn đã thanh toán + vé chưa bị hủy
+            // (vé đã hủy trước đó không còn giữ chỗ nên không cần đổi ghế/bồi thường).
             var now = DateTime.Now;
             var affected = seat.Tickets
-                .Where(t => t.Showtime != null && t.Showtime.StartTime > now &&
+                .Where(t => t.Status != "Cancelled" &&
+                            t.Showtime != null && t.Showtime.StartTime > now &&
                             t.Booking != null && t.Booking.PaymentStatus == "Paid")
                 .ToList();
 
@@ -124,7 +126,7 @@ namespace Cinema_System.Application.Services
             var rewardRate = ParseDecimal(
                 (await _unitOfWork.SystemConfigs.FirstOrDefaultAsync(c => c.ConfigKey == RewardRateKey))?.ConfigValue);
 
-            int reassigned = 0, compensated = 0;
+            int reassigned = 0, compensated = 0, cancelledNoAccount = 0;
             // Ghế vừa gán trong thao tác này (tránh gán trùng cho cùng 1 suất)
             var assignedPerShowtime = new Dictionary<Guid, HashSet<Guid>>();
 
@@ -161,37 +163,53 @@ namespace Cinema_System.Application.Services
                     assignedPerShowtime[showtimeId].Add(chosen.Id);
                     reassigned++;
                 }
-                else if (ticket.Booking?.UserId != null)
+                else
                 {
-                    // Hết ghế trống -> hoàn điểm bồi thường
-                    var points = (int)Math.Round(ticket.PriceAtBooking * rewardRate, MidpointRounding.AwayFromZero);
-                    if (points < 1) points = 1;
+                    // Hết ghế trống thay thế: ghế cũ đã hỏng nên vé không còn giữ chỗ hợp lệ
+                    // — phải hủy vé (nếu không, khách vẫn check-in được vào 1 ghế đã hỏng).
+                    ticket.Status = "Cancelled";
+                    _unitOfWork.Tickets.Update(ticket);
 
-                    await _unitOfWork.RewardPointHistories.AddAsync(new RewardPointHistory
+                    if (ticket.Booking?.UserId != null)
                     {
-                        Id = Guid.NewGuid(),
-                        UserId = ticket.Booking.UserId.Value,
-                        BookingId = ticket.BookingId,
-                        PointsChanged = points,
-                        ActionType = "Refund_Rollback",
-                        Description = "Hoàn điểm do ghế hỏng, không còn ghế trống thay thế",
-                        CreatedAt = now
-                    });
+                        // Hoàn điểm bồi thường cho khách có tài khoản
+                        var points = (int)Math.Round(ticket.PriceAtBooking * rewardRate, MidpointRounding.AwayFromZero);
+                        if (points < 1) points = 1;
 
-                    var user = await _unitOfWork.Users.GetByIdAsync(ticket.Booking.UserId.Value);
-                    if (user != null)
-                    {
-                        user.RewardPoints = (user.RewardPoints ?? 0) + points;
-                        _unitOfWork.Users.Update(user);
+                        await _unitOfWork.RewardPointHistories.AddAsync(new RewardPointHistory
+                        {
+                            Id = Guid.NewGuid(),
+                            UserId = ticket.Booking.UserId.Value,
+                            BookingId = ticket.BookingId,
+                            PointsChanged = points,
+                            ActionType = "Refund_Rollback",
+                            Description = "Hoàn điểm do ghế hỏng, không còn ghế trống thay thế",
+                            CreatedAt = now
+                        });
+
+                        var user = await _unitOfWork.Users.GetByIdAsync(ticket.Booking.UserId.Value);
+                        if (user != null)
+                        {
+                            user.RewardPoints = (user.RewardPoints ?? 0) + points;
+                            _unitOfWork.Users.Update(user);
+                        }
+                        compensated++;
                     }
-                    compensated++;
+                    else
+                    {
+                        // Khách lẻ (không tài khoản): không có nơi để hoàn điểm — vẫn hủy vé,
+                        // nhân viên cần liên hệ trực tiếp để xử lý hoàn tiền/đổi lịch.
+                        cancelledNoAccount++;
+                    }
                 }
             }
 
             await _unitOfWork.SaveChangesAsync();
 
             var msg = $"Đã khóa ghế. Đổi chỗ cho {reassigned} khách";
-            msg += compensated > 0 ? $", hoàn điểm cho {compensated} khách (hết ghế trống)." : ".";
+            if (compensated > 0) msg += $", hủy vé + hoàn điểm cho {compensated} khách (hết ghế trống)";
+            if (cancelledNoAccount > 0) msg += $", hủy {cancelledNoAccount} vé khách lẻ không tài khoản (cần liên hệ trực tiếp)";
+            msg += ".";
             return Result<string>.Success(msg);
         }
 

@@ -19,14 +19,24 @@ public class BookingManagementService : IBookingManagementService
     public async Task<BookingListViewModel> GetBookingsAsync(
         string? search, string? bookingType, string? paymentStatus, int page, int pageSize)
     {
+        if (page < 1) page = 1;
+
         // Lọc + phân trang được đẩy xuống SQL trong repository nên mỗi lần chỉ tải
         // đúng 1 trang — tránh kéo cả bảng Bookings về bộ nhớ gây timeout.
         var (rows, totalCount) = await _unitOfWork.Bookings.GetPagedListAsync(
             bookingType, paymentStatus, search, page, pageSize);
 
         var totalPages = totalCount == 0 ? 1 : (int)Math.Ceiling(totalCount / (double)pageSize);
-        if (page < 1) page = 1;
-        if (page > totalPages) page = totalPages;
+
+        if (page > totalPages)
+        {
+            // Trang yêu cầu vượt quá số trang thực tế (vd sau khi dữ liệu giảm, hoặc
+            // sửa tay query string) — truy vấn lại đúng trang cuối thay vì trả rows rỗng
+            // trong khi CurrentPage hiển thị lệch với dữ liệu.
+            page = totalPages;
+            (rows, totalCount) = await _unitOfWork.Bookings.GetPagedListAsync(
+                bookingType, paymentStatus, search, page, pageSize);
+        }
 
         var items = _mapper.Map<List<BookingListItemDTO>>(rows);
 
