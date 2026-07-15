@@ -1,5 +1,6 @@
 ﻿using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
+using Microsoft.EntityFrameworkCore;
 
 namespace Cinema_System.Application.Services;
 
@@ -17,19 +18,18 @@ public class AdminDashboardService : IAdminDashboardService
         var today = DateTime.Today;
         var windowStart = today.AddDays(-29); // 30 ngày gồm hôm nay
 
-        // Đơn ĐÃ THANH TOÁN (kèm khách + phim) -> doanh thu, xu hướng
-        var paidBookings = (await _unitOfWork.Bookings.GetAllAsync(
-            b => b.PaymentStatus == "Paid",
-            includeProperties: new[] { "User", "Showtime", "Showtime.Movie" })).ToList();
-
-        var revenueWindow = paidBookings.Where(b => b.CreatedAt >= windowStart).ToList();
-
-        // --- 4 ô thống kê ---
-        var revenue30 = revenueWindow.Sum(b => b.FinalAmount);
-        var totalPaid = paidBookings.Count;
+        // --- 4 ô thống kê (đều là COUNT dưới SQL, không kéo dữ liệu) ---
+        var totalPaid = await _unitOfWork.Bookings.CountAsync(b => b.PaymentStatus == "Paid");
         var totalUsers = await _unitOfWork.Users.CountAsync();
         var totalMovies = await _unitOfWork.Movies.CountAsync();
         var activeUsers = await _unitOfWork.Users.CountAsync(u => u.Status == "Active");
+
+        // Doanh thu 30 ngày: chỉ lấy đơn ĐÃ THANH TOÁN trong cửa sổ 30 ngày, KHÔNG kèm
+        // navigation (chỉ cần FinalAmount + CreatedAt) -> lọc đẩy xuống SQL.
+        var revenueWindow = (await _unitOfWork.Bookings.GetAllAsync(
+            b => b.PaymentStatus == "Paid" && b.CreatedAt >= windowStart)).ToList();
+
+        var revenue30 = revenueWindow.Sum(b => b.FinalAmount);
 
         // Tỉ lệ lấp đầy = ghế đã bán / tổng ghế các suất chiếu
         var soldSeats = await _unitOfWork.Tickets.CountAsync();
@@ -47,11 +47,15 @@ public class AdminDashboardService : IAdminDashboardService
             .Select(d => new RevenuePointViewModel { Date = d, Amount = byDay.GetValueOrDefault(d) })
             .ToList();
 
-        // --- 6 giao dịch gần nhất (mọi trạng thái) ---
-        var recent = (await _unitOfWork.Bookings.GetAllAsync(
-            includeProperties: new[] { "User", "Showtime", "Showtime.Movie" },
-            orderBy: q => q.OrderByDescending(b => b.CreatedAt)))
-            .Take(6)
+        // --- 6 giao dịch gần nhất (mọi trạng thái) — TOP 6 đẩy xuống SQL ---
+        var (recentRows, _) = await _unitOfWork.Bookings.GetPagedAsync(
+            page: 1, pageSize: 6,
+            include: q => q
+                .Include(b => b.User)
+                .Include(b => b.Showtime).ThenInclude(s => s.Movie),
+            orderBy: q => q.OrderByDescending(b => b.CreatedAt));
+
+        var recent = recentRows
             .Select(b => new RecentBookingViewModel
             {
                 CustomerName = b.User?.FullName ?? "Khách vãng lai",
@@ -61,22 +65,15 @@ public class AdminDashboardService : IAdminDashboardService
                 PaymentStatus = b.PaymentStatus
             }).ToList();
 
-        // --- Phim hot: bán nhiều vé nhất ---
-        var tickets = await _unitOfWork.Tickets.GetAllAsync(
-            includeProperties: new[] { "Showtime", "Showtime.Movie" });
-
-        var hotMovies = tickets
-            .Where(t => t.Showtime?.Movie != null)
-            .GroupBy(t => new { t.Showtime!.Movie!.Id, t.Showtime.Movie.Title, t.Showtime.Movie.PosterUrl })
-            .Select(g => new HotMovieViewModel
+        // --- Phim hot: bán nhiều vé nhất — GROUP BY + TOP 5 đẩy xuống SQL ---
+        var hotMovies = (await _unitOfWork.Tickets.GetTopMoviesByTicketsAsync(5))
+            .Select(m => new HotMovieViewModel
             {
-                MovieTitle = g.Key.Title,
-                PosterUrl = g.Key.PosterUrl,
-                TicketsSold = g.Count(),
-                Revenue = g.Sum(t => t.PriceAtBooking)
+                MovieTitle = m.MovieTitle,
+                PosterUrl = m.PosterUrl,
+                TicketsSold = m.TicketsSold,
+                Revenue = m.Revenue
             })
-            .OrderByDescending(m => m.TicketsSold)
-            .Take(5)
             .ToList();
 
         return new AdminDashboardViewModel

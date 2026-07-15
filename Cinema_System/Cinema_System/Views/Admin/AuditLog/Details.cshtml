@@ -1,0 +1,69 @@
+@model AuditLogDetailViewModel
+@{
+    ViewData["Title"] = "Chi Tiết Nhật Ký";
+    Layout = "_AdminLayout";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/site.css" />
+    <style>
+        .ald-wrap { max-width: 900px; margin: 0 auto 3rem; padding: 0; }
+        .ald-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap; }
+        .ald-title { font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: var(--on-surface); }
+        .ald-btn { padding: .55rem 1.1rem; border: none; border-radius: var(--radius); font-weight: 600; cursor: pointer; font-family: var(--font-body); text-decoration: none; display: inline-flex; align-items: center; }
+        .ald-btn-ghost { background: var(--surface-container); color: var(--on-surface); }
+        .ald-card { background: var(--white); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); padding: 1.75rem; margin-bottom: 1.5rem; }
+        .ald-grid { display: grid; grid-template-columns: 160px 1fr; gap: .85rem 1rem; }
+        .ald-label { color: var(--on-surface-variant); font-weight: 600; }
+        .ald-value { color: var(--on-surface); word-break: break-word; }
+        .ald-mono { font-family: monospace; font-size: .85rem; }
+        .ald-chip { display: inline-block; padding: .2rem .6rem; border-radius: 999px; font-size: .75rem; font-weight: 700; background: var(--surface-container); color: var(--on-surface-variant); }
+        .ald-section-title { font-family: var(--font-head); font-weight: 700; margin-bottom: .75rem; color: var(--on-surface); }
+        .ald-pre { background: var(--surface); border: 1px solid var(--outline-variant); border-radius: var(--radius); padding: 1rem; font-family: monospace; font-size: .82rem; white-space: pre-wrap; word-break: break-word; color: var(--on-surface); max-height: 340px; overflow: auto; }
+        .ald-changes { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        @@media (max-width: 720px) { .ald-changes { grid-template-columns: 1fr; } .ald-grid { grid-template-columns: 120px 1fr; } }
+    </style>
+}
+
+<div class="ald-wrap">
+    <div class="ald-top">
+        <h1 class="ald-title">Chi Tiết Nhật Ký</h1>
+        <a class="ald-btn ald-btn-ghost" href="@Url.Action("Index", "AuditLog")">← Danh sách</a>
+    </div>
+
+    <div class="ald-card">
+        <div class="ald-grid">
+            <span class="ald-label">Thời gian</span>
+            <span class="ald-value">@(Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm:ss") ?? "—")</span>
+
+            <span class="ald-label">Người thực hiện</span>
+            <span class="ald-value">@Model.UserName @(string.IsNullOrEmpty(Model.UserEmail) ? "" : $"({Model.UserEmail})")</span>
+
+            <span class="ald-label">Hành động</span>
+            <span class="ald-value"><span class="ald-chip">@Model.Action</span></span>
+
+            <span class="ald-label">Bảng</span>
+            <span class="ald-value">@(string.IsNullOrEmpty(Model.TableName) ? "—" : Model.TableName)</span>
+
+            <span class="ald-label">Bản ghi (Id)</span>
+            <span class="ald-value ald-mono">@(Model.RecordId?.ToString() ?? "—")</span>
+
+            <span class="ald-label">Địa chỉ IP</span>
+            <span class="ald-value ald-mono">@(string.IsNullOrEmpty(Model.IpAddress) ? "—" : Model.IpAddress)</span>
+        </div>
+    </div>
+
+    <div class="ald-card">
+        <h3 class="ald-section-title">Thay đổi dữ liệu</h3>
+        <div class="ald-changes">
+            <div>
+                <div class="ald-label" style="margin-bottom:.4rem;">Giá trị cũ</div>
+                <div class="ald-pre">@(string.IsNullOrEmpty(Model.OldValue) ? "—" : Model.OldValue)</div>
+            </div>
+            <div>
+                <div class="ald-label" style="margin-bottom:.4rem;">Giá trị mới</div>
+                <div class="ald-pre">@(string.IsNullOrEmpty(Model.NewValue) ? "—" : Model.NewValue)</div>
+            </div>
+        </div>
+    </div>
+</div>
