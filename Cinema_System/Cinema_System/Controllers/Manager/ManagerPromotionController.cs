@@ -1,11 +1,13 @@
 using Cinema_System.Application.Common;
 using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Cinema_System.Controllers.Manager;
 
 [Route("Manager/Promotion")]
+[Authorize(Roles = "MANAGER")]
 public class ManagerPromotionController : Controller
 {
     private readonly IPromotionService _promotionService;

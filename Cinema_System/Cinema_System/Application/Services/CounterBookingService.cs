@@ -243,7 +243,13 @@ public class CounterBookingService : ICounterBookingService
             customer = await _unitOfWork.Users.GetByIdAsync(customerId);
         else if (!string.IsNullOrWhiteSpace(request.CustomerPhone))
         {
-            customer = await _unitOfWork.Users.GetByPhoneAsync(request.CustomerPhone.Trim());
+            // Bỏ mọi khoảng trắng như MemberService.LookupByPhoneAsync để khớp với
+            // SĐT lưu trong DB kể cả khi nhân viên gõ trực tiếp có khoảng trắng giữa
+            // (không qua bước tra cứu thành viên trước).
+            var normalizedPhone = new string(
+                request.CustomerPhone.Where(c => !char.IsWhiteSpace(c)).ToArray());
+            if (normalizedPhone.Length > 0)
+                customer = await _unitOfWork.Users.GetByPhoneAsync(normalizedPhone);
         }
 
         // --- Thanh toán tại quầy ---
