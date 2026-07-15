@@ -34,6 +34,65 @@ public class ManagerShowtimeController : Controller
     [HttpGet("Calendar")]
     public async Task<IActionResult> Calendar(Guid? roomId, string? status, string? search, DateTime? weekStart)
     {
+        bool needsRedirect = false;
+        var cleanRouteValues = new RouteValueDictionary();
+
+        foreach (var key in Request.Query.Keys)
+        {
+            var value = Request.Query[key].ToString();
+            if (string.Equals(key, "roomId", StringComparison.OrdinalIgnoreCase))
+            {
+                if (Guid.TryParse(value, out var parsedGuid))
+                {
+                    cleanRouteValues["roomId"] = parsedGuid;
+                }
+                else
+                {
+                    needsRedirect = true;
+                }
+            }
+            else if (string.Equals(key, "status", StringComparison.OrdinalIgnoreCase))
+            {
+                var allowedStatuses = new[] { "Scheduled", "Live", "Completed", "Cancelled" };
+                if (allowedStatuses.Contains(value, StringComparer.OrdinalIgnoreCase) || string.IsNullOrEmpty(value))
+                {
+                    if (!string.IsNullOrEmpty(value))
+                        cleanRouteValues["status"] = value;
+                }
+                else
+                {
+                    needsRedirect = true;
+                }
+            }
+            else if (string.Equals(key, "search", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    cleanRouteValues["search"] = value;
+                }
+            }
+            else if (string.Equals(key, "weekStart", StringComparison.OrdinalIgnoreCase))
+            {
+                if (DateTime.TryParse(value, out var parsedDate))
+                {
+                    cleanRouteValues["weekStart"] = parsedDate.ToString("yyyy-MM-dd");
+                }
+                else
+                {
+                    needsRedirect = true;
+                }
+            }
+            else
+            {
+                needsRedirect = true; // Query parameter lạ
+            }
+        }
+
+        if (needsRedirect)
+        {
+            return RedirectToAction(nameof(Calendar), cleanRouteValues);
+        }
+
         var vm = await _showtimeService.GetCalendarAsync(roomId, status, search, weekStart);
         return View(vm);
     }
