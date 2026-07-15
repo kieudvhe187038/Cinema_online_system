@@ -61,6 +61,8 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<Vat> Vats { get; }
 
+    IGenericRepository<AuditLog> AuditLogs { get; }
+
     Task<int> SaveChangesAsync();
 
     /// <summary>
