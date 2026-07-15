@@ -51,6 +51,9 @@
             <a class="@navBase @(ctrl == "AdminUser" ? navActive : navIdle)" asp-controller="AdminUser" asp-action="Index">
                 <span class="material-symbols-outlined">group</span><span>Người Dùng</span>
             </a>
+            <a class="@navBase @(ctrl == "AuditLog" ? navActive : navIdle)" asp-controller="AuditLog" asp-action="Index">
+                <span class="material-symbols-outlined">history</span><span>Nhật Ký Chỉnh Sửa</span>
+            </a>
             <hr class="my-2 mx-6 border-t border-[#f0f0f0]" />
             <a class="@navBase @navIdle" asp-controller="Home" asp-action="Index">
                 <span class="material-symbols-outlined">home</span><span>Về Trang Chủ</span>

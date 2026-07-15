@@ -41,6 +41,7 @@ public class UnitOfWork : IUnitOfWork
     private IGenericRepository<SeatHold>? _seatHolds;
     private IGenericRepository<Payment>? _payments;
     private IGenericRepository<Vat>? _vats;
+    private IGenericRepository<AuditLog>? _auditLogs;
 
     public UnitOfWork(CinemaWebDbContext context)
     {
@@ -127,6 +128,9 @@ public class UnitOfWork : IUnitOfWork
 
     public IGenericRepository<Vat> Vats =>
         _vats ??= new GenericRepository<Vat>(_context);
+
+    public IGenericRepository<AuditLog> AuditLogs =>
+        _auditLogs ??= new GenericRepository<AuditLog>(_context);
 
     // Lưu tất cả thay đổi của DbContext trong 1 transaction logic
     public async Task<int> SaveChangesAsync()
