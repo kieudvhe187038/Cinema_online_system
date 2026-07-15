@@ -1,10 +1,12 @@
 using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Cinema_System.Controllers.Manager;
 
 [Route("Manager/SeatType")]
+[Authorize(Roles = "MANAGER")]
 public class ManagerSeatTypeController : Controller
 {
     private readonly ISeatTypeService _seatTypeService;

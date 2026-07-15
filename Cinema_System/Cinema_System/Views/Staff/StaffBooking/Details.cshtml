@@ -1,12 +1,13 @@
 @model BookingManagementDetailDTO
 @{
     ViewData["Title"] = "Chi Tiết Đơn Hàng";
+    Layout = "_StaffLayout";
 }
 
 @section Styles {
     <link rel="stylesheet" href="~/css/site.css" />
     <style>
-        .bd-wrap { max-width: 980px; margin: 6rem auto 3rem; padding: 0 1.5rem; }
+        .bd-wrap { max-width: 980px; margin: 0 auto 3rem; padding: 0; }
         .bd-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap; }
         .bd-title { font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: var(--on-surface); }
         .bd-code { font-family: monospace; font-weight: 700; color: var(--primary); }

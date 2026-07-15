@@ -1,5 +1,6 @@
 @{
     var ctrl = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
     var staffName = User.Identity?.Name ?? "Nhân viên";
     var parts = staffName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
     var initials = parts.Length >= 2
@@ -31,20 +32,42 @@
         body { font-family: 'Be Vietnam Pro', sans-serif; }
         .material-symbols-outlined { font-size: 20px; line-height: 1; }
     </style>
+    <partial name="_DarkMode" />
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body class="bg-[#f4f6f8] text-[#191c1d]">
 
 <!-- Sidebar (chỉ 2 chức năng quản lý phòng) -->
 <aside class="fixed inset-y-0 left-0 flex w-60 flex-col border-r border-[#e8eaed] bg-white z-[100]">
-    <div class="shrink-0 border-b border-[#f0f0f0] px-6 pt-5 pb-4">
-        <div class="font-head text-2xl font-extrabold tracking-tight text-primary leading-none">CineStar</div>
-        <div class="mt-0.5 text-[.7rem] font-medium uppercase tracking-wide text-[#8a94a6]">Nhân viên</div>
-    </div>
+    <a asp-controller="Home" asp-action="Index" title="Về trang chủ"
+       class="group flex items-center justify-between gap-2 shrink-0 border-b border-[#f0f0f0] px-6 pt-5 pb-4 hover:bg-[#fff7f0] transition-colors">
+        <div>
+            <div class="font-head text-2xl font-extrabold tracking-tight text-primary leading-none">CineStar</div>
+            <div class="mt-0.5 text-[.7rem] font-medium uppercase tracking-wide text-[#8a94a6]">Nhân viên</div>
+        </div>
+        <span class="material-symbols-outlined text-[#c0c6d0] group-hover:text-primary transition-colors">home</span>
+    </a>
 
     <nav class="flex-1 overflow-y-auto py-3">
         <a class="@navBase @(ctrl == "RoomManagement" ? navActive : navIdle)" asp-controller="RoomManagement" asp-action="Index">
             <span class="material-symbols-outlined">meeting_room</span>
             <span>Quản lý phòng chiếu</span>
+        </a>
+        <a class="@navBase @(ctrl == "StaffCounter" && action != "Member" ? navActive : navIdle)" asp-controller="StaffCounter" asp-action="Index">
+            <span class="material-symbols-outlined">point_of_sale</span>
+            <span>Đặt vé tại quầy</span>
+        </a>
+        <a class="@navBase @(ctrl == "StaffBooking" ? navActive : navIdle)" asp-controller="StaffBooking" asp-action="Index">
+            <span class="material-symbols-outlined">receipt_long</span>
+            <span>Đơn hàng</span>
+        </a>
+        <a class="@navBase @(ctrl == "StaffCheckin" ? navActive : navIdle)" asp-controller="StaffCheckin" asp-action="Index">
+            <span class="material-symbols-outlined">qr_code_scanner</span>
+            <span>Check-in vé</span>
+        </a>
+        <a class="@navBase @(ctrl == "StaffCounter" && action == "Member" ? navActive : navIdle)" asp-controller="StaffCounter" asp-action="Member">
+            <span class="material-symbols-outlined">badge</span>
+            <span>Tra cứu thành viên</span>
         </a>
     </nav>
 
@@ -69,8 +92,9 @@
 </aside>
 
 <!-- Topbar -->
-<header class="fixed top-0 left-60 right-0 z-[90] flex h-[60px] items-center border-b border-[#e8eaed] bg-white px-7">
+<header class="fixed top-0 left-60 right-0 z-[90] flex h-[60px] items-center justify-between border-b border-[#e8eaed] bg-white px-7">
     <span class="font-head text-[1.05rem] font-bold tracking-wide text-secondary-dark">@(ViewData["Title"] ?? "Quản lý")</span>
+    <partial name="_DarkModeToggle" />
 </header>
 
 <div class="ml-60 min-h-screen pt-[60px]">
@@ -78,6 +102,8 @@
         @RenderBody()
     </main>
 </div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
 @await RenderSectionAsync("Scripts", required: false)
 </body>

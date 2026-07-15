@@ -53,13 +53,15 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<ChatbotLog> ChatbotLogs { get; }
 
-    IGenericRepository<Ticket> Tickets { get; }
+    ITicketRepository Tickets { get; }
 
     IGenericRepository<SeatHold> SeatHolds { get; }
 
     IGenericRepository<Payment> Payments { get; }
 
     IGenericRepository<Vat> Vats { get; }
+
+    IGenericRepository<AuditLog> AuditLogs { get; }
 
     Task<int> SaveChangesAsync();
 

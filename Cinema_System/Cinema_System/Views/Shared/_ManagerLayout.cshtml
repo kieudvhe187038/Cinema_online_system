@@ -31,12 +31,22 @@
         body { font-family: 'Be Vietnam Pro', sans-serif; }
         .material-symbols-outlined { font-size: 20px; line-height: 1; }
     </style>
+    <partial name="_DarkMode" />
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body class="bg-[#f4f6f8] overflow-x-hidden text-[#191c1d]">
 @{
     var ctrl = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
     var topTitle = ViewData["Title"]?.ToString() ?? "Quản Lý";
+
+    // Thông tin manager cho avatar góc trên (đọc từ Claims, không truy vấn DB).
+    var avatarUrl = User.FindFirst(Cinema_System.Controllers.Auth.AuthControllerBase.AvatarUrlClaimType)?.Value;
+    var displayName = User.Identity?.Name ?? "Quản lý";
+    var userEmail = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+    var nameParts = displayName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+    var initials = nameParts.Length >= 2
+        ? (nameParts[^2].Substring(0, 1) + nameParts[^1].Substring(0, 1)).ToUpper()
+        : nameParts.Length == 1 ? nameParts[0].Substring(0, 1).ToUpper() : "Q";
 
     const string navBase = "flex items-center gap-3 px-4 py-2.5 mx-3 my-0.5 rounded-lg text-sm font-medium transition-colors";
     const string navIdle = "text-gray-700 hover:bg-[#fff7f0] hover:text-primary";
@@ -45,15 +55,25 @@
 
 <!-- Sidebar -->
 <aside class="fixed inset-y-0 left-0 w-60 bg-white border-r border-[#e8eaed] flex flex-col z-[100]">
-    <div class="px-6 pt-5 pb-4 border-b border-[#f0f0f0] shrink-0">
-        <div class="font-head text-2xl font-extrabold text-primary tracking-tight leading-none">CineStar</div>
-        <div class="text-[.7rem] text-[#8a94a6] mt-0.5 font-medium uppercase tracking-wide">Quản Lý Rạp</div>
-    </div>
+    <a asp-controller="Home" asp-action="Index" title="Về trang chủ"
+       class="group flex items-center justify-between gap-2 px-6 pt-5 pb-4 border-b border-[#f0f0f0] shrink-0 hover:bg-[#fff7f0] transition-colors">
+        <div>
+            <div class="font-head text-2xl font-extrabold text-primary tracking-tight leading-none">CineStar</div>
+            <div class="text-[.7rem] text-[#8a94a6] mt-0.5 font-medium uppercase tracking-wide">Quản Lý Rạp</div>
+        </div>
+        <span class="material-symbols-outlined text-[#c0c6d0] group-hover:text-primary transition-colors">home</span>
+    </a>
 
     <nav class="flex-1 py-3 overflow-y-auto">
-        <a class="@navBase @navIdle" href="#">
+        <a class="@navBase @(ctrl == "Dashboard" ? navActive : navIdle)"
+           asp-controller="Dashboard" asp-action="Index">
             <span class="material-symbols-outlined">grid_view</span>
             <span>Tổng Quan</span>
+        </a>
+        <a class="@navBase @(ctrl == "Report" ? navActive : navIdle)"
+           asp-controller="Report" asp-action="Index">
+            <span class="material-symbols-outlined">bar_chart</span>
+            <span>Báo Cáo &amp; Thống Kê</span>
         </a>
         <a class="@navBase @(ctrl == "MovieManagement" ? navActive : navIdle)"
            asp-controller="MovieManagement" asp-action="Index">
@@ -65,15 +85,28 @@
             <span class="material-symbols-outlined">meeting_room</span>
             <span>Phòng Chiếu</span>
         </a>
+        <a class="@navBase @(ctrl == "ManagerRoomType" ? navActive : navIdle)"
+           asp-controller="ManagerRoomType" asp-action="Index">
+            <span class="material-symbols-outlined">category</span>
+            <span>Loại Phòng</span>
+        </a>
+        <a class="@navBase @(ctrl == "ManagerSeatType" ? navActive : navIdle)"
+           asp-controller="ManagerSeatType" asp-action="Index">
+            <span class="material-symbols-outlined">event_seat</span>
+            <span>Loại Ghế</span>
+        </a>
         <a class="@navBase @(ctrl == "ManagerShowtime" ? navActive : navIdle)"
            asp-controller="ManagerShowtime" asp-action="Calendar">
             <span class="material-symbols-outlined">schedule</span>
             <span>Suất Chiếu</span>
         </a>
-        <a class="@navBase @navIdle" href="#">
-            <span class="material-symbols-outlined">confirmation_number</span>
-            <span>Đặt Vé</span>
+
+         <a class="@navBase @(ctrl == "ManagerIncident" ? navActive : navIdle)"
+               asp-controller="ManagerIncident" asp-action="Index">
+             <span class="material-symbols-outlined">report</span>
+             <span>Quản Lý Sự Cố</span>
         </a>
+
         <hr class="my-2 mx-6 border-t border-[#f0f0f0]" />
         <a class="@navBase @(ctrl == "FoodBeverages" ? navActive : navIdle)"
            asp-controller="FoodBeverages" asp-action="Index">
@@ -90,17 +123,40 @@
             <span class="material-symbols-outlined">payments</span>
             <span>Quản Lý Giá</span>
         </a>
+        <a class="@navBase @(ctrl == "ManagerVat" ? navActive : navIdle)"
+           asp-controller="ManagerVat" asp-action="Index">
+            <span class="material-symbols-outlined">receipt_long</span>
+            <span>Quản Lý VAT</span>
+        </a>
+        <a class="@navBase @(ctrl == "ManagerPoint" ? navActive : navIdle)"
+           asp-controller="ManagerPoint" asp-action="Index">
+            <span class="material-symbols-outlined">stars</span>
+            <span>Tỉ Lệ Tích Điểm</span>
+        </a>
         <a class="@navBase @navIdle" href="#">
             <span class="material-symbols-outlined">settings</span>
             <span>Cài Đặt</span>
         </a>
     </nav>
+
+    <!-- Về trang chủ + đăng xuất -->
+    <div class="border-t border-[#f0f0f0] p-4 shrink-0">
+        <a asp-controller="Home" asp-action="Index" class="mb-1 flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-[#f4f6f8] hover:text-primary transition-colors">
+            <span class="material-symbols-outlined">home</span> Về trang chủ
+        </a>
+        <form asp-controller="Login" asp-action="Logout" method="post">
+            <button type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors">
+                <span class="material-symbols-outlined">logout</span> Đăng xuất
+            </button>
+        </form>
+    </div>
 </aside>
 
 <!-- Topbar -->
 <header class="fixed top-0 left-60 right-0 h-[60px] bg-white border-b border-[#e8eaed] flex items-center justify-between px-7 z-[90]">
     <span class="font-head text-[1.05rem] font-bold text-secondary-dark tracking-wide">@topTitle</span>
     <div class="flex items-center gap-2.5">
+        <partial name="_DarkModeToggle" />
         <button class="relative w-9 h-9 rounded-full bg-[#f4f6f8] hover:bg-[#ffe8d6] text-gray-700 hover:text-primary flex items-center justify-center transition-colors">
             <span class="material-symbols-outlined">notifications</span>
             <span class="absolute top-[7px] right-[7px] w-[7px] h-[7px] rounded-full bg-red-500 border-[1.5px] border-white"></span>
@@ -108,6 +164,60 @@
         <button class="w-9 h-9 rounded-full bg-[#f4f6f8] hover:bg-[#ffe8d6] text-gray-700 hover:text-primary flex items-center justify-center transition-colors">
             <span class="material-symbols-outlined">help</span>
         </button>
+
+        @* Avatar + tên manager -> dropdown menu *@
+        <div class="relative" data-user-menu>
+            <button type="button" data-user-menu-toggle aria-haspopup="true" aria-expanded="false"
+                    class="flex items-center gap-2.5 rounded-full border border-[#e8eaed] bg-white py-1 pl-1 pr-2.5 hover:border-primary/40 hover:shadow-sm transition-colors">
+                @if (!string.IsNullOrEmpty(avatarUrl))
+                {
+                    <img src="@avatarUrl" alt="Ảnh đại diện" class="h-8 w-8 rounded-full object-cover" />
+                }
+                else
+                {
+                    <span class="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">@initials</span>
+                }
+                <span class="hidden max-w-[10rem] truncate text-sm font-semibold text-secondary-dark sm:block">@displayName</span>
+                <span class="material-symbols-outlined text-[20px] text-gray-400">expand_more</span>
+            </button>
+
+            <div data-user-menu-panel
+                 class="absolute right-0 mt-2 hidden w-60 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-xl ring-1 ring-black/5">
+                <div class="flex items-center gap-3 border-b border-slate-100 px-4 py-3">
+                    @if (!string.IsNullOrEmpty(avatarUrl))
+                    {
+                        <img src="@avatarUrl" alt="Ảnh đại diện" class="h-10 w-10 rounded-full object-cover" />
+                    }
+                    else
+                    {
+                        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">@initials</span>
+                    }
+                    <div class="min-w-0">
+                        <p class="truncate text-sm font-semibold text-slate-800">@displayName</p>
+                        @if (!string.IsNullOrEmpty(userEmail))
+                        {
+                            <p class="truncate text-xs text-slate-400">@userEmail</p>
+                        }
+                    </div>
+                </div>
+                <nav class="py-1 text-sm">
+                    <a asp-controller="Profile" asp-action="Index" class="flex items-center gap-3 px-4 py-2.5 text-slate-700 transition hover:bg-slate-50 hover:text-primary">
+                        <span class="material-symbols-outlined text-[20px]">person</span> Hồ sơ cá nhân
+                    </a>
+                    <a asp-controller="Profile" asp-action="PointHistory" class="flex items-center gap-3 px-4 py-2.5 text-slate-700 transition hover:bg-slate-50 hover:text-primary">
+                        <span class="material-symbols-outlined text-[20px]">stars</span> Lịch sử điểm
+                    </a>
+                    <a asp-controller="Profile" asp-action="ChangePassword" class="flex items-center gap-3 px-4 py-2.5 text-slate-700 transition hover:bg-slate-50 hover:text-primary">
+                        <span class="material-symbols-outlined text-[20px]">lock</span> Đổi mật khẩu
+                    </a>
+                </nav>
+                <form asp-controller="Login" asp-action="Logout" method="post" class="border-t border-slate-100">
+                    <button type="submit" class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-semibold text-red-600 transition hover:bg-red-50">
+                        <span class="material-symbols-outlined text-[20px]">logout</span> Đăng xuất
+                    </button>
+                </form>
+            </div>
+        </div>
     </div>
 </header>
 
@@ -129,6 +239,30 @@
 <script src="~/lib/jquery/dist/jquery.min.js"></script>
 <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 <script src="~/js/site.js" asp-append-version="true"></script>
+<script>
+    // Dropdown tài khoản manager: mở/đóng khi bấm avatar, đóng khi bấm ra ngoài hoặc nhấn Esc.
+    (function () {
+        const menu = document.querySelector('[data-user-menu]');
+        if (!menu) return;
+        const toggle = menu.querySelector('[data-user-menu-toggle]');
+        const panel = menu.querySelector('[data-user-menu-panel]');
+        function closeMenu() {
+            panel.classList.add('hidden');
+            toggle.setAttribute('aria-expanded', 'false');
+        }
+        toggle.addEventListener('click', function (e) {
+            e.stopPropagation();
+            const isHidden = panel.classList.toggle('hidden');
+            toggle.setAttribute('aria-expanded', String(!isHidden));
+        });
+        document.addEventListener('click', function (e) {
+            if (!menu.contains(e.target)) closeMenu();
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeMenu();
+        });
+    })();
+</script>
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

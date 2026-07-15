@@ -1,12 +1,13 @@
 @model BookingListViewModel
 @{
     ViewData["Title"] = "Quản Lý Đơn Hàng";
+    Layout = "_StaffLayout";
 }
 
 @section Styles {
     <link rel="stylesheet" href="~/css/site.css" />
     <style>
-        .bk-wrap { max-width: 1280px; margin: 6rem auto 3rem; padding: 0 1.5rem; }
+        .bk-wrap { max-width: 1280px; margin: 0 auto 3rem; padding: 0; }
         .bk-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap; }
         .bk-title { font-family: var(--font-head); font-size: 1.75rem; font-weight: 800; color: var(--on-surface); }
         .bk-alert { padding: .75rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: .9rem; }

@@ -37,10 +37,11 @@ public class UnitOfWork : IUnitOfWork
     private IGenericRepository<ShowtimeIncident>? _showtimeIncidents;
     private IGenericRepository<Review>? _reviews;
     private IGenericRepository<ChatbotLog>? _chatbotLogs;
-    private IGenericRepository<Ticket>? _tickets;
+    private ITicketRepository? _tickets;
     private IGenericRepository<SeatHold>? _seatHolds;
     private IGenericRepository<Payment>? _payments;
     private IGenericRepository<Vat>? _vats;
+    private IGenericRepository<AuditLog>? _auditLogs;
 
     public UnitOfWork(CinemaWebDbContext context)
     {
@@ -116,8 +117,8 @@ public class UnitOfWork : IUnitOfWork
     public IGenericRepository<ChatbotLog> ChatbotLogs =>
         _chatbotLogs ??= new GenericRepository<ChatbotLog>(_context);
 
-    public IGenericRepository<Ticket> Tickets =>
-        _tickets ??= new GenericRepository<Ticket>(_context);
+    public ITicketRepository Tickets =>
+        _tickets ??= new TicketRepository(_context);
 
     public IGenericRepository<SeatHold> SeatHolds =>
         _seatHolds ??= new GenericRepository<SeatHold>(_context);
@@ -127,6 +128,9 @@ public class UnitOfWork : IUnitOfWork
 
     public IGenericRepository<Vat> Vats =>
         _vats ??= new GenericRepository<Vat>(_context);
+
+    public IGenericRepository<AuditLog> AuditLogs =>
+        _auditLogs ??= new GenericRepository<AuditLog>(_context);
 
     // Lưu tất cả thay đổi của DbContext trong 1 transaction logic
     public async Task<int> SaveChangesAsync()

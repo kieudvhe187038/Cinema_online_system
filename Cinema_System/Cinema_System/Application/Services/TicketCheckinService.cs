@@ -58,15 +58,23 @@ public class TicketCheckinService : ITicketCheckinService
             return Result<TicketCheckinDTO>.Failure("Suất chiếu đã kết thúc, không thể check-in.");
 
         // --- Check-in ---
+        // UPDATE có điều kiện ở DB (không phải ghi lại entity đã đọc ở trên) để chặn
+        // race condition khi 2 thiết bị quét cùng mã QR gần như đồng thời.
+        var scannedAt = DateTime.Now;
+        if (!await _unitOfWork.Tickets.TryCheckinAsync(ticket.Id, staff.Id, scannedAt))
+        {
+            var latest = await FindByQrAsync(qrCode);
+            return Result<TicketCheckinDTO>.Failure(
+                latest is null ? "Vé đã được check-in bởi thao tác khác." : DescribeState(latest));
+        }
+
         ticket.Status = StatusCheckedIn;
         ticket.ScanBy = staff.Id;
-        ticket.ScannedAt = DateTime.Now;
-        _unitOfWork.Tickets.Update(ticket);
-        await _unitOfWork.SaveChangesAsync();
+        ticket.ScannedAt = scannedAt;
 
         var dto = MapToDTO(ticket);
         dto.ScanByName = staff.FullName;
-        dto.Message = $"Check-in thành công lúc {ticket.ScannedAt:HH:mm dd/MM/yyyy}.";
+        dto.Message = $"Check-in thành công lúc {scannedAt:HH:mm dd/MM/yyyy}.";
         return Result<TicketCheckinDTO>.Success(dto);
     }
 
@@ -97,20 +105,28 @@ public class TicketCheckinService : ITicketCheckinService
         if (booking.Showtime is not null && booking.Showtime.EndTime < DateTime.Now)
             return Result<BookingCheckinDTO>.Failure("Suất chiếu đã kết thúc, không thể check-in.");
 
+        // UPDATE có điều kiện từng vé ở DB (không ghi lại entity đã đọc ở trên) để
+        // chặn race condition với một request check-in khác trên cùng vé.
         var now = DateTime.Now;
+        var newlyCheckedIn = 0;
         foreach (var ticket in pending)
         {
-            ticket.Status = StatusCheckedIn;
-            ticket.ScanBy = staff.Id;
-            ticket.ScannedAt = now;
-            ticket.ScanByNavigation = staff; // để hiển thị tên người quét ngay
-            _unitOfWork.Tickets.Update(ticket);
+            if (await _unitOfWork.Tickets.TryCheckinAsync(ticket.Id, staff.Id, now))
+            {
+                ticket.Status = StatusCheckedIn;
+                ticket.ScanBy = staff.Id;
+                ticket.ScannedAt = now;
+                ticket.ScanByNavigation = staff; // để hiển thị tên người quét ngay
+                newlyCheckedIn++;
+            }
         }
-        await _unitOfWork.SaveChangesAsync();
+
+        if (newlyCheckedIn == 0)
+            return Result<BookingCheckinDTO>.Failure("Tất cả vé của đơn đã được check-in bởi thao tác khác.");
 
         var dto = MapBookingToDTO(booking);
-        dto.NewlyCheckedIn = pending.Count;
-        dto.Message = $"Đã check-in {pending.Count} vé. Tổng {dto.CheckedInCount}/{dto.TotalTickets} vé đã check-in.";
+        dto.NewlyCheckedIn = newlyCheckedIn;
+        dto.Message = $"Đã check-in {newlyCheckedIn} vé. Tổng {dto.CheckedInCount}/{dto.TotalTickets} vé đã check-in.";
         return Result<BookingCheckinDTO>.Success(dto);
     }
 

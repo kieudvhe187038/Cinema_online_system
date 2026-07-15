@@ -4,11 +4,13 @@
     var roles = ViewBag.Roles as IEnumerable<Cinema_System.Application.DTOs.RoleDTO>
         ?? new List<Cinema_System.Application.DTOs.RoleDTO>();
     var isActive = Model.Status == "Active";
+    Layout = "_AdminLayout";
 }
 
 @section Styles {
+    <link rel="stylesheet" href="~/css/site.css" />
     <style>
-        .ud-wrap { max-width: 880px; margin: 6rem auto 3rem; padding: 0 1.5rem; }
+        .ud-wrap { max-width: 880px; margin: 0 auto 3rem; padding: 0; }
         .ud-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
         .ud-title { font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: var(--on-surface); }
         .ud-alert { padding: .75rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: .9rem; }

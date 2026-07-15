@@ -32,6 +32,7 @@
         }
     </script>
 
+    <partial name="_DarkMode" />
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body class="bg-slate-50 text-slate-900 font-body antialiased">
@@ -40,38 +41,24 @@
     <header id="main-header" class="fixed top-0 w-full z-50 border-b border-slate-200 bg-white/95 backdrop-blur-xl shadow-sm">
         <div class="px-4 py-4 lg:px-8">
             <div class="mx-auto flex max-w-7xl items-center justify-between gap-4">
-                <div class="flex items-center gap-10">
-                    <a class="font-heading text-2xl font-black uppercase tracking-tight text-primary" asp-area="" asp-controller="Home" asp-action="Index">CineStar</a>
-                    <nav class="hidden items-center gap-8 lg:flex lg:flex-nowrap whitespace-nowrap">
+                <div class="flex items-center gap-5">
+                    <a class="font-heading text-2xl font-black uppercase tracking-tight text-primary shrink-0" asp-area="" asp-controller="Home" asp-action="Index">CineStar</a>
+                    <nav class="hidden items-center gap-5 lg:flex lg:flex-nowrap whitespace-nowrap">
                         <a class="text-sm font-semibold transition hover:text-primary @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "text-primary border-b-2 border-primary pb-1" : "text-slate-700")" asp-area="" asp-controller="Home" asp-action="Index">Trang Chủ</a>
                         <a class="text-sm font-semibold transition hover:text-primary @(ViewContext.RouteData.Values["controller"]?.ToString() == "Movies" ? "text-primary border-b-2 border-primary pb-1" : "text-slate-700")" asp-area="" asp-controller="Movies" asp-action="Index">Phim</a>
                         <a class="text-sm font-semibold transition hover:text-primary @(ViewContext.RouteData.Values["controller"]?.ToString() == "Showtime" ? "text-primary border-b-2 border-primary pb-1" : "text-slate-700")" asp-area="" asp-controller="Showtime" asp-action="Index">Lịch Chiếu</a>
-                        <a class="text-sm font-semibold transition hover:text-primary text-slate-700" href="#">Giá Vé</a>
-                        <a class="text-sm font-semibold transition hover:text-primary text-slate-700" href="#">Khuyến Mãi</a>
-                        <a class="text-sm font-semibold transition hover:text-primary text-slate-700" href="#">Tin Điện Ảnh</a>
-                        <a class="text-sm font-semibold transition hover:text-primary text-slate-700">Hỗ Trợ</a>
                         <a class="text-sm font-semibold transition hover:text-primary @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" && ViewContext.RouteData.Values["action"]?.ToString() == "Info" ? "text-primary border-b-2 border-primary pb-1" : "text-slate-700")" asp-area="" asp-controller="Home" asp-action="Info">Thông tin rạp</a>
-                        @if (User.IsInRole("STAFF") || User.IsInRole("MANAGER") || User.IsInRole("ADMIN"))
-                        {
-                            <a class="text-sm font-semibold text-primary transition hover:text-primary-dark" asp-controller="RoomManagement" asp-action="Index">Quản Lý Phòng</a>
-                        }
-                        @if (User.IsInRole("STAFF"))
-                        {
-                            <a class="text-sm font-semibold text-primary transition hover:text-primary-dark" asp-controller="StaffCounter" asp-action="Index">Đặt Vé Tại Quầy</a>
-                            <a class="text-sm font-semibold text-primary transition hover:text-primary-dark" asp-controller="StaffBooking" asp-action="Index">Đơn Hàng</a>
-                            <a class="text-sm font-semibold text-primary transition hover:text-primary-dark" asp-controller="StaffCheckin" asp-action="Index">Check-in Vé</a>
-                            <a class="text-sm font-semibold text-primary transition hover:text-primary-dark" asp-controller="StaffCounter" asp-action="Member">Tra Cứu Thành Viên</a>
-                        }
                     </nav>
                 </div>
-                <div class="flex items-center gap-3 whitespace-nowrap">
-                    <form asp-controller="Movies" asp-action="Search" method="get" class="hidden relative lg:block">
+                <div class="flex shrink-0 items-center gap-3 whitespace-nowrap">
+                    <form asp-controller="Movies" asp-action="Search" method="get" class="hidden relative xl:block">
                         <input type="hidden" name="tab" value="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Movies" ? (Context.Request.Query["tab"].ToString() ?? "now") : "now")" />
                         <input id="movie-search-input" type="text" name="find" maxlength="100" pattern="^[\p{L}\p{N}\s]+$" title="Từ khóa tìm kiếm tối đa 100 ký tự, không chứa ký tự đặc biệt." value="@(ViewData["SearchKeyword"] ?? string.Empty)" placeholder="Tìm kiếm phim" class="w-72 rounded-full border border-slate-200 bg-slate-100 py-2 pl-4 pr-11 text-sm text-slate-800 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
                         <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500" aria-label="Tìm kiếm">
                             <span class="material-symbols-outlined">search</span>
                         </button>
                     </form>
+                    <partial name="_DarkModeToggle" />
                     @if (User.Identity?.IsAuthenticated == true)
                     {
                         // Tên + email + avatar đọc từ Claims (đặt khi đăng nhập) -> không truy vấn DB ở header.
@@ -122,7 +109,19 @@
                                 <nav class="py-1 text-sm">
                                     @if (User.IsInRole("MANAGER"))
                                     {
-                                        <a asp-controller="MovieManagement" asp-action="Index" class="flex items-center gap-3 border-b border-slate-100 px-4 py-2.5 font-semibold text-primary transition hover:bg-primary/5">
+                                        <a asp-controller="Dashboard" asp-action="Index" class="flex items-center gap-3 border-b border-slate-100 px-4 py-2.5 font-semibold text-primary transition hover:bg-primary/5">
+                                            <span class="material-symbols-outlined text-[20px]">dashboard</span> Khu quản lý
+                                        </a>
+                                    }
+                                    @if (User.IsInRole("ADMIN"))
+                                    {
+                                        <a asp-controller="AdminDashboard" asp-action="Index" class="flex items-center gap-3 border-b border-slate-100 px-4 py-2.5 font-semibold text-primary transition hover:bg-primary/5">
+                                            <span class="material-symbols-outlined text-[20px]">dashboard</span> Khu quản trị
+                                        </a>
+                                    }
+                                    @if (User.IsInRole("STAFF"))
+                                    {
+                                        <a asp-controller="RoomManagement" asp-action="Index" class="flex items-center gap-3 border-b border-slate-100 px-4 py-2.5 font-semibold text-primary transition hover:bg-primary/5">
                                             <span class="material-symbols-outlined text-[20px]">dashboard</span> Khu quản lý
                                         </a>
                                     }

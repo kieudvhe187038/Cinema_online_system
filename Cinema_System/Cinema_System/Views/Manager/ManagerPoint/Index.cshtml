@@ -1,11 +1,13 @@
 @model PointRateViewModel
 @{
     ViewData["Title"] = "Quản Lý Tỉ Lệ Tích Điểm";
+    Layout = "_ManagerLayout";
 }
 
 @section Styles {
+    <link rel="stylesheet" href="~/css/site.css" />
     <style>
-        .pm-wrap { max-width: 760px; margin: 6rem auto 3rem; padding: 0 1.5rem; }
+        .pm-wrap { max-width: 760px; margin: 0 auto 3rem; padding: 0; }
         .pm-title { font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: var(--on-surface); margin-bottom: .35rem; }
         .pm-sub { color: var(--on-surface-variant); margin-bottom: 1.5rem; }
         .pm-alert { padding: .75rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: .9rem; }
