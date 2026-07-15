@@ -25,7 +25,12 @@
         </div>
         <div id="support-messages" class="flex h-[62vh] flex-col gap-3 overflow-y-auto bg-slate-50 p-4 text-sm text-slate-800">
             <div class="self-start max-w-[86%] rounded-[28px] border border-slate-200 bg-white px-4 py-4 text-slate-900 shadow-sm">
-                Xin chào! Tôi là trợ lý hỗ trợ CineStar. Bạn có thể hỏi về đặt vé, lịch chiếu, khuyến mãi, tài khoản hoặc quy định xem phim.
+                Xin chào! Tôi là trợ lý hỗ trợ CineStar. Bạn có thể hỏi về đặt vé, lịch chiếu, khuyến mãi hoặc <strong>tìm phim</strong> — tôi sẽ gợi ý kèm liên kết để bạn bấm xem ngay.
+            </div>
+            <div id="support-suggestions" class="flex flex-wrap gap-2">
+                <button type="button" class="support-chip rounded-full border border-primary/30 bg-white px-3 py-1.5 text-xs font-medium text-primary transition hover:bg-primary hover:text-white" data-query="Có phim nào đang chiếu?">🎬 Phim đang chiếu</button>
+                <button type="button" class="support-chip rounded-full border border-primary/30 bg-white px-3 py-1.5 text-xs font-medium text-primary transition hover:bg-primary hover:text-white" data-query="Sắp có phim gì mới?">🍿 Phim sắp chiếu</button>
+                <button type="button" class="support-chip rounded-full border border-primary/30 bg-white px-3 py-1.5 text-xs font-medium text-primary transition hover:bg-primary hover:text-white" data-query="Gợi ý cho tôi vài phim hành động hay">💥 Gợi ý phim hành động</button>
             </div>
         </div>
         <div class="border-t border-slate-100 bg-white p-3">
@@ -86,9 +91,20 @@
                 });
             }
 
+            // Chỉ cho phép liên kết nội bộ an toàn: /Movies/Details/<slug>
+            function isSafeMoviePath(url) {
+                return /^\/Movies\/Details\/[\w\-]+\/?$/i.test(url);
+            }
+
             function formatMessageText(text) {
                 if (!text) return '';
                 let formatted = escapeHtml(text);
+                // Liên kết phim [Tên phim](/Movies/Details/slug) -> thẻ bấm được, chỉ nhận đường dẫn nội bộ
+                formatted = formatted.replace(/\[([^\]]+)\]\((\/[^)\s]+)\)/g, function (m, label, url) {
+                    if (!isSafeMoviePath(url)) return label;
+                    return '<a href="' + url + '" class="support-movie-link inline-flex items-center gap-1 font-semibold text-primary underline decoration-primary/40 underline-offset-2 hover:decoration-primary">'
+                        + '<span class="material-symbols-outlined text-[15px] leading-none">local_movies</span>' + label + '</a>';
+                });
                 formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
                 formatted = formatted.replace(/\n\n+/g, '<br><br>');
                 formatted = formatted.replace(/\n/g, '<br>');
@@ -108,9 +124,12 @@
                 messages.scrollTop = messages.scrollHeight;
             }
 
-            async function sendMessage() {
-                const text = input.value.trim();
+            const suggestions = document.getElementById('support-suggestions');
+
+            async function sendMessage(preset) {
+                const text = (preset != null ? preset : input.value).trim();
                 if (!text) return;
+                if (suggestions) suggestions.remove();
                 appendMessage('user', text);
                 input.value = '';
 
@@ -138,8 +157,14 @@
                 }
             }
 
-            sendBtn?.addEventListener('click', sendMessage);
+            sendBtn?.addEventListener('click', () => sendMessage());
             input?.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); sendMessage(); } });
+
+            // Chip gợi ý: bấm để gửi câu hỏi tìm phim có sẵn
+            suggestions?.addEventListener('click', function (e) {
+                const chip = e.target.closest('.support-chip');
+                if (chip) sendMessage(chip.getAttribute('data-query'));
+            });
         })();
     </script>
 </div>

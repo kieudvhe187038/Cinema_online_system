@@ -38,6 +38,31 @@ PRINT N'[A] Da dat mat khau "Admin@123" cho admin/manager1/staff1@cinemaweb.vn';
 GO
 
 -- #######################################################################################
+-- A2) Tài khoản người dùng User1@cinemaweb.vn (role CUSTOMER, mật khẩu Admin@123)
+--     Idempotent: chưa có thì INSERT, đã có thì UPDATE lại mật khẩu về Admin@123.
+-- #######################################################################################
+DECLARE @custHash VARCHAR(255) = '$2a$10$spiC4CGfKOTsfXpOkVTK1OJtsH0PeuKkrzu.td9jClj.6DTiCbBRi';
+DECLARE @custRoleId uniqueidentifier =
+    (SELECT TOP 1 id FROM Roles WHERE name = N'CUSTOMER');
+
+IF EXISTS (SELECT 1 FROM [Users] WHERE [email] = 'User1@cinemaweb.vn')
+BEGIN
+    UPDATE [Users]
+    SET [password_hash] = @custHash,
+        [status]        = N'Active',
+        [updated_at]    = GETDATE()
+    WHERE [email] = 'User1@cinemaweb.vn';
+    PRINT N'[A2] Da dat lai mat khau "Admin@123" cho User1@cinemaweb.vn';
+END
+ELSE
+BEGIN
+    INSERT INTO [Users] ([id],[role_id],[full_name],[email],[phone],[date_of_birth],[password_hash],[reward_points],[status],[created_at])
+    VALUES (NEWID(), @custRoleId, N'Nguyễn Văn Người Dùng', 'User1@cinemaweb.vn', '0912100001', '2000-01-01 00:00:00', @custHash, 0, N'Active', GETDATE());
+    PRINT N'[A2] Da tao User1@cinemaweb.vn (CUSTOMER, mat khau "Admin@123")';
+END
+GO
+
+-- #######################################################################################
 -- B) SEED: Đặt vé tại quầy (#39 Counter Ticket Booking)
 --    Idempotent: chạy nhiều lần không tạo trùng.
 --    Mục tiêu: có >= 1 phim với suất chiếu TƯƠNG LAI (status='Scheduled'),
