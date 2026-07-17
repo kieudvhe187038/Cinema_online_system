@@ -15,26 +15,56 @@
                 <div class="carousel-container relative overflow-hidden">
                     <!-- Đây là khung chứa slider, chiều cao responsive theo viewport -->
                     <div class="relative w-full h-[48vh] sm:h-[52vh] md:h-[56vh] lg:h-[60vh] xl:h-[64vh] min-h-[320px]">
-                        <!-- Slide 1 -->
-                        <div class="carousel-slide absolute inset-0 opacity-100 transition-opacity duration-700 ease-in-out">
-                            <a href="#" class="block h-full w-full">
-                                <img src="/images/banner1.png" class="w-full h-full object-cover" />
-                            </a>
-                        </div>
-
-                        <!-- Slide 2 -->
-                        <div class="carousel-slide absolute inset-0 opacity-0 transition-opacity duration-700 ease-in-out">
-                            <a href="#" class="block h-full w-full">
-                                <img src="/images/banner2.png" class="w-full h-full object-cover" />
-                            </a>
-                        </div>
-
-                        <!-- Slide 3 -->
-                        <div class="carousel-slide absolute inset-0 opacity-0 transition-opacity duration-700 ease-in-out">
-                            <a href="#" class="block h-full w-full">
-                                <img src="/images/banner3.png" class="w-full h-full object-cover" />
-                            </a>
-                        </div>
+                        @* 3 phim hot (đang chiếu) làm banner; có ảnh + nút Đặt vé dẫn tới trang suất chiếu của phim. *@
+                        @{
+                            var hotMovies = Model.NowShowingMovies.Take(3).ToList();
+                        }
+                        @if (hotMovies.Any())
+                        {
+                            for (var i = 0; i < hotMovies.Count; i++)
+                            {
+                                var m = hotMovies[i];
+                                var slideImg = MediaUrl.Banner(m.BannerUrl) ?? MediaUrl.Poster(m.PosterUrl)
+                                    ?? $"https://placehold.co/1280x640?text={Uri.EscapeDataString(m.Title)}";
+                                <div class="carousel-slide absolute inset-0 @(i == 0 ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none") transition-opacity duration-700 ease-in-out">
+                                    <img src="@slideImg" alt="@m.Title" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/1280x640?text=Phim'" />
+                                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/35 to-transparent"></div>
+                                    <div class="absolute inset-x-0 bottom-0 p-6 sm:p-10 lg:p-14">
+                                        <div class="max-w-2xl space-y-4">
+                                            <span class="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
+                                                <span class="material-symbols-outlined text-sm">local_fire_department</span>Đang chiếu
+                                            </span>
+                                            <h2 class="text-2xl font-extrabold leading-tight text-white drop-shadow sm:text-4xl lg:text-5xl">@m.Title</h2>
+                                            <div class="flex flex-wrap items-center gap-3 text-sm text-slate-200">
+                                                @if (!string.IsNullOrEmpty(m.AgeRating))
+                                                {
+                                                    <span class="rounded bg-white/20 px-2 py-0.5 font-semibold">@m.AgeRating</span>
+                                                }
+                                                @if (m.DurationMinutes.HasValue)
+                                                {
+                                                    <span class="inline-flex items-center gap-1"><span class="material-symbols-outlined text-base">schedule</span>@m.DurationMinutes phút</span>
+                                                }
+                                            </div>
+                                            @if (!string.IsNullOrWhiteSpace(m.Description))
+                                            {
+                                                <p class="max-w-xl text-sm leading-relaxed text-slate-200/90 line-clamp-2 sm:text-base">@m.Description</p>
+                                            }
+                                            <a asp-controller="Showtime" asp-action="Index" asp-route-movieId="@m.Id"
+                                               class="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-primary to-orange-600 px-7 py-3 text-base font-bold text-white shadow-lg shadow-primary/40 transition hover:scale-105 active:scale-95">
+                                                <span class="material-symbols-outlined">confirmation_number</span>Đặt vé ngay
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            @* Chưa có phim đang chiếu -> giữ banner tĩnh mặc định. *@
+                            <div class="carousel-slide absolute inset-0 opacity-100 transition-opacity duration-700 ease-in-out"><img src="/images/banner1.png" class="w-full h-full object-cover" /></div>
+                            <div class="carousel-slide absolute inset-0 opacity-0 transition-opacity duration-700 ease-in-out"><img src="/images/banner2.png" class="w-full h-full object-cover" /></div>
+                            <div class="carousel-slide absolute inset-0 opacity-0 transition-opacity duration-700 ease-in-out"><img src="/images/banner3.png" class="w-full h-full object-cover" /></div>
+                        }
                     </div>
 
                     <!-- Navigation Buttons -->
@@ -47,9 +77,11 @@
 
                     <!-- Indicators -->
                     <div class="absolute inset-x-0 bottom-6 flex justify-center gap-2 z-10">
-                        <span class="carousel-dot h-2 w-2 rounded-full bg-white/80 cursor-pointer transition hover:bg-white active" data-slide="0"></span>
-                        <span class="carousel-dot h-2 w-2 rounded-full bg-white/50 cursor-pointer transition hover:bg-white" data-slide="1"></span>
-                        <span class="carousel-dot h-2 w-2 rounded-full bg-white/50 cursor-pointer transition hover:bg-white" data-slide="2"></span>
+                        @{ var dotCount = hotMovies.Any() ? hotMovies.Count : 3; }
+                        @for (var i = 0; i < dotCount; i++)
+                        {
+                            <span class="carousel-dot h-2 w-2 rounded-full @(i == 0 ? "bg-white/80 active" : "bg-white/50") cursor-pointer transition hover:bg-white" data-slide="@i"></span>
+                        }
                     </div>
                 </div>
             </div>
@@ -119,8 +151,8 @@
 
             function showSlide(n) {
                 slides.forEach(slide => {
-                    slide.classList.remove('opacity-100');
-                    slide.classList.add('opacity-0');
+                    slide.classList.remove('opacity-100', 'pointer-events-auto');
+                    slide.classList.add('opacity-0', 'pointer-events-none');
                 });
                 dots.forEach(dot => {
                     if (dot.getAttribute('data-slide') == n) {
@@ -133,8 +165,8 @@
                 });
                 if (n >= slides.length) currentSlide = 0;
                 if (n < 0) currentSlide = slides.length - 1;
-                slides[currentSlide].classList.remove('opacity-0');
-                slides[currentSlide].classList.add('opacity-100');
+                slides[currentSlide].classList.remove('opacity-0', 'pointer-events-none');
+                slides[currentSlide].classList.add('opacity-100', 'pointer-events-auto');
             }
 
             function nextSlide() {
