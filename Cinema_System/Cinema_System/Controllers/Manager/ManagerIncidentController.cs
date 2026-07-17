@@ -12,10 +12,12 @@ namespace Cinema_System.Controllers.Manager
     public class ManagerIncidentController : Controller
     {
         private readonly IShowtimeIncidentService _incidentService;
+        private readonly IAuditLogWriter _audit;
 
-        public ManagerIncidentController(IShowtimeIncidentService incidentService)
+        public ManagerIncidentController(IShowtimeIncidentService incidentService, IAuditLogWriter audit)
         {
             _incidentService = incidentService;
+            _audit = audit;
         }
 
         // Lấy Id manager đang đăng nhập từ Claims
@@ -34,6 +36,9 @@ namespace Cinema_System.Controllers.Manager
         public async Task<IActionResult> Restore(Guid showtimeId, string? scope)
         {
             var result = await _incidentService.RestoreShowtimeAsync(showtimeId);
+            if (result.Succeeded)
+                await _audit.LogAsync("RESTORE_SHOWTIME", "Showtimes", showtimeId);
+
             TempData[result.Succeeded ? "Success" : "Error"] =
                 result.Succeeded ? "Đã khôi phục suất chiếu về trạng thái Đã lên lịch." : result.Error;
             return RedirectToAction(nameof(Index), new { scope });
@@ -71,6 +76,9 @@ namespace Cinema_System.Controllers.Manager
                 return View(await RebuildAsync());
             }
 
+            await _audit.LogAsync("DECLARE_INCIDENT", "ShowtimeIncidents",
+                newValue: new { form.ShowtimeId, form.RefundPointsRate, form.CancelShowtime });
+
             TempData["Success"] = "Đã khai báo sự cố và hoàn điểm cho khách hàng.";
             return RedirectToAction(nameof(Index));
         }
@@ -107,6 +115,9 @@ namespace Cinema_System.Controllers.Manager
                 ModelState.AddModelError(string.Empty, result.Error!);
                 return View(await RebuildAsync());
             }
+
+            await _audit.LogAsync("MAINTAIN_ROOM", "Rooms", form.RoomId,
+                newValue: new { form.FromTime, form.ToTime, form.RefundPointsRate });
 
             TempData["Success"] = result.Data;
             return RedirectToAction(nameof(Index));

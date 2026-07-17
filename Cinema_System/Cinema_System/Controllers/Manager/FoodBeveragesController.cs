@@ -11,15 +11,17 @@ public class FoodBeveragesController : Controller
 {
     private readonly IFoodBeverageService _fbService;
     private readonly IWebHostEnvironment _env;
+    private readonly IAuditLogWriter _audit;
 
     private const long MaxUploadBytes = 10 * 1024 * 1024; // giới hạn request
     private const long MaxImageBytes = 2 * 1024 * 1024;   // mỗi ảnh tối đa 2MB
     private static readonly string[] ImageExts = { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
 
-    public FoodBeveragesController(IFoodBeverageService fbService, IWebHostEnvironment env)
+    public FoodBeveragesController(IFoodBeverageService fbService, IWebHostEnvironment env, IAuditLogWriter audit)
     {
         _fbService = fbService;
         _env = env;
+        _audit = audit;
     }
 
     [HttpGet("")]
@@ -56,6 +58,9 @@ public class FoodBeveragesController : Controller
             return View(model);
         }
 
+        await _audit.LogAsync("CREATE_FOOD", "Food_Beverages",
+            newValue: new { model.Name, model.Price, model.StockStatus });
+
         TempData["Success"] = "Thêm món thành công.";
         return RedirectToAction(nameof(Index));
     }
@@ -88,6 +93,9 @@ public class FoodBeveragesController : Controller
             return View(model);
         }
 
+        await _audit.LogAsync("UPDATE_FOOD", "Food_Beverages", model.Id,
+            newValue: new { model.Name, model.Price, model.StockStatus });
+
         TempData["Success"] = "Cập nhật món thành công.";
         return RedirectToAction(nameof(Index));
     }
@@ -98,6 +106,9 @@ public class FoodBeveragesController : Controller
     public async Task<IActionResult> ToggleVisibility(Guid id)
     {
         var result = await _fbService.ToggleVisibilityAsync(id);
+        if (result.Succeeded)
+            await _audit.LogAsync("TOGGLE_FOOD_VISIBILITY", "Food_Beverages", id);
+
         TempData[result.Succeeded ? "Success" : "Error"] =
             result.Succeeded ? "Đã cập nhật trạng thái hiển thị." : result.Error;
         return RedirectToAction(nameof(Index));
@@ -113,7 +124,11 @@ public class FoodBeveragesController : Controller
 
         var result = await _fbService.DeleteAsync(id);
         if (result.Succeeded)
+        {
             DeleteFile(item?.ImageUrl);
+            await _audit.LogAsync("DELETE_FOOD", "Food_Beverages", id,
+                oldValue: item is null ? null : new { item.Name, item.Price });
+        }
 
         TempData[result.Succeeded ? "Success" : "Error"] =
             result.Succeeded ? "Đã xóa món khỏi menu." : result.Error;

@@ -10,10 +10,12 @@ namespace Cinema_System.Controllers.Staff;
 public class StaffCheckinController : Controller
 {
     private readonly ITicketCheckinService _checkinService;
+    private readonly IAuditLogWriter _audit;
 
-    public StaffCheckinController(ITicketCheckinService checkinService)
+    public StaffCheckinController(ITicketCheckinService checkinService, IAuditLogWriter audit)
     {
         _checkinService = checkinService;
+        _audit = audit;
     }
 
     // Lấy Id nhân viên đang đăng nhập từ Claims (LoginController set ClaimTypes.NameIdentifier khi đăng nhập).
@@ -52,18 +54,22 @@ public class StaffCheckinController : Controller
         if (await _checkinService.LookupAsync(qr) is not null)
         {
             var result = await _checkinService.CheckinAsync(qr, GetCurrentStaffId());
-            return result.Succeeded
-                ? Json(new { success = true, mode = "ticket", ticket = result.Data })
-                : Json(new { success = false, error = result.Error });
+            if (!result.Succeeded)
+                return Json(new { success = false, error = result.Error });
+
+            await _audit.LogAsync("CHECKIN_TICKET", "Tickets", newValue: new { qr });
+            return Json(new { success = true, mode = "ticket", ticket = result.Data });
         }
 
         // Mã đơn?
         if (await _checkinService.LookupBookingAsync(qr) is not null)
         {
             var result = await _checkinService.CheckinBookingAsync(qr, GetCurrentStaffId());
-            return result.Succeeded
-                ? Json(new { success = true, mode = "booking", booking = result.Data })
-                : Json(new { success = false, error = result.Error });
+            if (!result.Succeeded)
+                return Json(new { success = false, error = result.Error });
+
+            await _audit.LogAsync("CHECKIN_BOOKING", "Bookings", newValue: new { qr });
+            return Json(new { success = true, mode = "booking", booking = result.Data });
         }
 
         return Json(new { success = false, error = "Không tìm thấy vé hoặc đơn với mã này." });

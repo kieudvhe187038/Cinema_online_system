@@ -10,10 +10,12 @@ namespace Cinema_System.Controllers.Admin;
 public class AdminUserController : Controller
 {
     private readonly IUserService _userService;
+    private readonly IAuditLogWriter _audit;
 
-    public AdminUserController(IUserService userService)
+    public AdminUserController(IUserService userService, IAuditLogWriter audit)
     {
         _userService = userService;
+        _audit = audit;
     }
 
     [HttpGet("")]
@@ -61,6 +63,9 @@ public class AdminUserController : Controller
             return View(model);
         }
 
+        await _audit.LogAsync("UPDATE_USER", "Users", model.Id,
+            newValue: new { model.FullName, model.Email, model.Phone, model.DateOfBirth });
+
         TempData["Success"] = "Cập nhật thông tin người dùng thành công.";
         return RedirectToAction(nameof(Details), new { id = model.Id });
     }
@@ -70,6 +75,10 @@ public class AdminUserController : Controller
     public async Task<IActionResult> ToggleStatus(Guid id, bool active)
     {
         var result = await _userService.SetStatusAsync(id, active);
+        if (result.Succeeded)
+            await _audit.LogAsync(active ? "UNLOCK_USER" : "LOCK_USER", "Users", id,
+                newValue: new { active });
+
         TempData[result.Succeeded ? "Success" : "Error"] =
             result.Succeeded
                 ? (active ? "Đã kích hoạt tài khoản." : "Đã vô hiệu hóa tài khoản.")
@@ -83,6 +92,9 @@ public class AdminUserController : Controller
     public async Task<IActionResult> AssignRole(Guid id, Guid roleId)
     {
         var result = await _userService.AssignRoleAsync(id, roleId);
+        if (result.Succeeded)
+            await _audit.LogAsync("ASSIGN_ROLE", "Users", id, newValue: new { roleId });
+
         TempData[result.Succeeded ? "Success" : "Error"] =
             result.Succeeded ? "Đã cập nhật vai trò." : result.Error;
 
@@ -99,6 +111,9 @@ public class AdminUserController : Controller
             TempData["Error"] = result.Error;
             return RedirectToAction(nameof(Details), new { id });
         }
+
+        // KHÔNG ghi mật khẩu tạm vào audit log.
+        await _audit.LogAsync("RESET_PASSWORD", "Users", id);
 
         TempData["TempPassword"] = result.Data;
         TempData["Success"] = "Đã đặt lại mật khẩu. Vui lòng gửi mật khẩu tạm cho người dùng.";
