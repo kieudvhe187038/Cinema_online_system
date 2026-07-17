@@ -11,16 +11,18 @@ public class MovieManagementController : Controller
 {
     private readonly IMovieService _movieService;
     private readonly IWebHostEnvironment _env;
+    private readonly IAuditLogWriter _audit;
 
     // Giới hạn request 10MB (đủ chỗ cho cả poster + banner); mỗi ảnh tối đa 2MB.
     private const long MaxUploadBytes = 10 * 1024 * 1024;
     private const long MaxImageBytes = 2 * 1024 * 1024;
     private static readonly string[] ImageExts = { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
 
-    public MovieManagementController(IMovieService movieService, IWebHostEnvironment env)
+    public MovieManagementController(IMovieService movieService, IWebHostEnvironment env, IAuditLogWriter audit)
     {
         _movieService = movieService;
         _env = env;
+        _audit = audit;
     }
 
     [HttpGet("")]
@@ -65,6 +67,9 @@ public class MovieManagementController : Controller
             return View(model);
         }
 
+        await _audit.LogAsync("CREATE_MOVIE", "Movies",
+            newValue: new { model.Title, model.Status, model.ReleaseDate });
+
         TempData["Success"] = "Thêm phim thành công.";
         return RedirectToAction(nameof(Index));
     }
@@ -102,6 +107,9 @@ public class MovieManagementController : Controller
             return View(model);
         }
 
+        await _audit.LogAsync("UPDATE_MOVIE", "Movies", model.Id,
+            newValue: new { model.Title, model.Status, model.ReleaseDate });
+
         TempData["Success"] = "Cập nhật phim thành công.";
         return RedirectToAction(nameof(Index));
     }
@@ -112,6 +120,9 @@ public class MovieManagementController : Controller
     public async Task<IActionResult> ToggleStatus(Guid id)
     {
         var result = await _movieService.ToggleStatusAsync(id);
+        if (result.Succeeded)
+            await _audit.LogAsync("TOGGLE_MOVIE_STATUS", "Movies", id);
+
         TempData[result.Succeeded ? "Success" : "Error"] =
             result.Succeeded ? "Đã cập nhật trạng thái phim." : result.Error;
         return RedirectToAction(nameof(Index));

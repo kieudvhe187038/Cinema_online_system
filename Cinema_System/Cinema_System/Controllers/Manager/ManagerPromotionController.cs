@@ -11,10 +11,12 @@ namespace Cinema_System.Controllers.Manager;
 public class ManagerPromotionController : Controller
 {
     private readonly IPromotionService _promotionService;
+    private readonly IAuditLogWriter _audit;
 
-    public ManagerPromotionController(IPromotionService promotionService)
+    public ManagerPromotionController(IPromotionService promotionService, IAuditLogWriter audit)
     {
         _promotionService = promotionService;
+        _audit = audit;
     }
 
     [HttpGet("")]
@@ -47,6 +49,9 @@ public class ManagerPromotionController : Controller
             return View(model);
         }
 
+        await _audit.LogAsync("CREATE_PROMOTION", "Promotions",
+            newValue: new { model.Code, model.DiscountType, model.DiscountAmount });
+
         TempData["Success"] = "Tạo voucher thành công.";
         return RedirectToAction(nameof(Index));
     }
@@ -75,6 +80,9 @@ public class ManagerPromotionController : Controller
             return View(model);
         }
 
+        await _audit.LogAsync("UPDATE_PROMOTION", "Promotions", model.Id,
+            newValue: new { model.Code, model.DiscountType, model.DiscountAmount });
+
         TempData["Success"] = "Cập nhật voucher thành công.";
         return RedirectToAction(nameof(Index));
     }
@@ -85,6 +93,9 @@ public class ManagerPromotionController : Controller
     public async Task<IActionResult> ToggleStatus(Guid id)
     {
         var result = await _promotionService.ToggleStatusAsync(id);
+        if (result.Succeeded)
+            await _audit.LogAsync("TOGGLE_PROMOTION_STATUS", "Promotions", id);
+
         TempData[result.Succeeded ? "Success" : "Error"] =
             result.Succeeded ? "Đã cập nhật trạng thái voucher." : result.Error;
         return RedirectToAction(nameof(Index));
@@ -96,6 +107,9 @@ public class ManagerPromotionController : Controller
     public async Task<IActionResult> Delete(Guid id)
     {
         var result = await _promotionService.DeleteAsync(id);
+        if (result.Succeeded)
+            await _audit.LogAsync("DELETE_PROMOTION", "Promotions", id);
+
         TempData[result.Succeeded ? "Success" : "Error"] =
             result.Succeeded ? "Đã xóa voucher." : result.Error;
         return RedirectToAction(nameof(Index));

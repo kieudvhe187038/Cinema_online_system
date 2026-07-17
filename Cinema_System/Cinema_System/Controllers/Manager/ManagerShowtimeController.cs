@@ -13,10 +13,12 @@ namespace Cinema_System.Controllers.Manager;
 public class ManagerShowtimeController : Controller
 {
     private readonly IShowtimeScheduleService _showtimeService;
+    private readonly IAuditLogWriter _audit;
 
-    public ManagerShowtimeController(IShowtimeScheduleService showtimeService)
+    public ManagerShowtimeController(IShowtimeScheduleService showtimeService, IAuditLogWriter audit)
     {
         _showtimeService = showtimeService;
+        _audit = audit;
     }
 
     /// <summary>
@@ -133,6 +135,9 @@ public class ManagerShowtimeController : Controller
             return View(model);
         }
 
+        await _audit.LogAsync("CREATE_SHOWTIME", "Showtimes",
+            newValue: new { model.MovieId, model.RoomId, model.StartTime, model.EndTime });
+
         TempData["Success"] = "Thêm suất chiếu thành công.";
         return RedirectToAction(nameof(Calendar));
     }
@@ -170,6 +175,9 @@ public class ManagerShowtimeController : Controller
             return View(model);
         }
 
+        await _audit.LogAsync("UPDATE_SHOWTIME", "Showtimes", model.Id,
+            newValue: new { model.MovieId, model.RoomId, model.StartTime, model.EndTime, model.Status });
+
         TempData["Success"] = "Cập nhật suất chiếu thành công.";
         return RedirectToAction(nameof(Calendar));
     }
@@ -182,6 +190,9 @@ public class ManagerShowtimeController : Controller
     public async Task<IActionResult> Delete(Guid id)
     {
         var result = await _showtimeService.DeleteAsync(id);
+        if (result.Succeeded)
+            await _audit.LogAsync("DELETE_SHOWTIME", "Showtimes", id);
+
         TempData[result.Succeeded ? "Success" : "Error"] =
             result.Succeeded ? "Đã xóa suất chiếu." : result.Error;
         return RedirectToAction(nameof(Calendar));
@@ -195,6 +206,9 @@ public class ManagerShowtimeController : Controller
     public async Task<IActionResult> Cancel(Guid id)
     {
         var result = await _showtimeService.CancelAsync(id);
+        if (result.Succeeded)
+            await _audit.LogAsync("CANCEL_SHOWTIME", "Showtimes", id);
+
         TempData[result.Succeeded ? "Success" : "Error"] =
             result.Succeeded ? "Đã hủy suất chiếu." : result.Error;
         return RedirectToAction(nameof(Calendar));

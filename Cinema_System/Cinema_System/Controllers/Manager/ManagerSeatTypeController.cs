@@ -10,10 +10,12 @@ namespace Cinema_System.Controllers.Manager;
 public class ManagerSeatTypeController : Controller
 {
     private readonly ISeatTypeService _seatTypeService;
+    private readonly IAuditLogWriter _audit;
 
-    public ManagerSeatTypeController(ISeatTypeService seatTypeService)
+    public ManagerSeatTypeController(ISeatTypeService seatTypeService, IAuditLogWriter audit)
     {
         _seatTypeService = seatTypeService;
+        _audit = audit;
     }
 
     [HttpGet("")]
@@ -43,6 +45,9 @@ public class ManagerSeatTypeController : Controller
             return View(model);
         }
 
+        await _audit.LogAsync("CREATE_SEAT_TYPE", "Seat_Types",
+            newValue: new { model.Name, model.Capacity });
+
         TempData["Success"] = "Thêm loại ghế thành công.";
         return RedirectToAction(nameof(Index));
     }
@@ -70,6 +75,9 @@ public class ManagerSeatTypeController : Controller
             return View(model);
         }
 
+        await _audit.LogAsync("UPDATE_SEAT_TYPE", "Seat_Types", model.Id,
+            newValue: new { model.Name, model.Capacity });
+
         TempData["Success"] = "Cập nhật loại ghế thành công.";
         return RedirectToAction(nameof(Index));
     }
@@ -79,6 +87,9 @@ public class ManagerSeatTypeController : Controller
     public async Task<IActionResult> Delete(Guid id)
     {
         var result = await _seatTypeService.DeleteAsync(id);
+        if (result.Succeeded)
+            await _audit.LogAsync("DELETE_SEAT_TYPE", "Seat_Types", id);
+
         TempData[result.Succeeded ? "Success" : "Error"] =
             result.Succeeded ? "Đã xóa loại ghế." : result.Error;
 

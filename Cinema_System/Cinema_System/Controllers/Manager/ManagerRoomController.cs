@@ -11,10 +11,12 @@ namespace Cinema_System.Controllers.Manager;
 public class ManagerRoomController : Controller
 {
     private readonly IRoomService _roomService;
+    private readonly IAuditLogWriter _audit;
 
-    public ManagerRoomController(IRoomService roomService)
+    public ManagerRoomController(IRoomService roomService, IAuditLogWriter audit)
     {
         _roomService = roomService;
+        _audit = audit;
     }
 
     [HttpGet("")]
@@ -48,6 +50,9 @@ public class ManagerRoomController : Controller
             return View(model);
         }
 
+        await _audit.LogAsync("CREATE_ROOM", "Rooms",
+            newValue: new { model.Name, model.RoomTypeId, model.TotalRow, model.TotalColumns });
+
         TempData["Success"] = "Thêm phòng chiếu thành công. Hãy bố trí sơ đồ ghế cho phòng.";
         return RedirectToAction(nameof(Index));
     }
@@ -79,6 +84,9 @@ public class ManagerRoomController : Controller
             return View(model);
         }
 
+        await _audit.LogAsync("UPDATE_ROOM", "Rooms", model.Id,
+            newValue: new { model.Name, model.RoomTypeId, model.Status });
+
         TempData["Success"] = result.Data ?? "Cập nhật phòng chiếu thành công.";
         return RedirectToAction(nameof(Index));
     }
@@ -88,6 +96,9 @@ public class ManagerRoomController : Controller
     public async Task<IActionResult> Delete(Guid id)
     {
         var result = await _roomService.DeleteAsync(id);
+        if (result.Succeeded)
+            await _audit.LogAsync("DELETE_ROOM", "Rooms", id);
+
         TempData[result.Succeeded ? "Success" : "Error"] =
             result.Succeeded ? "Đã xóa phòng chiếu." : result.Error;
 

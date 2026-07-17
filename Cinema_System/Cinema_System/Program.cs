@@ -73,6 +73,9 @@ builder.Services.AddScoped<IPointConfigService, PointConfigService>();
 builder.Services.AddScoped<IShowtimeIncidentService, ShowtimeIncidentService>();
 builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+// Ghi Audit_Logs tại các endpoint quản trị (cần IHttpContextAccessor để lấy user + IP).
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IAuditLogWriter, AuditLogWriter>();
 builder.Services.AddScoped<ISeatTypeService, SeatTypeService>();
 builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
 builder.Services.AddScoped<IRoomService, RoomService>();

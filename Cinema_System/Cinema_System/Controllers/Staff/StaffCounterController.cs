@@ -15,15 +15,18 @@ public class StaffCounterController : Controller
     private readonly ICounterBookingService _counterBookingService;
     private readonly IBookingManagementService _bookingService;
     private readonly IMemberService _memberService;
+    private readonly IAuditLogWriter _audit;
 
     public StaffCounterController(
         ICounterBookingService counterBookingService,
         IBookingManagementService bookingService,
-        IMemberService memberService)
+        IMemberService memberService,
+        IAuditLogWriter audit)
     {
         _counterBookingService = counterBookingService;
         _bookingService = bookingService;
         _memberService = memberService;
+        _audit = audit;
     }
 
     // Lấy Id nhân viên đang đăng nhập từ Claims (LoginController set ClaimTypes.NameIdentifier khi đăng nhập).
@@ -85,6 +88,9 @@ public class StaffCounterController : Controller
             TempData["Error"] = result.Error;
             return RedirectToAction(nameof(Index));
         }
+
+        await _audit.LogAsync("CREATE_COUNTER_BOOKING", "Bookings", result.Data,
+            newValue: new { request.ShowtimeId });
 
         TempData["Success"] = BookingSuccessMessage;
         return RedirectToAction(nameof(Ticket), new { id = result.Data });
