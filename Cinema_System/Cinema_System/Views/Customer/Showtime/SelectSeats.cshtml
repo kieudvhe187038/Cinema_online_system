@@ -38,7 +38,7 @@
             <div class="hidden h-28 w-20 shrink-0 overflow-hidden rounded-lg bg-slate-100 sm:block">
                 @if (!string.IsNullOrEmpty(Model.MoviePosterUrl))
                 {
-                    <img src="@Model.MoviePosterUrl" alt="@Model.MovieTitle" class="h-full w-full object-cover" onerror="this.style.display='none'" />
+                    <img src="@MediaUrl.Poster(Model.MoviePosterUrl)" alt="@Model.MovieTitle" class="h-full w-full object-cover" onerror="this.style.display='none'" />
                 }
             </div>
             <div>

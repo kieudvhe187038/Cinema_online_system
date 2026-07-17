@@ -128,7 +128,7 @@
                         <td class="px-4 py-3.5 border-b border-gray-100 text-sm align-middle">
                             @if (!string.IsNullOrEmpty(movie.PosterUrl))
                             {
-                                <img class="w-[42px] h-[60px] object-cover rounded block" src="@movie.PosterUrl" alt="@movie.Title"
+                                <img class="w-[42px] h-[60px] object-cover rounded block" src="@MediaUrl.Poster(movie.PosterUrl)" alt="@movie.Title"
                                      onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
                                 <div class="w-[42px] h-[60px] bg-gray-100 rounded items-center justify-center text-[.6rem] text-gray-400 text-center" style="display:none">Chưa có ảnh</div>
                             }

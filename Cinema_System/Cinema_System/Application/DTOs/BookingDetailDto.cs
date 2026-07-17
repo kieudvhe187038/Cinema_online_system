@@ -8,6 +8,7 @@
         // Phim + suất
         public string MovieTitle { get; set; } = string.Empty;
         public string? PosterUrl { get; set; }
+        public string? BannerUrl { get; set; }
         public string? AgeRating { get; set; }
         public int? DurationMinutes { get; set; }
         public DateTime StartTime { get; set; }

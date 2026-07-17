@@ -22,7 +22,8 @@
             @foreach (var item in Model.Items)
             {
                 <li class="flex items-center gap-4 py-4">
-                    <img src="@(string.IsNullOrEmpty(item.PosterUrl) ? "https://placehold.co/60x84?text=Phim" : item.PosterUrl)"
+                    <img src="@(MediaUrl.Poster(item.PosterUrl) ?? "https://placehold.co/60x84?text=Phim")"
+                         onerror="this.src='https://placehold.co/60x84?text=Phim'"
                          class="h-21 w-16 rounded-lg object-cover bg-gray-100" style="height:84px;width:60px" alt="poster" />
 
                     <div class="min-w-0 flex-1">

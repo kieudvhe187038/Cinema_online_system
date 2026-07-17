@@ -107,7 +107,7 @@
                     <div class="hidden h-40 w-28 shrink-0 overflow-hidden rounded-xl bg-slate-100 sm:block">
                         @if (!string.IsNullOrEmpty(group.Key.MoviePosterUrl))
                         {
-                            <img src="@group.Key.MoviePosterUrl" alt="@group.Key.MovieTitle" class="h-full w-full object-cover"
+                            <img src="@MediaUrl.Poster(group.Key.MoviePosterUrl)" alt="@group.Key.MovieTitle" class="h-full w-full object-cover"
                                  onerror="this.style.display='none'" />
                         }
                     </div>

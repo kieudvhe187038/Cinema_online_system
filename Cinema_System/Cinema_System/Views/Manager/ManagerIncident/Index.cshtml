@@ -81,7 +81,8 @@
                         <tr class="border-b border-gray-50">
                             <td class="py-3">
                                 <div class="flex items-center gap-3">
-                                    <img src="@(string.IsNullOrEmpty(s.PosterUrl) ? "https://placehold.co/40x56?text=Phim" : s.PosterUrl)"
+                                    <img src="@(MediaUrl.Poster(s.PosterUrl) ?? "https://placehold.co/40x56?text=Phim")"
+                                         onerror="this.src='https://placehold.co/40x56?text=Phim'"
                                          class="h-14 w-10 rounded object-cover bg-gray-100" alt="poster" />
                                     <div>
                                         <p class="font-semibold text-secondary-dark">@s.MovieTitle</p>

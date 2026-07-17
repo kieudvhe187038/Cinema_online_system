@@ -23,7 +23,7 @@
                         @if (!string.IsNullOrEmpty(movie.PosterUrl))
                         {
                             <div class="relative h-64 overflow-hidden bg-slate-200">
-                                <img src="@movie.PosterUrl" alt="@movie.Title" 
+                                <img src="@MediaUrl.Poster(movie.PosterUrl)" alt="@movie.Title"
                                      class="h-full w-full object-cover transition group-hover:scale-110" />
                                 <div class="absolute inset-0 bg-black/40 opacity-0 transition group-hover:opacity-100 flex items-center justify-center">
                                     <span class="text-white font-semibold">Đánh giá phim</span>

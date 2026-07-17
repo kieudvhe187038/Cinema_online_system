@@ -20,6 +20,7 @@ namespace Cinema_System.Application.Mappings
             CreateMap<Booking, BookingDetailDto>()
                 .ForMember(d => d.MovieTitle, o => o.MapFrom(s => s.Showtime.Movie.Title))
                 .ForMember(d => d.PosterUrl, o => o.MapFrom(s => s.Showtime.Movie.PosterUrl))
+                .ForMember(d => d.BannerUrl, o => o.MapFrom(s => s.Showtime.Movie.BannerUrl))
                 .ForMember(d => d.AgeRating, o => o.MapFrom(s => s.Showtime.Movie.AgeRating))
                 .ForMember(d => d.DurationMinutes, o => o.MapFrom(s => s.Showtime.Movie.DurationMinutes))
                 .ForMember(d => d.StartTime, o => o.MapFrom(s => s.Showtime.StartTime))

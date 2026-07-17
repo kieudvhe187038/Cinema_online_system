@@ -121,7 +121,7 @@
                     <label asp-for="PosterFile" class="@fieldLabel"></label>
                     @if (!string.IsNullOrEmpty(Model.PosterUrl))
                     {
-                        <img src="@Model.PosterUrl" alt="Poster hiện tại" class="w-24 h-36 object-cover rounded-lg mb-2 border border-[#e0c0b2]" />
+                        <img src="@MediaUrl.Poster(Model.PosterUrl)" alt="Poster hiện tại" class="w-24 h-36 object-cover rounded-lg mb-2 border border-[#e0c0b2]" />
                     }
                     <input asp-for="PosterFile" type="file" accept="image/*" class="@fileInput" />
                     <span asp-validation-for="PosterFile" class="@fieldError"></span>
@@ -131,7 +131,7 @@
                     <label asp-for="BannerFile" class="@fieldLabel"></label>
                     @if (!string.IsNullOrEmpty(Model.BannerUrl))
                     {
-                        <img src="@Model.BannerUrl" alt="Banner hiện tại" class="w-full h-24 object-cover rounded-lg mb-2 border border-[#e0c0b2]" />
+                        <img src="@MediaUrl.Banner(Model.BannerUrl)" alt="Banner hiện tại" class="w-full h-24 object-cover rounded-lg mb-2 border border-[#e0c0b2]" />
                     }
                     <input asp-for="BannerFile" type="file" accept="image/*" class="@fileInput" />
                     <span asp-validation-for="BannerFile" class="@fieldError"></span>
