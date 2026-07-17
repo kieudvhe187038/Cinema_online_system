@@ -68,18 +68,5 @@ namespace Cinema_System.Controllers.Staff
             TempData[result.Succeeded ? "Success" : "Error"] = result.Succeeded ? result.Data : result.Error;
             return RedirectToAction(nameof(Seats), new { roomId });
         }
-
-        // Đổi trạng thái ghế (mở <-> hỏng) rồi quay lại sơ đồ, kèm thông báo kết quả
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ToggleSeat(Guid seatId, Guid roomId)
-        {
-            var result = await _roomService.ToggleSeatStatusAsync(seatId);
-            if (result.Succeeded)
-                await _audit.LogAsync("TOGGLE_SEAT_STATUS", "Seats", seatId, newValue: new { roomId });
-
-            TempData[result.Succeeded ? "Success" : "Error"] = result.Succeeded ? result.Data : result.Error;
-            return RedirectToAction(nameof(Seats), new { roomId });
-        }
     }
 }
