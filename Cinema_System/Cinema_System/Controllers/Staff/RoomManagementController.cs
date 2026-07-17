@@ -13,11 +13,13 @@ namespace Cinema_System.Controllers.Staff
     {
         private readonly IRoomManagementService _roomService;
         private readonly IMapper _mapper;
+        private readonly IAuditLogWriter _audit;
 
-        public RoomManagementController(IRoomManagementService roomService, IMapper mapper)
+        public RoomManagementController(IRoomManagementService roomService, IMapper mapper, IAuditLogWriter audit)
         {
             _roomService = roomService;
             _mapper = mapper;
+            _audit = audit;
         }
 
         // Xem toàn bộ phòng chiếu
@@ -60,6 +62,9 @@ namespace Cinema_System.Controllers.Staff
         public async Task<IActionResult> ToggleRoomStatus(Guid roomId)
         {
             var result = await _roomService.ToggleRoomStatusAsync(roomId);
+            if (result.Succeeded)
+                await _audit.LogAsync("TOGGLE_ROOM_STATUS", "Rooms", roomId);
+
             TempData[result.Succeeded ? "Success" : "Error"] = result.Succeeded ? result.Data : result.Error;
             return RedirectToAction(nameof(Seats), new { roomId });
         }
@@ -70,6 +75,9 @@ namespace Cinema_System.Controllers.Staff
         public async Task<IActionResult> ToggleSeat(Guid seatId, Guid roomId)
         {
             var result = await _roomService.ToggleSeatStatusAsync(seatId);
+            if (result.Succeeded)
+                await _audit.LogAsync("TOGGLE_SEAT_STATUS", "Seats", seatId, newValue: new { roomId });
+
             TempData[result.Succeeded ? "Success" : "Error"] = result.Succeeded ? result.Data : result.Error;
             return RedirectToAction(nameof(Seats), new { roomId });
         }

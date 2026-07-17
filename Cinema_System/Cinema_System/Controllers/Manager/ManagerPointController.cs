@@ -10,10 +10,12 @@ namespace Cinema_System.Controllers.Manager;
 public class ManagerPointController : Controller
 {
     private readonly IPointConfigService _pointConfigService;
+    private readonly IAuditLogWriter _audit;
 
-    public ManagerPointController(IPointConfigService pointConfigService)
+    public ManagerPointController(IPointConfigService pointConfigService, IAuditLogWriter audit)
     {
         _pointConfigService = pointConfigService;
+        _audit = audit;
     }
 
     [HttpGet("")]
@@ -36,6 +38,9 @@ public class ManagerPointController : Controller
             ModelState.AddModelError(string.Empty, result.Error!);
             return View(model);
         }
+
+        await _audit.LogAsync("UPDATE_POINT_RATE", "SystemConfig",
+            newValue: new { model.Rate });
 
         TempData["Success"] = "Cập nhật tỉ lệ tích điểm thành công.";
         return RedirectToAction(nameof(Index));

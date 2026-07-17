@@ -11,11 +11,22 @@ namespace Cinema_System.Controllers.Manager;
 public class ManagerPriceController : Controller
 {
     private readonly IPriceService _priceService;
+    private readonly IAuditLogWriter _audit;
 
-    public ManagerPriceController(IPriceService priceService)
+    public ManagerPriceController(IPriceService priceService, IAuditLogWriter audit)
     {
         _priceService = priceService;
+        _audit = audit;
     }
+
+    // Tên bảng DB tương ứng với từng loại cấu hình giá (dùng cho audit log).
+    private static string PriceTable(string kind) => kind switch
+    {
+        PriceKind.Room => "Price_Room_Type_Configs",
+        PriceKind.Seat => "Price_Seat_Configs",
+        PriceKind.Time => "Price_Time_Configs",
+        _ => "Price_Base_Configs"
+    };
 
     [HttpGet("")]
     // Màn quản lý giá: 4 nhóm cấu hình (giá cơ bản / phụ thu phòng / ghế / giờ) theo tab, có phân trang.
@@ -52,6 +63,9 @@ public class ManagerPriceController : Controller
             await _priceService.PopulateOptionsAsync(model);
             return View(model);
         }
+
+        await _audit.LogAsync("CREATE_PRICE", PriceTable(kind),
+            newValue: new { kind, model.EffectiveFrom });
 
         TempData["Success"] = $"Đã thêm cấu hình {PriceKind.Label(kind).ToLowerInvariant()}.";
         return RedirectToAction(nameof(Index), new { tab = kind });
@@ -91,6 +105,9 @@ public class ManagerPriceController : Controller
             return View(model);
         }
 
+        await _audit.LogAsync("UPDATE_PRICE", PriceTable(kind), id,
+            newValue: new { kind, model.EffectiveFrom });
+
         TempData["Success"] = $"Đã cập nhật cấu hình {PriceKind.Label(kind).ToLowerInvariant()}.";
         return RedirectToAction(nameof(Index), new { tab = kind });
     }
@@ -101,6 +118,9 @@ public class ManagerPriceController : Controller
     public async Task<IActionResult> Delete(string kind, Guid id)
     {
         var result = await _priceService.DeleteAsync(kind, id);
+        if (result.Succeeded)
+            await _audit.LogAsync("DELETE_PRICE", PriceTable(kind), id, newValue: new { kind });
+
         TempData[result.Succeeded ? "Success" : "Error"] =
             result.Succeeded ? "Đã ngừng áp dụng cấu hình giá." : result.Error;
         return RedirectToAction(nameof(Index), new { tab = kind });

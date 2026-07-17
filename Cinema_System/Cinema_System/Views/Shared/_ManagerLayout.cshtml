@@ -85,6 +85,16 @@
             <span class="material-symbols-outlined">meeting_room</span>
             <span>Phòng Chiếu</span>
         </a>
+        <a class="@navBase @(ctrl == "ManagerRoomType" ? navActive : navIdle)"
+           asp-controller="ManagerRoomType" asp-action="Index">
+            <span class="material-symbols-outlined">category</span>
+            <span>Loại Phòng</span>
+        </a>
+        <a class="@navBase @(ctrl == "ManagerSeatType" ? navActive : navIdle)"
+           asp-controller="ManagerSeatType" asp-action="Index">
+            <span class="material-symbols-outlined">event_seat</span>
+            <span>Loại Ghế</span>
+        </a>
         <a class="@navBase @(ctrl == "ManagerShowtime" ? navActive : navIdle)"
            asp-controller="ManagerShowtime" asp-action="Calendar">
             <span class="material-symbols-outlined">schedule</span>
@@ -117,6 +127,11 @@
            asp-controller="ManagerVat" asp-action="Index">
             <span class="material-symbols-outlined">receipt_long</span>
             <span>Quản Lý VAT</span>
+        </a>
+        <a class="@navBase @(ctrl == "ManagerPoint" ? navActive : navIdle)"
+           asp-controller="ManagerPoint" asp-action="Index">
+            <span class="material-symbols-outlined">stars</span>
+            <span>Tỉ Lệ Tích Điểm</span>
         </a>
         <a class="@navBase @navIdle" href="#">
             <span class="material-symbols-outlined">settings</span>

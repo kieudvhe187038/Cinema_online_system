@@ -1,11 +1,13 @@
 @model UserListViewModel
 @{
     ViewData["Title"] = "Quản Lý Người Dùng";
+    Layout = "_AdminLayout";
 }
 
 @section Styles {
+    <link rel="stylesheet" href="~/css/site.css" />
     <style>
-        .um-wrap { max-width: 1280px; margin: 6rem auto 3rem; padding: 0 1.5rem; }
+        .um-wrap { max-width: 1280px; margin: 0 auto 3rem; padding: 0; }
         .um-title { font-family: var(--font-head); font-size: 1.75rem; font-weight: 800; color: var(--on-surface); margin-bottom: 1.5rem; }
         .um-alert { padding: .75rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: .9rem; }
         .um-alert.success { background: #e7f5ec; color: #166534; border: 1px solid #16653433; }

@@ -1,17 +1,21 @@
 using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Cinema_System.Controllers.Manager;
 
 [Route("Manager/Vat")]
+[Authorize(Roles = "MANAGER")]
 public class ManagerVatController : Controller
 {
     private readonly IVatService _vatService;
+    private readonly IAuditLogWriter _audit;
 
-    public ManagerVatController(IVatService vatService)
+    public ManagerVatController(IVatService vatService, IAuditLogWriter audit)
     {
         _vatService = vatService;
+        _audit = audit;
     }
 
     [HttpGet("")]
@@ -41,6 +45,9 @@ public class ManagerVatController : Controller
             return View(model);
         }
 
+        await _audit.LogAsync("CREATE_VAT", "VAT",
+            newValue: new { model.VatRate, model.Status });
+
         TempData["Success"] = "Tạo cấu hình VAT thành công.";
         return RedirectToAction(nameof(Index));
     }
@@ -67,6 +74,9 @@ public class ManagerVatController : Controller
             return View(model);
         }
 
+        await _audit.LogAsync("UPDATE_VAT", "VAT", model.Id,
+            newValue: new { model.VatRate, model.Status });
+
         TempData["Success"] = "Cập nhật cấu hình VAT thành công.";
         return RedirectToAction(nameof(Index));
     }
@@ -76,6 +86,9 @@ public class ManagerVatController : Controller
     public async Task<IActionResult> ToggleStatus(Guid id)
     {
         var result = await _vatService.ToggleStatusAsync(id);
+        if (result.Succeeded)
+            await _audit.LogAsync("TOGGLE_VAT_STATUS", "VAT", id);
+
         TempData[result.Succeeded ? "Success" : "Error"] =
             result.Succeeded ? "Đã cập nhật trạng thái VAT." : result.Error;
         return RedirectToAction(nameof(Index));
@@ -86,6 +99,9 @@ public class ManagerVatController : Controller
     public async Task<IActionResult> Delete(Guid id)
     {
         var result = await _vatService.DeleteAsync(id);
+        if (result.Succeeded)
+            await _audit.LogAsync("DELETE_VAT", "VAT", id);
+
         TempData[result.Succeeded ? "Success" : "Error"] =
             result.Succeeded ? "Đã xóa cấu hình VAT." : result.Error;
         return RedirectToAction(nameof(Index));

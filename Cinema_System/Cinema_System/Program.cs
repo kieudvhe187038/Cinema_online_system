@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.Mappings;
 using Cinema_System.Application.Services;
@@ -5,6 +6,7 @@ using Cinema_System.Helpers;
 using Cinema_System.Infrastructure.Data;
 using Cinema_System.Infrastructure.Email;
 using Cinema_System.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Mvc.Razor;
@@ -70,6 +72,10 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IPointConfigService, PointConfigService>();
 builder.Services.AddScoped<IShowtimeIncidentService, ShowtimeIncidentService>();
 builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+// Ghi Audit_Logs tại các endpoint quản trị (cần IHttpContextAccessor để lấy user + IP).
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IAuditLogWriter, AuditLogWriter>();
 builder.Services.AddScoped<ISeatTypeService, SeatTypeService>();
 builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
@@ -104,6 +110,40 @@ var authBuilder = builder.Services.AddAuthentication(CookieAuthenticationDefault
         options.AccessDeniedPath = "/access-denied";
         options.ExpireTimeSpan = TimeSpan.FromDays(15);
         options.SlidingExpiration = true;
+
+        // Cookie sống tới 15 ngày (sliding) nên vai trò/trạng thái ghi trong cookie có thể
+        // cũ hơn DB rất nhiều. Đối chiếu lại mỗi request: tài khoản bị khóa -> đăng xuất
+        // ngay; đổi vai trò -> phát hành lại claim Role mới mà không cần đăng nhập lại.
+        options.Events.OnValidatePrincipal = async context =>
+        {
+            var idClaim = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (idClaim is null || !Guid.TryParse(idClaim, out var userId))
+            {
+                context.RejectPrincipal();
+                await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return;
+            }
+
+            var unitOfWork = context.HttpContext.RequestServices.GetRequiredService<IUnitOfWork>();
+            var user = await unitOfWork.Users.GetByIdWithRoleAsync(userId);
+
+            if (user is null || !string.Equals(user.Status, "Active", StringComparison.OrdinalIgnoreCase))
+            {
+                context.RejectPrincipal();
+                await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return;
+            }
+
+            var cookieRole = context.Principal!.FindFirstValue(ClaimTypes.Role);
+            if (!string.Equals(cookieRole, user.Role?.Name, StringComparison.Ordinal))
+            {
+                var identity = (ClaimsIdentity)context.Principal!.Identity!;
+                var oldRoleClaim = identity.FindFirst(ClaimTypes.Role);
+                if (oldRoleClaim is not null) identity.RemoveClaim(oldRoleClaim);
+                identity.AddClaim(new Claim(ClaimTypes.Role, user.Role?.Name ?? string.Empty));
+                context.ShouldRenew = true;
+            }
+        };
     });
 
 // Đăng nhập Google (chỉ bật khi đã cấu hình ClientId/ClientSecret trong .env).
