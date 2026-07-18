@@ -67,6 +67,53 @@
     {
         heroBannerUrl = heroBannerUrl.Contains("banner") ? $"/banner/{heroBannerUrl}" : $"/images/{heroBannerUrl}";
     }
+
+    // Trạng thái phát hành tiếng Việt
+    var statusText = "Đang cập nhật";
+    var statusColorClass = "text-slate-600";
+    var dotColorClass = "bg-slate-500";
+    var pingColorClass = "";
+    var hasPing = false;
+
+    if (!string.IsNullOrEmpty(Model.Movie.Status))
+    {
+        switch (Model.Movie.Status)
+        {
+            case "Now Showing":
+                statusText = "Đang chiếu";
+                statusColorClass = "text-emerald-600";
+                dotColorClass = "bg-emerald-500";
+                pingColorClass = "bg-emerald-400";
+                hasPing = true;
+                break;
+            case "Coming Soon":
+                statusText = "Sắp chiếu";
+                statusColorClass = "text-orange-600";
+                dotColorClass = "bg-orange-500";
+                pingColorClass = "bg-orange-400";
+                hasPing = false;
+                break;
+            case "Special":
+                statusText = "Suất chiếu đặc biệt";
+                statusColorClass = "text-purple-600";
+                dotColorClass = "bg-purple-500";
+                pingColorClass = "bg-purple-400";
+                hasPing = true;
+                break;
+            case "Stopped":
+                statusText = "Ngừng chiếu";
+                statusColorClass = "text-slate-500";
+                dotColorClass = "bg-slate-400";
+                hasPing = false;
+                break;
+            default:
+                statusText = Model.Movie.Status;
+                statusColorClass = "text-slate-600";
+                dotColorClass = "bg-slate-500";
+                hasPing = false;
+                break;
+        }
+    }
 }
 
 <div class="min-h-screen bg-slate-50 text-slate-900 font-body antialiased">
@@ -362,12 +409,15 @@
                             <span class="material-symbols-outlined text-slate-500 mt-0.5">info</span>
                             <div>
                                 <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Trạng thái phát hành</p>
-                                <p class="inline-flex items-center gap-2 text-sm font-bold text-emerald-600 mt-1">
-                                    <span class="relative flex h-2 w-2">
-                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                <p class="inline-flex items-center gap-2 text-sm font-bold @statusColorClass mt-1">
+                                    <span class="relative flex h-2 w-2 items-center justify-center">
+                                        @if (hasPing)
+                                        {
+                                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full @pingColorClass opacity-75"></span>
+                                        }
+                                        <span class="relative inline-flex rounded-full h-2 w-2 @dotColorClass"></span>
                                     </span>
-                                    @(string.IsNullOrEmpty(Model.Movie.Status) ? "Đang cập nhật" : Model.Movie.Status)
+                                    @statusText
                                 </p>
                             </div>
                         </div>
