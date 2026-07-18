@@ -44,11 +44,16 @@ public class BookingController : Controller
         return View(vm);
     }
 
-    // Chi tiết 1 đơn đặt vé
+    // Chi tiết 1 đơn đặt vé. Lọc theo user ở service -> đổi Id sang đơn người khác sẽ ra null.
+    // Khi không có: quay về Lịch sử đặt vé kèm thông báo (giữ trong layout web, không rơi ra trang lỗi mặc định).
     public async Task<IActionResult> Detail(Guid id)
     {
         var detail = await _bookingService.GetBookingDetailAsync(id, GetCurrentUserId());
-        if (detail == null) return NotFound("Không tìm thấy đơn đặt vé");
+        if (detail == null)
+        {
+            TempData["Error"] = "Không tìm thấy đơn đặt vé, hoặc đơn này không thuộc về bạn.";
+            return RedirectToAction(nameof(History));
+        }
 
         var vm = _mapper.Map<BookingDetailViewModel>(detail);
         return View(vm);
@@ -58,7 +63,11 @@ public class BookingController : Controller
     public async Task<IActionResult> ETicket(Guid id)
     {
         var detail = await _bookingService.GetBookingDetailAsync(id, GetCurrentUserId());
-        if (detail == null) return NotFound("Không tìm thấy đơn đặt vé");
+        if (detail == null)
+        {
+            TempData["Error"] = "Không tìm thấy đơn đặt vé, hoặc đơn này không thuộc về bạn.";
+            return RedirectToAction(nameof(History));
+        }
 
         var vm = _mapper.Map<BookingDetailViewModel>(detail);
         return View(vm);
