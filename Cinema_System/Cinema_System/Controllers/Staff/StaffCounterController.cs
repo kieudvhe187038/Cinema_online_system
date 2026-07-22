@@ -86,6 +86,9 @@ public class StaffCounterController : Controller
         if (!result.Succeeded)
         {
             TempData["Error"] = result.Error;
+            // Giữ lại lựa chọn của nhân viên để trang không bị reset (mất phim + suất chiếu đang chọn).
+            TempData["RestoreMovieId"] = Request.Form["MovieId"].ToString();
+            TempData["RestoreShowtimeId"] = request.ShowtimeId.ToString();
             return RedirectToAction(nameof(Index));
         }
 

@@ -63,6 +63,16 @@
         <div class="ct-staff">Nhân viên: <strong>@Model.ActingStaffName</strong></div>
     </div>
 
+    <style>
+        /* Chặn số tiền dài làm tràn viền khung "Thông tin đơn" */
+        .ct-sumrow { align-items: flex-start; gap: .5rem; }
+        .ct-sumrow > span:first-child { flex: 0 0 auto; }
+        .ct-sumrow > span:last-child { text-align: right; min-width: 0; overflow-wrap: anywhere; word-break: break-word; }
+        .ct-alert { overflow-wrap: anywhere; }
+        #cashReceived { width: 100%; max-width: 100%; box-sizing: border-box; }
+        .ct-cashwarn { color: #c0392b; font-size: .8rem; margin-top: .35rem; line-height: 1.35; overflow-wrap: anywhere; }
+    </style>
+
     @if (TempData["Error"] != null)
     {
         <div class="ct-alert error">@TempData["Error"]</div>
@@ -160,7 +170,8 @@
 
             <div id="cashBox">
                 <label class="ct-lbl">Tiền khách đưa</label>
-                <input type="number" id="cashReceived" class="ct-input" min="0" value="0" />
+                <input type="number" id="cashReceived" class="ct-input" min="0" max="100000000" step="1000" value="0" inputmode="numeric" />
+                <div id="cashWarn" class="ct-cashwarn" style="display:none;"></div>
                 <div class="ct-sumrow"><span>Tiền thối</span><span id="changeAmount">0 đ</span></div>
             </div>
 
@@ -183,9 +194,8 @@
 
         const fmt = n => (Math.round(n)).toLocaleString('vi-VN') + ' đ';
 
-        // --- Bước 1: chọn phim → tải suất chiếu ---
-        $('#movieSelect').on('change', function () {
-            const movieId = this.value;
+        // --- Bước 1: chọn phim → tải suất chiếu (tách hàm để khôi phục được sau khi submit lỗi) ---
+        function loadShowtimes(movieId, autoSelectId) {
             resetSeats();
             $('#seatCard,#foodCard').hide();
             const $list = $('#showtimeList');
@@ -202,8 +212,15 @@
                         .html('<div class="t">' + t + '</div><div class="m">' + s.roomName + ' · ' + (s.roomType||'') + ' · còn ' + s.availableSeats + ' ghế</div>')
                         .appendTo($list);
                 });
+                // Chọn lại đúng suất chiếu cũ (khôi phục sau khi submit lỗi)
+                if (autoSelectId) {
+                    const $btn = $list.find('.ct-show[data-id="' + autoSelectId + '"]');
+                    if ($btn.length) $btn.trigger('click');
+                }
             });
-        });
+        }
+
+        $('#movieSelect').on('change', function () { loadShowtimes(this.value); });
 
         // --- Bước 1b: chọn suất → tải sơ đồ ghế ---
         $('#showtimeList').on('click', '.ct-show', function () {
@@ -308,6 +325,27 @@
             $('#changeAmount').text(fmt(Math.max(0, cash - grand)));
 
             window._grandTotal = grand;
+            checkCash();
+        }
+
+        // --- Kiểm tra tiền khách đưa: chặn số quá lớn, cảnh báo khi lớn bất thường ---
+        const MAX_CASH = 100000000; // 100.000.000 đ cho 1 giao dịch tại quầy
+
+        function checkCash() {
+            const cash = parseFloat($('#cashReceived').val()) || 0;
+            const grand = window._grandTotal || 0;
+            const $w = $('#cashWarn');
+
+            if (cash > MAX_CASH) {
+                $w.text('Số tiền khách đưa quá lớn (tối đa ' + fmt(MAX_CASH) + '). Vui lòng nhập lại.').show();
+                return false;
+            }
+            if (grand > 0 && cash > grand * 10) {
+                $w.text('Số tiền khách đưa lớn bất thường so với tổng cần thu (' + fmt(grand) + '). Vui lòng kiểm tra lại.').show();
+                return true; // chỉ cảnh báo, vẫn cho thanh toán
+            }
+            $w.hide().text('');
+            return true;
         }
 
         // --- Submit ---
@@ -321,9 +359,15 @@
             if (method === 'Cash' && cash < (window._grandTotal || 0)) {
                 alert('Tiền khách đưa không đủ.'); return;
             }
+            if (method === 'Cash' && cash > MAX_CASH) {
+                alert('Số tiền khách đưa quá lớn (tối đa ' + fmt(MAX_CASH) + '). Vui lòng nhập lại.');
+                $('#cashReceived').focus();
+                return;
+            }
 
             const $f = $('#formFields').empty();
             const add = (n, v) => $('<input type="hidden">').attr('name', n).val(v).appendTo($f);
+            add('MovieId', $('#movieSelect').val());   // gửi kèm để khôi phục lựa chọn nếu lưu lỗi
             add('ShowtimeId', selectedShowtimeId);
             seatIds.forEach(id => add('SeatIds', id));
             let fi = 0;
@@ -343,5 +387,13 @@
 
         function resetSeats() { selectedSeats = {}; recalc(); }
         recalc();
+
+        // --- Khôi phục phim + suất chiếu sau khi submit lỗi (tránh mất lịch chiếu đang chọn) ---
+        const RESTORE_MOVIE_ID = '@(TempData["RestoreMovieId"])';
+        const RESTORE_SHOWTIME_ID = '@(TempData["RestoreShowtimeId"])';
+        if (RESTORE_MOVIE_ID) {
+            $('#movieSelect').val(RESTORE_MOVIE_ID);
+            loadShowtimes(RESTORE_MOVIE_ID, RESTORE_SHOWTIME_ID);
+        }
     </script>
 }
