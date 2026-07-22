@@ -36,8 +36,28 @@ public class ShowtimeService : IShowtimeService
         var today = DateOnly.FromDateTime(now);
 
         // Chỉ cho xem lịch từ hiện tại đến tương lai: ép ngày đã chọn về hôm nay nếu nằm trong quá khứ.
+        // autoPick = true khi vào trang mà chưa chỉ định ngày (vd bấm "Mua vé" từ trang chủ).
+        var autoPick = date is null;
         var selectedDate = date ?? today;
         if (selectedDate < today) selectedDate = today;
+
+        // Khi chưa chọn ngày: nhảy tới ngày gần nhất (trong 14 ngày tới) chắc chắn có suất chiếu
+        // theo đúng bộ lọc hiện tại — để bấm "Mua vé" luôn thấy giờ chiếu thay vì trang trống.
+        if (autoPick)
+        {
+            var windowEnd = today.AddDays(14).ToDateTime(TimeOnly.MinValue);
+            var upcoming = await _unitOfWork.Showtimes.GetAllAsync(
+                predicate: s =>
+                    s.StartTime >= now && s.StartTime < windowEnd &&
+                    (movieId == null || s.MovieId == movieId) &&
+                    (genreId == null || s.Movie.Genres.Any(g => g.Id == genreId)) &&
+                    (ageRating == null || s.Movie.AgeRating == ageRating) &&
+                    (roomTypeId == null || s.Room.RoomTypeId == roomTypeId) &&
+                    s.Status != "Cancelled",
+                orderBy: q => q.OrderBy(s => s.StartTime));
+            var first = upcoming.FirstOrDefault();
+            if (first != null) selectedDate = DateOnly.FromDateTime(first.StartTime);
+        }
 
         var dayEnd = selectedDate.ToDateTime(TimeOnly.MinValue).AddDays(1);
         // Mốc bắt đầu: nếu là hôm nay thì chỉ lấy suất từ thời điểm hiện tại trở đi (bỏ suất đã qua trong ngày).
