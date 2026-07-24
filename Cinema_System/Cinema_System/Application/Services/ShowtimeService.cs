@@ -151,6 +151,44 @@ public class ShowtimeService : IShowtimeService
         };
     }
 
+    // Kiểm tra khách có đủ tuổi đặt vé theo phân loại độ tuổi của phim (P/C13/C16/C18...).
+    public async Task<Result> CheckAgeRestrictionAsync(Guid showtimeId, Guid userId)
+    {
+        var showtime = (await _unitOfWork.Showtimes.GetAllAsync(
+            predicate: s => s.Id == showtimeId,
+            include: q => q.Include(s => s.Movie))).FirstOrDefault();
+        if (showtime is null) return Result.Success();   // suất không tồn tại -> để caller xử lý sau
+
+        var minAge = MinAgeFromRating(showtime.Movie.AgeRating);
+        if (minAge <= 0) return Result.Success();         // phim không giới hạn độ tuổi
+
+        var user = await _unitOfWork.Users.GetByIdAsync(userId);
+        if (user is null) return Result.Success();
+
+        var age = CalcAge(user.DateOfBirth, DateTime.Today);
+        if (age < minAge)
+            return Result.Failure($"Phim này được phân loại {showtime.Movie.AgeRating} (từ {minAge} tuổi trở lên). Bạn chưa đủ tuổi để đặt vé.");
+
+        return Result.Success();
+    }
+
+    // Suy ra tuổi tối thiểu từ nhãn phân loại: lấy số trong nhãn (C13->13, C16->16, C18->18); không có số (P) -> 0.
+    private static int MinAgeFromRating(string? rating)
+    {
+        if (string.IsNullOrWhiteSpace(rating)) return 0;
+        var digits = new string(rating.Where(char.IsDigit).ToArray());
+        return int.TryParse(digits, out var n) ? n : 0;
+    }
+
+    // Tính tuổi (đủ năm) từ ngày sinh tới hôm nay.
+    private static int CalcAge(DateOnly dob, DateTime today)
+    {
+        var t = DateOnly.FromDateTime(today);
+        var age = t.Year - dob.Year;
+        if (dob > t.AddYears(-age)) age--;   // chưa tới sinh nhật năm nay thì trừ 1
+        return age;
+    }
+
     // Lấy sơ đồ ghế cho 1 suất chiếu, đánh dấu trạng thái từng ghế.
     public async Task<SeatSelectionViewModel?> GetSeatSelectionAsync(Guid showtimeId, Guid? currentUserId = null)
     {
