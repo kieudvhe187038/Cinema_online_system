@@ -16,6 +16,14 @@
 
 <div class="mx-auto max-w-7xl space-y-8 px-4 py-10 sm:px-6 lg:px-8">
 
+    @if (TempData["Error"] is string errorMsg && !string.IsNullOrEmpty(errorMsg))
+    {
+        <div class="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+            <span class="material-symbols-outlined text-[20px]">error</span>
+            <span>@errorMsg</span>
+        </div>
+    }
+
     <div>
         <h1 class="font-heading text-3xl font-black uppercase tracking-tight text-tertiary">Lịch Chiếu Phim</h1>
         <p class="mt-1 text-sm text-slate-500">Xem suất chiếu theo phim, thể loại, độ tuổi và loại phòng.</p>
