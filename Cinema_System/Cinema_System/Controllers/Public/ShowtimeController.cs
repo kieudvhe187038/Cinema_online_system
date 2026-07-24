@@ -44,6 +44,16 @@ namespace Cinema_System.Controllers.Public
             return View(vm);
         }
 
+        // Popup "đặt vé nhanh" (AJAX): trả về partial ngày + suất chiếu của một phim để hiển thị trong modal
+        // ở trang chủ / chi tiết phim (giữ nguyên trang hiện tại). Mọi role đều xem được.
+        [HttpGet]
+        public async Task<IActionResult> MovieShowtimes(Guid movieId)
+        {
+            var vm = await _showtimeService.GetMovieShowtimesAsync(movieId);
+            if (vm is null) return NotFound();
+            return PartialView("_MovieShowtimes", vm);
+        }
+
         // Trang chọn ghế cho một suất chiếu (click từ lịch chiếu sang).
         // Cho CUSTOMER (tự mua) và STAFF (mua hộ khách tại quầy); guest sẽ bị chuyển tới trang đăng nhập.
         [Authorize(Roles = "CUSTOMER,STAFF")]

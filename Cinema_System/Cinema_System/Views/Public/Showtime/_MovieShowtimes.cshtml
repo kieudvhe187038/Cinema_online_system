@@ -1,0 +1,71 @@
+@* Nội dung popup "đặt vé nhanh": ngày + suất chiếu của một phim (nạp qua AJAX vào modal). *@
+@model Cinema_System.Application.ViewModels.MovieShowtimesViewModel
+@{
+    Layout = null;
+    string[] weekdays = { "CN", "T2", "T3", "T4", "T5", "T6", "T7" };
+    var today = DateOnly.FromDateTime(DateTime.Today);
+}
+
+<div class="mb-4 flex items-center gap-3">
+    <div class="hidden h-16 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-100 sm:block">
+        @if (!string.IsNullOrEmpty(Model.MoviePosterUrl))
+        {
+            <img src="@MediaUrl.Poster(Model.MoviePosterUrl)" alt="@Model.MovieTitle" class="h-full w-full object-cover" onerror="this.style.display='none'" />
+        }
+    </div>
+    <div class="min-w-0">
+        <p class="text-xs font-semibold uppercase tracking-wide text-primary">Đặt vé</p>
+        <h3 class="truncate font-heading text-lg font-bold text-tertiary">@Model.MovieTitle</h3>
+    </div>
+</div>
+
+@if (!Model.Days.Any())
+{
+    <div class="py-10 text-center">
+        <span class="material-symbols-outlined text-4xl text-slate-300">event_busy</span>
+        <p class="mt-2 text-sm text-slate-500">Phim này chưa có suất chiếu nào trong 14 ngày tới.</p>
+    </div>
+}
+else
+{
+    <!-- Thanh chọn ngày -->
+    <div class="flex gap-2 overflow-x-auto pb-1" data-day-pills>
+        @for (int i = 0; i < Model.Days.Count; i++)
+        {
+            var d = Model.Days[i].Date;
+            var on = i == 0;
+            <button type="button" data-day-pill="@i"
+                    class="flex min-w-[62px] flex-col items-center rounded-xl border px-3 py-2 transition @(on ? "border-primary bg-primary text-white shadow" : "border-slate-200 bg-white text-slate-700 hover:border-primary/50")">
+                <span class="text-xs font-semibold">@(d == today ? "Hôm nay" : weekdays[(int)d.DayOfWeek])</span>
+                <span class="text-lg font-bold leading-tight">@d.Day</span>
+                <span class="text-[.7rem] opacity-80">Th@(d.Month)</span>
+            </button>
+        }
+    </div>
+
+    <!-- Suất chiếu theo từng ngày -->
+    @for (int i = 0; i < Model.Days.Count; i++)
+    {
+        <div data-day-panel="@i" class="mt-4 @(i == 0 ? "" : "hidden")">
+            <div class="flex flex-wrap gap-2.5">
+                @foreach (var st in Model.Days[i].Showtimes)
+                {
+                    <a href="@Url.Action("SelectSeats", "Showtime", new { id = st.Id })"
+                       class="block rounded-xl border border-slate-200 px-4 py-2.5 transition hover:border-primary hover:bg-primary/5 hover:shadow-sm">
+                        <div class="text-base font-bold text-slate-900">
+                            @st.StartTime.ToString("HH:mm") <span class="text-slate-400">–</span> @st.EndTime.ToString("HH:mm")
+                        </div>
+                        <div class="mt-0.5 text-xs text-slate-500">
+                            <span class="material-symbols-outlined align-middle text-[14px]">meeting_room</span>
+                            @st.RoomName@(string.IsNullOrEmpty(st.RoomTypeName) ? "" : $" · {st.RoomTypeName}")
+                        </div>
+                        @if (!string.IsNullOrEmpty(st.CinemaName))
+                        {
+                            <div class="text-[.7rem] text-slate-400">@st.CinemaName</div>
+                        }
+                    </a>
+                }
+            </div>
+        </div>
+    }
+}

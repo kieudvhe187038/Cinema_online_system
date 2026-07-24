@@ -114,6 +114,43 @@ public class ShowtimeService : IShowtimeService
         };
     }
 
+    // Lấy ngày + suất chiếu (14 ngày tới, từ hiện tại) của một phim cho popup "đặt vé nhanh".
+    public async Task<MovieShowtimesViewModel?> GetMovieShowtimesAsync(Guid movieId)
+    {
+        var movie = (await _unitOfWork.Movies.GetAllAsync(predicate: m => m.Id == movieId)).FirstOrDefault();
+        if (movie is null) return null;
+
+        var now = DateTime.Now;
+        var today = DateOnly.FromDateTime(now);
+        var windowEnd = today.AddDays(14).ToDateTime(TimeOnly.MinValue);
+
+        // Suất chiếu của phim từ hiện tại tới 14 ngày tới, bỏ suất đã hủy.
+        var showtimes = await _unitOfWork.Showtimes.GetAllAsync(
+            predicate: s => s.MovieId == movieId && s.StartTime >= now && s.StartTime < windowEnd && s.Status != "Cancelled",
+            include: q => q
+                .Include(s => s.Room).ThenInclude(r => r.RoomType)
+                .Include(s => s.Room).ThenInclude(r => r.Cinema),
+            orderBy: q => q.OrderBy(s => s.StartTime));
+
+        var dtos = _mapper.Map<List<ShowtimeDTO>>(showtimes);
+
+        return new MovieShowtimesViewModel
+        {
+            MovieId = movie.Id,
+            MovieTitle = movie.Title,
+            MoviePosterUrl = movie.PosterUrl,
+            Days = dtos
+                .GroupBy(s => DateOnly.FromDateTime(s.StartTime))
+                .OrderBy(g => g.Key)
+                .Select(g => new MovieShowtimeDay
+                {
+                    Date = g.Key,
+                    Showtimes = g.OrderBy(s => s.StartTime).ThenBy(s => s.RoomName).ToList()
+                })
+                .ToList()
+        };
+    }
+
     // Lấy sơ đồ ghế cho 1 suất chiếu, đánh dấu trạng thái từng ghế.
     public async Task<SeatSelectionViewModel?> GetSeatSelectionAsync(Guid showtimeId, Guid? currentUserId = null)
     {
