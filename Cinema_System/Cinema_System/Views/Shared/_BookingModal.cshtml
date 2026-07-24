@@ -1,0 +1,75 @@
+@* Modal "đặt vé nhanh" dùng chung: mở khi bấm phần tử có [data-book-movie], nạp ngày+suất chiếu qua AJAX. *@
+<div id="booking-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
+    <div data-modal-close class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"></div>
+    <div class="relative z-10 flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+            <h3 class="font-heading text-lg font-bold text-tertiary">Chọn suất chiếu</h3>
+            <button type="button" data-modal-close aria-label="Đóng" class="text-slate-400 transition hover:text-slate-700">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <div class="overflow-y-auto px-5 py-4">
+            <div data-modal-loading class="hidden py-10 text-center text-sm text-slate-500">Đang tải suất chiếu…</div>
+            <div data-modal-body></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const modal = document.getElementById('booking-modal');
+        if (!modal) return;
+        const body = modal.querySelector('[data-modal-body]');
+        const loading = modal.querySelector('[data-modal-loading]');
+
+        function openModal() { modal.classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
+        function closeModal() { modal.classList.add('hidden'); document.body.style.overflow = ''; body.innerHTML = ''; }
+
+        // Chuyển ngày trong popup: bấm pill -> hiện panel suất chiếu tương ứng.
+        function initDayTabs(container) {
+            const pills = Array.from(container.querySelectorAll('[data-day-pill]'));
+            const panels = Array.from(container.querySelectorAll('[data-day-panel]'));
+            pills.forEach(pill => pill.addEventListener('click', function () {
+                const idx = pill.getAttribute('data-day-pill');
+                pills.forEach(x => {
+                    const on = x === pill;
+                    x.classList.toggle('border-primary', on);
+                    x.classList.toggle('bg-primary', on);
+                    x.classList.toggle('text-white', on);
+                    x.classList.toggle('shadow', on);
+                    x.classList.toggle('border-slate-200', !on);
+                    x.classList.toggle('bg-white', !on);
+                    x.classList.toggle('text-slate-700', !on);
+                });
+                panels.forEach(p => p.classList.toggle('hidden', p.getAttribute('data-day-panel') !== idx));
+            }));
+        }
+
+        async function load(movieId) {
+            openModal();
+            loading.classList.remove('hidden');
+            body.innerHTML = '';
+            try {
+                const res = await fetch('/Showtime/MovieShowtimes?movieId=' + encodeURIComponent(movieId),
+                    { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                if (!res.ok) throw new Error('load failed');
+                body.innerHTML = await res.text();
+                initDayTabs(body);
+            } catch (e) {
+                body.innerHTML = '<div class="py-10 text-center text-sm text-slate-500">Không tải được suất chiếu. Vui lòng thử lại.</div>';
+            } finally {
+                loading.classList.add('hidden');
+            }
+        }
+
+        // Bấm nút "Đặt vé / Mua vé" (có data-book-movie) ở bất kỳ trang nào -> mở popup thay vì chuyển trang.
+        document.addEventListener('click', function (e) {
+            const trigger = e.target.closest('[data-book-movie]');
+            if (trigger) { e.preventDefault(); load(trigger.getAttribute('data-book-movie')); return; }
+            if (e.target.closest('[data-modal-close]')) closeModal();
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal();
+        });
+    })();
+</script>
