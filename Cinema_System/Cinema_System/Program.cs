@@ -21,7 +21,21 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 // Đăng ký SubfolderViewLocationExpander để controller trong các area con
 // (Admin / Manager / Staff) tìm được view ở /Views/{Area}/{Controller}/{Action}.cshtml.
-builder.Services.AddControllersWithViews()
+builder.Services.AddControllersWithViews(options =>
+    {
+        // Việt hóa các thông báo lỗi mặc định của model binder (ví dụ "The value '' is invalid."),
+        // vốn hiện ra trước khi DataAnnotations/IValidatableObject chạy nên không tự dịch được.
+        var provider = options.ModelBindingMessageProvider;
+        provider.SetValueIsInvalidAccessor(v => $"Giá trị '{v}' không hợp lệ.");
+        provider.SetAttemptedValueIsInvalidAccessor((v, f) => $"Giá trị '{v}' không hợp lệ cho {f}.");
+        provider.SetValueMustNotBeNullAccessor(v => "Trường này là bắt buộc.");
+        provider.SetMissingBindRequiredValueAccessor(f => $"Thiếu giá trị cho trường '{f}'.");
+        provider.SetMissingKeyOrValueAccessor(() => "Trường này là bắt buộc.");
+        provider.SetUnknownValueIsInvalidAccessor(f => $"Giá trị nhập vào cho {f} không hợp lệ.");
+        provider.SetValueMustBeANumberAccessor(f => $"Trường {f} phải là một số.");
+        provider.SetNonPropertyValueMustBeANumberAccessor(() => "Giá trị phải là một số.");
+        provider.SetMissingRequestBodyRequiredValueAccessor(() => "Dữ liệu gửi lên không được để trống.");
+    })
     .AddRazorOptions(options =>
     {
         options.ViewLocationExpanders.Add(new SubfolderViewLocationExpander());
