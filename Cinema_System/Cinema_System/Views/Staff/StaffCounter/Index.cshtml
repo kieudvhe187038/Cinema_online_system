@@ -63,10 +63,7 @@
         <div class="ct-staff">Nhân viên: <strong>@Model.ActingStaffName</strong></div>
     </div>
 
-    @if (TempData["Error"] != null)
-    {
-        <div class="ct-alert error">@TempData["Error"]</div>
-    }
+    <div id="ctErrorAlert" class="ct-alert error" style="display:none;"></div>
     @if (!Model.HasStaff)
     {
         <div class="ct-alert warn">Chưa có tài khoản nhân viên (role Staff) đang hoạt động — không thể tạo đơn. Vui lòng tạo nhân viên trước.</div>
@@ -186,6 +183,7 @@
         // --- Bước 1: chọn phim → tải suất chiếu ---
         $('#movieSelect').on('change', function () {
             const movieId = this.value;
+            hideError();
             resetSeats();
             $('#seatCard,#foodCard').hide();
             const $list = $('#showtimeList');
@@ -210,19 +208,23 @@
             $('.ct-show').removeClass('active');
             $(this).addClass('active');
             selectedShowtimeId = $(this).data('id');
+            hideError();
             resetSeats();
             loadSeatMap(selectedShowtimeId);
         });
 
-        function loadSeatMap(showtimeId) {
+        function loadSeatMap(showtimeId, done) {
             $('#seatCard').show();
             $('#seatMap').html('<span class="ct-staff">Đang tải sơ đồ ghế...</span>');
             $.getJSON('/Staff/Counter/Seats/' + showtimeId, function (map) {
                 renderSeatMap(map);
                 $('#foodCard').show();
+                if (done) done();
             });
         }
 
+        // Vẽ lại sơ đồ ghế theo trạng thái mới nhất từ server. Ghế nào đang chọn (selectedSeats)
+        // mà giờ đã bị người khác đặt/giữ thì tự động bỏ chọn (tránh submit lại đúng ghế vừa mất).
         function renderSeatMap(map) {
             const $m = $('#seatMap').empty();
             const rows = {};
@@ -235,14 +237,25 @@
                     const $seat = $('<button type="button" class="seat"></button>')
                         .text(s.label)
                         .attr('title', s.seatTypeName + ' · ' + fmt(s.price));
-                    if (s.isOccupied) { $seat.addClass('occupied').prop('disabled', true); }
-                    else {
+                    if (s.isOccupied) {
+                        $seat.addClass('occupied').prop('disabled', true);
+                        delete selectedSeats[s.id];
+                    } else {
                         $seat.attr('data-id', s.id).attr('data-price', s.price).attr('data-label', s.label);
+                        if (selectedSeats[s.id]) $seat.addClass('selected');
                     }
                     $row.append($seat);
                 });
                 $m.append($row);
             });
+        }
+
+        function showError(msg) {
+            $('#ctErrorAlert').text(msg).show();
+        }
+
+        function hideError() {
+            $('#ctErrorAlert').hide();
         }
 
         // --- Chọn / bỏ ghế ---
@@ -310,7 +323,7 @@
             window._grandTotal = grand;
         }
 
-        // --- Submit ---
+        // --- Submit (AJAX — không reload trang, để có thể xử lý lỗi tại chỗ) ---
         $('#submitBtn').on('click', function () {
             const seatIds = Object.keys(selectedSeats);
             if (!selectedShowtimeId) { alert('Vui lòng chọn suất chiếu.'); return; }
@@ -322,23 +335,45 @@
                 alert('Tiền khách đưa không đủ.'); return;
             }
 
-            const $f = $('#formFields').empty();
-            const add = (n, v) => $('<input type="hidden">').attr('name', n).val(v).appendTo($f);
-            add('ShowtimeId', selectedShowtimeId);
-            seatIds.forEach(id => add('SeatIds', id));
+            hideError();
+
+            const fd = new FormData();
+            fd.append('__RequestVerificationToken', $('#createForm input[name="__RequestVerificationToken"]').val());
+            fd.append('ShowtimeId', selectedShowtimeId);
+            seatIds.forEach(id => fd.append('SeatIds', id));
             let fi = 0;
             $('.food-qty').each(function () {
                 const q = parseInt(this.value) || 0;
-                if (q > 0) { add('Foods[' + fi + '].FbId', $(this).data('id')); add('Foods[' + fi + '].Quantity', q); fi++; }
+                if (q > 0) { fd.append('Foods[' + fi + '].FbId', $(this).data('id')); fd.append('Foods[' + fi + '].Quantity', q); fi++; }
             });
-            if (memberId) add('CustomerId', memberId);
-            add('CustomerName', $('#customerName').val().trim());
-            add('CustomerPhone', $('#phoneInput').val().trim());
-            add('PaymentMethod', method);
-            if (method === 'Cash') add('CashReceived', cash);
+            if (memberId) fd.append('CustomerId', memberId);
+            fd.append('CustomerName', $('#customerName').val().trim());
+            fd.append('CustomerPhone', $('#phoneInput').val().trim());
+            fd.append('PaymentMethod', method);
+            if (method === 'Cash') fd.append('CashReceived', cash);
 
-            $(this).prop('disabled', true).text('Đang xử lý...');
-            $('#createForm').submit();
+            const $btn = $(this).prop('disabled', true).text('Đang xử lý...');
+
+            $.ajax({
+                url: $('#createForm').attr('action'),
+                method: 'POST',
+                data: fd,
+                processData: false,
+                contentType: false
+            }).done(function (res) {
+                if (res.ok) {
+                    window.location.href = res.ticketUrl;
+                    return;
+                }
+                // Lỗi (thường gặp nhất: ghế vừa bị người khác đặt/giữ trong lúc thao tác) —
+                // tải lại sơ đồ ghế thay vì reload cả trang, giữ nguyên đồ ăn/khách/thanh toán đã nhập.
+                showError(res.error || 'Có lỗi xảy ra, vui lòng thử lại.');
+                $btn.prop('disabled', false).text('Xác nhận & Thanh toán');
+                if (selectedShowtimeId) loadSeatMap(selectedShowtimeId, recalc);
+            }).fail(function () {
+                showError('Không thể kết nối máy chủ, vui lòng thử lại.');
+                $btn.prop('disabled', false).text('Xác nhận & Thanh toán');
+            });
         });
 
         function resetSeats() { selectedSeats = {}; recalc(); }

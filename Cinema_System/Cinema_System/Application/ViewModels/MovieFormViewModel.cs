@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Cinema_System.Application.Common;
 using Cinema_System.Application.DTOs;
 using Microsoft.AspNetCore.Http;
 
@@ -47,6 +48,7 @@ public class MovieFormViewModel : IValidatableObject
     public string? Director { get; set; }
 
     [Display(Name = "Diễn viên")]
+    [StringLength(2000, ErrorMessage = "Diễn viên tối đa 2000 ký tự")]
     public string? CastMembers { get; set; }
 
     [Display(Name = "Ngôn ngữ")]
@@ -65,6 +67,7 @@ public class MovieFormViewModel : IValidatableObject
     public DateOnly? ReleaseDate { get; set; }
 
     [Display(Name = "Giới hạn độ tuổi")]
+    [StringLength(50, ErrorMessage = "Giới hạn độ tuổi tối đa 50 ký tự")]
     public string? AgeRating { get; set; }
 
     [Required(ErrorMessage = "Vui lòng chọn trạng thái")]
@@ -76,7 +79,8 @@ public class MovieFormViewModel : IValidatableObject
 
     public List<GenreDTO> AvailableGenres { get; set; } = new();
 
-    // Kiểm tra hợp lệ thêm: ngày khởi chiếu không được ở quá khứ.
+    // Kiểm tra hợp lệ thêm: ngày khởi chiếu không được ở quá khứ + giới hạn độ tuổi phải nằm trong danh sách cho phép
+    // (chặn request giả mạo gửi giá trị ngoài dropdown, tránh lỗi truncation ở cột age_rating VARCHAR(50)).
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (ReleaseDate.HasValue && ReleaseDate.Value < DateOnly.FromDateTime(DateTime.Today))
@@ -84,6 +88,13 @@ public class MovieFormViewModel : IValidatableObject
             yield return new ValidationResult(
                 "Ngày khởi chiếu phải là hôm nay hoặc trong tương lai.",
                 new[] { nameof(ReleaseDate) });
+        }
+
+        if (!string.IsNullOrWhiteSpace(AgeRating) && !AgeRatingPolicy.DisplayOrder.Contains(AgeRating))
+        {
+            yield return new ValidationResult(
+                "Giới hạn độ tuổi không hợp lệ.",
+                new[] { nameof(AgeRating) });
         }
     }
 }

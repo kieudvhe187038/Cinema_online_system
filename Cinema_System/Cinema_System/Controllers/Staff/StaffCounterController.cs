@@ -10,8 +10,6 @@ namespace Cinema_System.Controllers.Staff;
 [Route("Staff/Counter")]
 public class StaffCounterController : Controller
 {
-    private const string BookingSuccessMessage = "Đặt vé tại quầy thành công.";
-
     private readonly ICounterBookingService _counterBookingService;
     private readonly IBookingManagementService _bookingService;
     private readonly IMemberService _memberService;
@@ -78,6 +76,9 @@ public class StaffCounterController : Controller
     }
 
     // --- Tạo đơn + thanh toán (#40/#42) ---
+    // Trả JSON (thay vì redirect) để trang Counter xử lý lỗi tại chỗ — quan trọng nhất là lỗi
+    // "ghế vừa bị đặt/giữ bởi người khác" (race condition khi sơ đồ ghế tải 1 lần rồi đứng yên
+    // trong lúc Staff thao tác): JS sẽ tải lại sơ đồ ghế thay vì reload cả trang mất hết lựa chọn.
     [HttpPost("Create")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(CounterBookingRequest request)
@@ -85,15 +86,13 @@ public class StaffCounterController : Controller
         var result = await _counterBookingService.CreateAsync(request, GetCurrentStaffId());
         if (!result.Succeeded)
         {
-            TempData["Error"] = result.Error;
-            return RedirectToAction(nameof(Index));
+            return Json(new { ok = false, error = result.Error });
         }
 
         await _audit.LogAsync("CREATE_COUNTER_BOOKING", "Bookings", result.Data,
             newValue: new { request.ShowtimeId });
 
-        TempData["Success"] = BookingSuccessMessage;
-        return RedirectToAction(nameof(Ticket), new { id = result.Data });
+        return Json(new { ok = true, ticketUrl = Url.Action(nameof(Ticket), new { id = result.Data }) });
     }
 
     // --- In vé (#43) ---
