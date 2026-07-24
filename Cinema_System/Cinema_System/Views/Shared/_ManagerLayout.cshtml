@@ -80,6 +80,11 @@
             <span class="material-symbols-outlined">movie</span>
             <span>Quản Lý Phim</span>
         </a>
+        <a class="@navBase @(ctrl == "ManagerGenre" ? navActive : navIdle)"
+           asp-controller="ManagerGenre" asp-action="Index">
+            <span class="material-symbols-outlined">theater_comedy</span>
+            <span>Thể Loại Phim</span>
+        </a>
         <a class="@navBase @(ctrl == "ManagerRoom" ? navActive : navIdle)"
            asp-controller="ManagerRoom" asp-action="Index">
             <span class="material-symbols-outlined">meeting_room</span>

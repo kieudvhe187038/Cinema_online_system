@@ -1,0 +1,156 @@
+@model IEnumerable<GenreListItemViewModel>
+@{
+    ViewData["Title"] = "Quản Lý Thể Loại Phim";
+    Layout = "_ManagerLayout";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/site.css" />
+    <style>
+        .gn-wrap { max-width: 1000px; margin: 0 auto 3rem; padding: 0; }
+        .gn-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: .5rem; }
+        .gn-title { font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: var(--on-surface); }
+        .gn-sub { color: var(--on-surface-variant); font-size: .9rem; margin-bottom: 1.5rem; }
+        .gn-alert { padding: .75rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: .9rem; }
+        .gn-alert.success { background: #e7f5ec; color: #166534; border: 1px solid #16653433; }
+        .gn-alert.error { background: #fde8e8; color: #b91c1c; border: 1px solid #b91c1c33; }
+        .gn-btn { padding: .55rem 1.1rem; border: none; border-radius: var(--radius); font-weight: 600; cursor: pointer; font-family: var(--font-body); text-decoration: none; display: inline-flex; align-items: center; gap: .35rem; }
+        .gn-btn-primary { background: var(--primary); color: var(--white); }
+        .gn-btn-primary:hover { background: var(--primary-dark); }
+        .gn-count { color: var(--on-surface-variant); font-size: .85rem; margin-bottom: 1rem; }
+        .gn-search { display: flex; gap: .6rem; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; }
+        .gn-search .box { position: relative; flex: 1; min-width: 220px; max-width: 360px; }
+        .gn-search .box .material-symbols-outlined { position: absolute; left: .65rem; top: 50%; transform: translateY(-50%); color: var(--on-surface-variant); font-size: 1.1rem; pointer-events: none; }
+        .gn-search input { width: 100%; padding: .55rem .8rem .55rem 2.2rem; border: 1px solid var(--outline-variant); border-radius: var(--radius); background: var(--white); font-family: var(--font-body); font-size: .9rem; }
+        .gn-search input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(243,112,33,.15); }
+        .gn-search .btn { padding: .55rem 1.1rem; border: none; border-radius: var(--radius); font-weight: 600; cursor: pointer; font-family: var(--font-body); background: var(--secondary-dark); color: var(--white); }
+        .gn-search .clear { color: var(--on-surface-variant); font-size: .85rem; text-decoration: none; }
+        .gn-search .clear:hover { color: var(--primary); }
+        .gn-table { width: 100%; border-collapse: collapse; background: var(--white); border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-sm); }
+        .gn-table th, .gn-table td { padding: .85rem 1rem; text-align: left; border-bottom: 1px solid var(--surface-container); font-size: .9rem; }
+        .gn-table th { background: var(--secondary-dark); color: var(--white); font-weight: 600; }
+        .gn-table tr:last-child td { border-bottom: none; }
+        .gn-table tr:hover td { background: var(--surface); }
+        .gn-name { font-weight: 600; color: var(--on-surface); display: inline-flex; align-items: center; gap: .5rem; }
+        .gn-name .material-symbols-outlined { color: var(--primary); font-size: 1.15rem; }
+        .gn-tag { display: inline-block; padding: .15rem .6rem; border-radius: 999px; font-size: .78rem; font-weight: 600; background: var(--surface-container); color: var(--on-surface-variant); }
+        .gn-tag.active { background: #fff2e8; color: var(--primary-dark); }
+        .gn-actions { display: flex; gap: .9rem; align-items: center; }
+        .gn-link { color: var(--secondary); text-decoration: none; font-weight: 600; font-size: .85rem; }
+        .gn-link:hover { color: var(--primary); }
+        .gn-danger { color: #b91c1c; background: none; border: none; cursor: pointer; font-weight: 600; font-size: .85rem; font-family: var(--font-body); padding: 0; }
+        .gn-danger:hover { text-decoration: underline; }
+        .gn-disabled { color: var(--on-surface-variant); font-size: .8rem; font-style: italic; }
+        .gn-empty { text-align: center; padding: 3.5rem 1rem; color: var(--on-surface-variant); background: var(--white); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); }
+        .gn-empty .material-symbols-outlined { font-size: 3rem; color: var(--outline-variant); display: block; margin-bottom: .5rem; }
+    </style>
+}
+
+<div class="gn-wrap">
+    <div class="gn-top">
+        <h1 class="gn-title">Quản Lý Thể Loại Phim</h1>
+        <a class="gn-btn gn-btn-primary" href="@Url.Action("Create", "ManagerGenre")">
+            <span class="material-symbols-outlined" style="font-size:1.1rem">add</span> Thêm thể loại
+        </a>
+    </div>
+    <p class="gn-sub">Thêm, sửa, xóa các thể loại dùng để phân loại phim (VD: Hành động, Tình cảm, Kinh dị…).</p>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="gn-alert success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="gn-alert error">@TempData["Error"]</div>
+    }
+
+    @{ var search = ViewData["Search"] as string; }
+    <form method="get" action="@Url.Action("Index", "ManagerGenre")" class="gn-search">
+        <div class="box">
+            <span class="material-symbols-outlined">search</span>
+            <input type="text" name="search" value="@search" placeholder="Tìm kiếm thể loại theo tên..." autocomplete="off" />
+        </div>
+        <button type="submit" class="btn">Tìm</button>
+        @if (!string.IsNullOrEmpty(search))
+        {
+            <a class="clear" href="@Url.Action("Index", "ManagerGenre")">Xóa tìm kiếm</a>
+        }
+    </form>
+
+    @if (Model.Any())
+    {
+        <p class="gn-count">
+            @if (string.IsNullOrEmpty(search))
+            {
+                <text>Tổng cộng <strong>@Model.Count()</strong> thể loại.</text>
+            }
+            else
+            {
+                <text>Tìm thấy <strong>@Model.Count()</strong> thể loại cho từ khóa "<strong>@search</strong>".</text>
+            }
+        </p>
+        <table class="gn-table">
+            <thead>
+                <tr>
+                    <th style="width:45%">Tên thể loại</th>
+                    <th style="width:30%">Số phim đang dùng</th>
+                    <th style="width:25%">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>
+                            <span class="gn-name">
+                                <span class="material-symbols-outlined">theater_comedy</span>@item.Name
+                            </span>
+                        </td>
+                        <td>
+                            @if (item.MovieCount > 0)
+                            {
+                                <span class="gn-tag active">@item.MovieCount phim</span>
+                            }
+                            else
+                            {
+                                <span class="gn-tag">Chưa có phim</span>
+                            }
+                        </td>
+                        <td>
+                            <div class="gn-actions">
+                                <a class="gn-link" href="@Url.Action("Edit", "ManagerGenre", new { id = item.Id })">Sửa</a>
+                                @if (item.InUse)
+                                {
+                                    <span class="gn-disabled" title="Đang được gán cho phim nên không thể xóa">Không thể xóa</span>
+                                }
+                                else
+                                {
+                                    <form method="post" action="@Url.Action("Delete", "ManagerGenre", new { id = item.Id })" style="display:inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="gn-danger"
+                                                onclick="return confirm('Xóa thể loại @item.Name?');">Xóa</button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="gn-empty">
+            @if (string.IsNullOrEmpty(search))
+            {
+                <span class="material-symbols-outlined">theater_comedy</span>
+                <text>Chưa có thể loại nào. Bấm "Thêm thể loại" để tạo mới.</text>
+            }
+            else
+            {
+                <span class="material-symbols-outlined">search_off</span>
+                <text>Không tìm thấy thể loại nào khớp với "<strong>@search</strong>".</text>
+            }
+        </div>
+    }
+</div>
