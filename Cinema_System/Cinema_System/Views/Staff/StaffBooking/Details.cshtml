@@ -2,121 +2,156 @@
 @{
     ViewData["Title"] = "Chi Tiết Đơn Hàng";
     Layout = "_StaffLayout";
-}
 
-@section Styles {
-    <link rel="stylesheet" href="~/css/site.css" />
-    <style>
-        .bd-wrap { max-width: 980px; margin: 0 auto 3rem; padding: 0; }
-        .bd-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap; }
-        .bd-title { font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: var(--on-surface); }
-        .bd-code { font-family: monospace; font-weight: 700; color: var(--primary); }
-        .bd-btn { padding: .55rem 1.1rem; border: none; border-radius: var(--radius); font-weight: 600; cursor: pointer; font-family: var(--font-body); text-decoration: none; display: inline-flex; align-items: center; gap: .35rem; }
-        .bd-btn-primary { background: var(--primary); color: var(--white); }
-        .bd-btn-ghost { background: var(--surface-container); color: var(--on-surface); }
-        .bd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
-        .bd-card { background: var(--white); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); padding: 1.5rem; }
-        .bd-card h3 { font-family: var(--font-head); font-size: 1rem; font-weight: 700; margin-bottom: 1rem; color: var(--on-surface); }
-        .bd-row { display: flex; justify-content: space-between; padding: .35rem 0; font-size: .9rem; border-bottom: 1px dashed var(--surface-container); }
-        .bd-row span:first-child { color: var(--on-surface-variant); }
-        .bd-row span:last-child { font-weight: 600; color: var(--on-surface); }
-        .bd-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
-        .bd-table th, .bd-table td { padding: .6rem .5rem; text-align: left; border-bottom: 1px solid var(--surface-container); }
-        .bd-table th { color: var(--on-surface-variant); font-weight: 600; }
-        .bd-total { text-align: right; font-size: 1.1rem; font-weight: 800; color: var(--primary); margin-top: .75rem; }
-        @@media (max-width: 720px) { .bd-grid { grid-template-columns: 1fr; } }
-    </style>
-}
-
-<div class="bd-wrap">
-    <div class="bd-top">
-        <div>
-            <h1 class="bd-title">Chi Tiết Đơn Hàng</h1>
-            <div class="bd-code">@(string.IsNullOrEmpty(Model.BookingCode) ? "—" : Model.BookingCode)</div>
-        </div>
-        <div style="display:flex; gap:.5rem;">
-            <a class="bd-btn bd-btn-primary" target="_blank" href="@Url.Action("Ticket", "StaffCounter", new { id = Model.Id })">In vé</a>
-            <a class="bd-btn bd-btn-ghost" href="@Url.Action("Index", "StaffBooking")">Quay lại</a>
-        </div>
-    </div>
-
-    <div class="bd-grid">
-        <div class="bd-card">
-            <h3>Thông tin suất chiếu</h3>
-            <div class="bd-row"><span>Phim</span><span>@Model.MovieTitle</span></div>
-            <div class="bd-row"><span>Rạp</span><span>@Model.CinemaName</span></div>
-            <div class="bd-row"><span>Phòng</span><span>@Model.RoomName</span></div>
-            <div class="bd-row"><span>Bắt đầu</span><span>@Model.ShowStartTime.ToString("dd/MM/yyyy HH:mm")</span></div>
-            <div class="bd-row"><span>Kết thúc</span><span>@Model.ShowEndTime.ToString("dd/MM/yyyy HH:mm")</span></div>
-        </div>
-        <div class="bd-card">
-            <h3>Khách hàng & Đơn</h3>
-            <div class="bd-row"><span>Khách hàng</span><span>@Model.CustomerName</span></div>
-            <div class="bd-row"><span>SĐT</span><span>@(string.IsNullOrEmpty(Model.CustomerPhone) ? "—" : Model.CustomerPhone)</span></div>
-            <div class="bd-row"><span>Nhân viên</span><span>@(string.IsNullOrEmpty(Model.StaffName) ? "—" : Model.StaffName)</span></div>
-            <div class="bd-row"><span>Loại đơn</span><span>@Model.BookingType</span></div>
-            <div class="bd-row"><span>Trạng thái</span><span>@Model.PaymentStatus</span></div>
-            <div class="bd-row"><span>Ngày tạo</span><span>@(Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "—")</span></div>
-        </div>
-    </div>
-
-    <div class="bd-card" style="margin-bottom:1.25rem;">
-        <h3>Vé (@Model.Seats.Count ghế)</h3>
-        <table class="bd-table">
-            <thead><tr><th>Ghế</th><th>Loại ghế</th><th>Trạng thái</th><th style="text-align:right">Giá</th></tr></thead>
-            <tbody>
-                @foreach (var s in Model.Seats)
-                {
-                    <tr>
-                        <td><strong>@s.SeatLabel</strong></td>
-                        <td>@s.SeatType</td>
-                        <td>@s.Status</td>
-                        <td style="text-align:right">@s.Price.ToString("#,##0") đ</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-
-    @if (Model.Foods.Any())
+    // Badge trạng thái / loại đơn — cùng bảng màu với danh sách đơn (StaffBooking/Index).
+    (string cls, string dot, string text) StatusBadge(string? status) => status switch
     {
-        <div class="bd-card" style="margin-bottom:1.25rem;">
-            <h3>Đồ ăn / Thức uống</h3>
-            <table class="bd-table">
-                <thead><tr><th>Món</th><th>SL</th><th style="text-align:right">Đơn giá</th><th style="text-align:right">Thành tiền</th></tr></thead>
+        "Paid" => ("bg-green-100 text-green-700", "bg-green-600", "Đã thanh toán"),
+        "Cancelled" => ("bg-red-100 text-red-700", "bg-red-500", "Đã hủy"),
+        _ => ("bg-amber-100 text-amber-700", "bg-amber-500", "Chờ thanh toán")
+    };
+    (string cls, string text) TypeBadge(string? type) => type == "Online"
+        ? ("bg-blue-100 text-blue-700", "Online")
+        : ("bg-amber-100 text-amber-700", "Tại quầy");
+
+    var status = StatusBadge(Model.PaymentStatus);
+    var type = TypeBadge(Model.BookingType);
+
+    const string rowCls = "flex items-start justify-between gap-3 border-b border-dashed border-gray-100 py-2 text-sm last:border-0";
+    const string labelCls = "shrink-0 text-gray-500";
+    const string valueCls = "min-w-0 text-right font-semibold text-[#191c1d] [overflow-wrap:anywhere]";
+    const string cardCls = "rounded-xl border border-[#e8eaed] bg-white p-5 shadow-sm";
+    const string cardTitleCls = "mb-3 font-head text-base font-bold text-[#191c1d]";
+    const string thCls = "border-b border-gray-100 px-2 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400";
+    const string tdCls = "border-b border-gray-100 px-2 py-2.5 text-sm text-[#191c1d]";
+}
+
+<div class="mx-auto max-w-5xl">
+    <div class="mb-5 flex flex-wrap items-start justify-between gap-4">
+        <div>
+            <h1 class="font-head text-2xl font-extrabold text-[#191c1d]">Chi Tiết Đơn Hàng</h1>
+            <div class="mt-0.5 font-mono text-sm font-bold text-primary">
+                @(string.IsNullOrEmpty(Model.BookingCode) ? "—" : Model.BookingCode)
+            </div>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a target="_blank" href="@Url.Action("Ticket", "StaffCounter", new { id = Model.Id })"
+               class="inline-flex items-center gap-1.5 rounded-lg bg-primary px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-dark">
+                <span class="material-symbols-outlined" style="font-size:18px">print</span> In vé
+            </a>
+            <a href="@Url.Action("Index", "StaffBooking")"
+               class="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-5 py-2.5 text-sm font-semibold text-[#191c1d] transition-colors hover:bg-gray-200">
+                <span class="material-symbols-outlined" style="font-size:18px">arrow_back</span> Quay lại
+            </a>
+        </div>
+    </div>
+
+    <div class="mb-5 grid gap-5 md:grid-cols-2">
+        <div class="@cardCls">
+            <h3 class="@cardTitleCls">Thông tin suất chiếu</h3>
+            <div class="@rowCls"><span class="@labelCls">Phim</span><span class="@valueCls">@Model.MovieTitle</span></div>
+            <div class="@rowCls"><span class="@labelCls">Rạp</span><span class="@valueCls">@Model.CinemaName</span></div>
+            <div class="@rowCls"><span class="@labelCls">Phòng</span><span class="@valueCls">@Model.RoomName</span></div>
+            <div class="@rowCls"><span class="@labelCls">Bắt đầu</span><span class="@valueCls">@Model.ShowStartTime.ToString("dd/MM/yyyy HH:mm")</span></div>
+            <div class="@rowCls"><span class="@labelCls">Kết thúc</span><span class="@valueCls">@Model.ShowEndTime.ToString("dd/MM/yyyy HH:mm")</span></div>
+        </div>
+
+        <div class="@cardCls">
+            <h3 class="@cardTitleCls">Khách hàng &amp; Đơn</h3>
+            <div class="@rowCls"><span class="@labelCls">Khách hàng</span><span class="@valueCls">@Model.CustomerName</span></div>
+            <div class="@rowCls"><span class="@labelCls">SĐT</span><span class="@valueCls">@(string.IsNullOrEmpty(Model.CustomerPhone) ? "—" : Model.CustomerPhone)</span></div>
+            <div class="@rowCls"><span class="@labelCls">Nhân viên</span><span class="@valueCls">@(string.IsNullOrEmpty(Model.StaffName) ? "—" : Model.StaffName)</span></div>
+            <div class="@rowCls">
+                <span class="@labelCls">Loại đơn</span>
+                <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold @type.cls">@type.text</span>
+            </div>
+            <div class="@rowCls">
+                <span class="@labelCls">Trạng thái</span>
+                <span class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold @status.cls">
+                    <span class="h-[7px] w-[7px] shrink-0 rounded-full @status.dot"></span> @status.text
+                </span>
+            </div>
+            <div class="@rowCls"><span class="@labelCls">Ngày tạo</span><span class="@valueCls">@(Model.CreatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "—")</span></div>
+        </div>
+    </div>
+
+    <div class="@cardCls mb-5">
+        <h3 class="@cardTitleCls">Vé (@Model.Seats.Count ghế)</h3>
+        <div class="overflow-x-auto">
+            <table class="w-full border-collapse">
+                <thead>
+                    <tr>
+                        <th class="@thCls">Ghế</th>
+                        <th class="@thCls">Loại ghế</th>
+                        <th class="@thCls">Trạng thái</th>
+                        <th class="@thCls text-right">Giá</th>
+                    </tr>
+                </thead>
                 <tbody>
-                    @foreach (var f in Model.Foods)
+                    @foreach (var s in Model.Seats)
                     {
                         <tr>
-                            <td>@f.Name</td>
-                            <td>@f.Quantity</td>
-                            <td style="text-align:right">@f.UnitPrice.ToString("#,##0") đ</td>
-                            <td style="text-align:right">@f.LineTotal.ToString("#,##0") đ</td>
+                            <td class="@tdCls"><strong>@s.SeatLabel</strong></td>
+                            <td class="@tdCls">@s.SeatType</td>
+                            <td class="@tdCls">@s.Status</td>
+                            <td class="@tdCls text-right font-semibold">@s.Price.ToString("#,##0") đ</td>
                         </tr>
                     }
                 </tbody>
             </table>
         </div>
+    </div>
+
+    @if (Model.Foods.Any())
+    {
+        <div class="@cardCls mb-5">
+            <h3 class="@cardTitleCls">Đồ ăn / Thức uống</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse">
+                    <thead>
+                        <tr>
+                            <th class="@thCls">Món</th>
+                            <th class="@thCls">SL</th>
+                            <th class="@thCls text-right">Đơn giá</th>
+                            <th class="@thCls text-right">Thành tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var f in Model.Foods)
+                        {
+                            <tr>
+                                <td class="@tdCls">@f.Name</td>
+                                <td class="@tdCls">@f.Quantity</td>
+                                <td class="@tdCls text-right">@f.UnitPrice.ToString("#,##0") đ</td>
+                                <td class="@tdCls text-right font-semibold">@f.LineTotal.ToString("#,##0") đ</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
     }
 
-    <div class="bd-card">
-        <h3>Thanh toán</h3>
-        <div class="bd-row"><span>Tạm tính</span><span>@Model.TotalAmount.ToString("#,##0") đ</span></div>
-        <div class="bd-row"><span>Giảm giá</span><span>@Model.DiscountAmount.ToString("#,##0") đ</span></div>
-        <div class="bd-row"><span>VAT</span><span>@Model.VatAmount.ToString("#,##0") đ</span></div>
+    <div class="@cardCls">
+        <h3 class="@cardTitleCls">Thanh toán</h3>
+        <div class="@rowCls"><span class="@labelCls">Tạm tính</span><span class="@valueCls">@Model.TotalAmount.ToString("#,##0") đ</span></div>
+        <div class="@rowCls"><span class="@labelCls">Giảm giá</span><span class="@valueCls">@Model.DiscountAmount.ToString("#,##0") đ</span></div>
+        <div class="@rowCls"><span class="@labelCls">VAT</span><span class="@valueCls">@Model.VatAmount.ToString("#,##0") đ</span></div>
         @foreach (var p in Model.Payments)
         {
-            <div class="bd-row">
-                <span>@p.Method @(string.IsNullOrEmpty(p.Source) ? "" : $"({p.Source})")</span>
-                <span>
+            <div class="@rowCls">
+                <span class="@labelCls">@p.Method @(string.IsNullOrEmpty(p.Source) ? "" : $"({p.Source})")</span>
+                <span class="@valueCls">
                     @p.Amount.ToString("#,##0") đ
                     @if (p.CashReceived.HasValue)
                     {
-                        <text> · Khách đưa @p.CashReceived.Value.ToString("#,##0") đ · Thối @((p.ChangeAmount ?? 0).ToString("#,##0")) đ</text>
+                        <text> · Khách đưa @p.CashReceived.Value.ToString("#,##0") đ · Tiền thừa @((p.ChangeAmount ?? 0).ToString("#,##0")) đ</text>
                     }
                 </span>
             </div>
         }
-        <div class="bd-total">Tổng cộng: @Model.FinalAmount.ToString("#,##0") đ</div>
+        <div class="mt-3 border-t border-gray-100 pt-3 text-right text-lg font-extrabold text-primary">
+            Tổng cộng: @Model.FinalAmount.ToString("#,##0") đ
+        </div>
     </div>
 </div>
