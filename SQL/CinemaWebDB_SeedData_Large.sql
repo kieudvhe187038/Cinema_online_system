@@ -28356,39 +28356,6 @@ INSERT INTO [Seat_Holds] ([id],[showtime_id],[seat_id],[user_id],[held_at],[expi
 ('00000000-0000-0000-0015-000000000027','00000000-0000-0000-0009-0000000000b1','00000000-0000-0000-000e-00000000010c','00000000-0000-0000-0002-000000000406','2026-07-09 23:54:00','2026-07-10 00:04:00',N'Released'),
 ('00000000-0000-0000-0015-000000000028','00000000-0000-0000-0009-0000000000c8','00000000-0000-0000-000e-0000000002f5','00000000-0000-0000-0002-000000000403','2026-07-09 23:52:00','2026-07-10 00:02:00',N'Holding');
 
--- Chatbot_Logs: 30 dòng
-INSERT INTO [Chatbot_Logs] ([id],[user_id],[session_id],[user_message],[bot_response],[intent_detected],[created_at]) VALUES
-('00000000-0000-0000-001b-000000000001','00000000-0000-0000-0002-000000000409','sess-1000',N'Phòng IMAX ở rạp nào?',N'Phòng IMAX hiện có tại rạp Cầu Giấy.',N'room_info','2026-07-08 17:00:00'),
-('00000000-0000-0000-001b-000000000002',NULL,'sess-1001',N'Giá vé bao nhiêu?',N'Vé thường từ 75.000đ, tuỳ loại ghế và khung giờ.',N'pricing','2026-07-06 13:00:00'),
-('00000000-0000-0000-001b-000000000003','00000000-0000-0000-0002-000000000404','sess-1002',N'Phòng IMAX ở rạp nào?',N'Phòng IMAX hiện có tại rạp Cầu Giấy.',N'room_info','2026-07-05 22:00:00'),
-('00000000-0000-0000-001b-000000000004','00000000-0000-0000-0002-0000000003ea','sess-1003',N'Làm sao đổi điểm thưởng?',N'Bạn có thể dùng điểm thưởng khi thanh toán tại bước cuối.',N'reward_points','2026-07-06 06:00:00'),
-('00000000-0000-0000-001b-000000000005','00000000-0000-0000-0002-0000000003eb','sess-1004',N'Hôm nay có phim gì hay?',N'Hiện đang chiếu nhiều phim hot như Trận Chiến Cuối Cùng, Vũ Trụ Song Song...',N'movie_recommendation','2026-07-07 20:00:00'),
-('00000000-0000-0000-001b-000000000006',NULL,'sess-1005',N'Phòng IMAX ở rạp nào?',N'Phòng IMAX hiện có tại rạp Cầu Giấy.',N'room_info','2026-07-06 19:00:00'),
-('00000000-0000-0000-001b-000000000007',NULL,'sess-1006',N'Rạp Cầu Giấy ở đâu?',N'Rạp CinemaWeb Cầu Giấy tại 88 Trần Thái Tông.',N'cinema_location','2026-07-06 05:00:00'),
-('00000000-0000-0000-001b-000000000008',NULL,'sess-1007',N'Rạp Cầu Giấy ở đâu?',N'Rạp CinemaWeb Cầu Giấy tại 88 Trần Thái Tông.',N'cinema_location','2026-07-07 23:00:00'),
-('00000000-0000-0000-001b-000000000009','00000000-0000-0000-0002-0000000003fe','sess-1008',N'Phòng IMAX ở rạp nào?',N'Phòng IMAX hiện có tại rạp Cầu Giấy.',N'room_info','2026-07-07 14:00:00'),
-('00000000-0000-0000-001b-00000000000a',NULL,'sess-1009',N'Làm sao đổi điểm thưởng?',N'Bạn có thể dùng điểm thưởng khi thanh toán tại bước cuối.',N'reward_points','2026-07-09 15:00:00'),
-('00000000-0000-0000-001b-00000000000b',NULL,'sess-1010',N'Hôm nay có phim gì hay?',N'Hiện đang chiếu nhiều phim hot như Trận Chiến Cuối Cùng, Vũ Trụ Song Song...',N'movie_recommendation','2026-07-04 05:00:00'),
-('00000000-0000-0000-001b-00000000000c','00000000-0000-0000-0002-000000000417','sess-1011',N'Giá vé bao nhiêu?',N'Vé thường từ 75.000đ, tuỳ loại ghế và khung giờ.',N'pricing','2026-07-08 12:00:00'),
-('00000000-0000-0000-001b-00000000000d','00000000-0000-0000-0002-000000000403','sess-1012',N'Rạp Cầu Giấy ở đâu?',N'Rạp CinemaWeb Cầu Giấy tại 88 Trần Thái Tông.',N'cinema_location','2026-07-09 12:00:00'),
-('00000000-0000-0000-001b-00000000000e','00000000-0000-0000-0002-0000000003ff','sess-1013',N'Phòng IMAX ở rạp nào?',N'Phòng IMAX hiện có tại rạp Cầu Giấy.',N'room_info','2026-07-05 02:00:00'),
-('00000000-0000-0000-001b-00000000000f','00000000-0000-0000-0002-0000000003fc','sess-1014',N'Rạp Cầu Giấy ở đâu?',N'Rạp CinemaWeb Cầu Giấy tại 88 Trần Thái Tông.',N'cinema_location','2026-07-08 11:00:00'),
-('00000000-0000-0000-001b-000000000010','00000000-0000-0000-0002-0000000003fc','sess-1015',N'Phòng IMAX ở rạp nào?',N'Phòng IMAX hiện có tại rạp Cầu Giấy.',N'room_info','2026-07-06 19:00:00'),
-('00000000-0000-0000-001b-000000000011','00000000-0000-0000-0002-000000000403','sess-1016',N'Phòng IMAX ở rạp nào?',N'Phòng IMAX hiện có tại rạp Cầu Giấy.',N'room_info','2026-07-09 11:00:00'),
-('00000000-0000-0000-001b-000000000012','00000000-0000-0000-0002-00000000041d','sess-1017',N'Giá vé bao nhiêu?',N'Vé thường từ 75.000đ, tuỳ loại ghế và khung giờ.',N'pricing','2026-07-09 21:00:00'),
-('00000000-0000-0000-001b-000000000013','00000000-0000-0000-0002-0000000003f8','sess-1018',N'Phòng IMAX ở rạp nào?',N'Phòng IMAX hiện có tại rạp Cầu Giấy.',N'room_info','2026-07-04 02:00:00'),
-('00000000-0000-0000-001b-000000000014','00000000-0000-0000-0002-00000000041a','sess-1019',N'Làm sao đổi điểm thưởng?',N'Bạn có thể dùng điểm thưởng khi thanh toán tại bước cuối.',N'reward_points','2026-07-09 13:00:00'),
-('00000000-0000-0000-001b-000000000015','00000000-0000-0000-0002-00000000040e','sess-1020',N'Rạp Cầu Giấy ở đâu?',N'Rạp CinemaWeb Cầu Giấy tại 88 Trần Thái Tông.',N'cinema_location','2026-07-04 08:00:00'),
-('00000000-0000-0000-001b-000000000016',NULL,'sess-1021',N'Hôm nay có phim gì hay?',N'Hiện đang chiếu nhiều phim hot như Trận Chiến Cuối Cùng, Vũ Trụ Song Song...',N'movie_recommendation','2026-07-05 14:00:00'),
-('00000000-0000-0000-001b-000000000017','00000000-0000-0000-0002-000000000400','sess-1022',N'Hôm nay có phim gì hay?',N'Hiện đang chiếu nhiều phim hot như Trận Chiến Cuối Cùng, Vũ Trụ Song Song...',N'movie_recommendation','2026-07-05 17:00:00'),
-('00000000-0000-0000-001b-000000000018','00000000-0000-0000-0002-0000000003f1','sess-1023',N'Giá vé bao nhiêu?',N'Vé thường từ 75.000đ, tuỳ loại ghế và khung giờ.',N'pricing','2026-07-04 16:00:00'),
-('00000000-0000-0000-001b-000000000019','00000000-0000-0000-0002-00000000041d','sess-1024',N'Làm sao đổi điểm thưởng?',N'Bạn có thể dùng điểm thưởng khi thanh toán tại bước cuối.',N'reward_points','2026-07-06 13:00:00'),
-('00000000-0000-0000-001b-00000000001a','00000000-0000-0000-0002-0000000003fd','sess-1025',N'Rạp Cầu Giấy ở đâu?',N'Rạp CinemaWeb Cầu Giấy tại 88 Trần Thái Tông.',N'cinema_location','2026-07-07 03:00:00'),
-('00000000-0000-0000-001b-00000000001b','00000000-0000-0000-0002-0000000003fd','sess-1026',N'Giá vé bao nhiêu?',N'Vé thường từ 75.000đ, tuỳ loại ghế và khung giờ.',N'pricing','2026-07-04 16:00:00'),
-('00000000-0000-0000-001b-00000000001c','00000000-0000-0000-0002-0000000003ef','sess-1027',N'Giá vé bao nhiêu?',N'Vé thường từ 75.000đ, tuỳ loại ghế và khung giờ.',N'pricing','2026-07-07 15:00:00'),
-('00000000-0000-0000-001b-00000000001d',NULL,'sess-1028',N'Giá vé bao nhiêu?',N'Vé thường từ 75.000đ, tuỳ loại ghế và khung giờ.',N'pricing','2026-07-04 23:00:00'),
-('00000000-0000-0000-001b-00000000001e','00000000-0000-0000-0002-00000000040c','sess-1029',N'Giá vé bao nhiêu?',N'Vé thường từ 75.000đ, tuỳ loại ghế và khung giờ.',N'pricing','2026-07-09 04:00:00');
-
 -- Audit_Logs: 25 dòng
 INSERT INTO [Audit_Logs] ([id],[user_id],[action],[table_name],[record_id],[old_value],[new_value],[ip_address],[created_at]) VALUES
 ('00000000-0000-0000-001c-000000000001','00000000-0000-0000-0002-00000000000e',N'LOCK_USER','Users',NULL,NULL,N'{"changed":true}','192.168.3.159','2026-07-09 00:00:00'),
@@ -28464,7 +28431,6 @@ UNION ALL SELECT 'Email_Logs' AS [table], COUNT(*) AS [rows] FROM [Email_Logs]
 UNION ALL SELECT 'Reward_Point_History' AS [table], COUNT(*) AS [rows] FROM [Reward_Point_History]
 UNION ALL SELECT 'Reviews' AS [table], COUNT(*) AS [rows] FROM [Reviews]
 UNION ALL SELECT 'Seat_Holds' AS [table], COUNT(*) AS [rows] FROM [Seat_Holds]
-UNION ALL SELECT 'Chatbot_Logs' AS [table], COUNT(*) AS [rows] FROM [Chatbot_Logs]
 UNION ALL SELECT 'Audit_Logs' AS [table], COUNT(*) AS [rows] FROM [Audit_Logs]
 UNION ALL SELECT 'ShowtimeIncidents' AS [table], COUNT(*) AS [rows] FROM [ShowtimeIncidents]
 UNION ALL SELECT 'SystemConfig' AS [table], COUNT(*) AS [rows] FROM [SystemConfig];

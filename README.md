@@ -1,7 +1,7 @@
 
 # Cinema Web System (Advanced Version)
 
-Hệ thống quản lý và đặt vé xem phim trực tuyến toàn diện, tích hợp các tính năng nâng cao như khóa ghế thời gian thực (Realtime Seat Locking), cấu hình giá vé linh hoạt, AI Chatbot tích hợp và hệ thống lưu vết thông minh.
+Hệ thống quản lý và đặt vé xem phim trực tuyến toàn diện, tích hợp các tính năng nâng cao như khóa ghế thời gian thực (Realtime Seat Locking), cấu hình giá vé linh hoạt và hệ thống lưu vết thông minh.
 
 ## Tổng Quan Dự Án
 

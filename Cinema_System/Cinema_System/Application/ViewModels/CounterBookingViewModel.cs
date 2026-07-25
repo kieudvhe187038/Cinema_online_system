@@ -18,4 +18,7 @@ public class CounterBookingViewModel
 
     /// <summary>Tỉ lệ VAT hiện hành (%) dùng để hiển thị, 0 nếu không có.</summary>
     public decimal VatRate { get; set; }
+
+    /// <summary>Giá trị quy đổi của 1 điểm thưởng khi dùng để giảm giá (₫) — dùng để tính điểm tối đa có thể dùng ngay ở client.</summary>
+    public int PointValueVnd { get; set; }
 }

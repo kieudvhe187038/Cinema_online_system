@@ -745,6 +745,7 @@ public partial class CinemaWebDbContext : DbContext
                 .HasDefaultValue("Holding")
                 .HasColumnName("status");
             entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.HoldToken).HasColumnName("hold_token");
 
             entity.HasOne(d => d.Seat).WithMany(p => p.SeatHolds)
                 .HasForeignKey(d => d.SeatId)

@@ -53,6 +53,21 @@ public class SeatCellDTO
 
     /// <summary>True nếu ghế đã có vé hoặc đang bị giữ → không chọn được.</summary>
     public bool IsOccupied { get; set; }
+
+    /// <summary>True nếu ghế đang bị NGƯỜI KHÁC giữ tạm (chưa thành vé) — phân biệt với đã bán hẳn, chỉ có ý nghĩa khi IsOccupied = true.</summary>
+    public bool IsHeld { get; set; }
+}
+
+/// <summary>Kết quả xem trước áp mã khuyến mãi tại quầy (AJAX).</summary>
+public class CounterPromoPreviewDTO
+{
+    public bool Ok { get; set; }
+
+    public string? Message { get; set; }
+
+    public string? Code { get; set; }
+
+    public decimal Discount { get; set; }
 }
 
 /// <summary>Sơ đồ ghế của một suất chiếu trả về cho trang quầy.</summary>

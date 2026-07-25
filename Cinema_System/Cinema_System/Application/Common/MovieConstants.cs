@@ -83,7 +83,7 @@ public static class ShowtimeBrowsing
 {
     // Số ngày tới hiển thị trên trang lịch chiếu, popup đặt vé nhanh và nút "Mua vé" của thẻ phim.
     // Đủ dài để đặt vé trước cho phim sắp chiếu / chiếu sớm.
-    public const int AdvanceDays = 30;
+    public const int AdvanceDays = 14;
 }
 
 /// <summary>Cấu hình phân trang phim.</summary>
