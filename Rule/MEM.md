@@ -684,3 +684,12 @@ Nhật ký thay đổi mã nguồn / CSDL / quyết định kỹ thuật của d
   - **Thứ tự kiểm tra:** tài khoản được kiểm TRƯỚC khi kiểm mã có tồn tại/còn hạn hay không → khách lẻ gõ mã sai vẫn nhận thông báo "cần xác minh tài khoản" (không lộ mã nào có thật).
   - Luồng online (`ShowtimeService.ResolvePromoAsync`) **không đổi** — khách online luôn đăng nhập nên vốn đã có `userId`.
   - **Đã smoke-test HTTP với DB thật** (6 ca): khách lẻ không SĐT → chặn; gõ SĐT thành viên mà chưa bấm "Tra" → **áp được** (đây là ca lệch cũ); đã tra cứu → áp được; SĐT không phải thành viên → chặn; SĐT có khoảng trắng giữa → vẫn nhận ra thành viên; mã hết hạn + có tài khoản → báo đúng "Mã giảm giá không còn hiệu lực". Build pass 0/0.
+
+### [2026-07-26] Quầy: ẩn ô nhập mã ưu đãi tới khi tra ra tài khoản khách (By: vkieu)
+- **What changed:** Tiếp theo mục ràng buộc tài khoản ở trên — thay vì luôn hiện ô nhập mã rồi mới báo lỗi, giờ **ẩn hẳn**. Bọc phần mã khuyến mãi vào `#promoBox` (mặc định `display:none`), thêm `#offerHint` hướng dẫn hiện khi chưa có khách. Gom việc bật/tắt vào `toggleOfferBoxes(hasMember)` điều khiển **cả 3**: `#offerHint` / `#promoBox` / `#pointsBox` — gọi ở 3 nơi: `resetMember()` (false), tra cứu thấy thành viên (true), tra cứu không thấy (false). Bỏ dòng `<p>` gợi ý tĩnh thêm ở lần trước (đã thay bằng `#offerHint`).
+- **Why:** Mã giảm giá và điểm thưởng đều chỉ dành cho khách có tài khoản, nên để nhân viên gõ mã rồi mới báo "cần xác minh tài khoản" là thừa một bước.
+- **Impact/Notes for Team:**
+  - **`#pointsBox` trước đây tự show/hide rải rác ở 3 chỗ, nay đi qua `toggleOfferBoxes`** — thêm khối ưu đãi mới thì khai báo trong hàm này, đừng gọi `.show()/.hide()` trực tiếp nữa.
+  - `resetMember()` chạy ở **mỗi lần gõ phím** trong ô SĐT (`$('#phoneInput').on('input', ...)`) → nó xoá luôn `appliedPromo`, nội dung ô mã và thông báo. Cố ý: khối mã ẩn đi thì không được để lại khoản giảm mà server sẽ từ chối.
+  - Đây chỉ là lớp giao diện — **chặn thật vẫn nằm ở `ResolvePromoAsync`** (server), đừng bỏ.
+  - **Đã kiểm bằng cách chạy trực tiếp `toggleOfferBoxes`/`resetMember` trích từ trang đã render** qua 5 trạng thái: mới vào trang (chỉ hiện hướng dẫn) → tra ra thành viên (hiện mã + điểm) → tra không ra (ẩn lại) → tra lại ra (hiện) → đổi SĐT (ẩn, `appliedPromo=null`, ô mã và thông báo trống). Script inline của trang quầy parse OK. Build pass 0/0.
