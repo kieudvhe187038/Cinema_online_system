@@ -110,6 +110,24 @@ namespace Cinema_System.Controllers.Public
             if (pointsUsed < 0) pointsUsed = 0;
             promoCode = string.IsNullOrWhiteSpace(promoCode) ? null : promoCode.Trim();
 
+            // Đơn 0đ (mã giảm giá/điểm phủ hết tiền): tạo vé ngay, không cần chọn phương thức hay qua cổng.
+            var payVm = await _showtimeService.GetPaymentAsync(id, CurrentUserId, fbId, qty);
+            if (payVm is null) return RedirectToAction(nameof(SelectSeats), new { id });
+            var promoDiscount0 = await ResolvePromoDiscountAsync(id, fbId, qty, promoCode);
+            var afterPromo0 = payVm.GrandTotal - promoDiscount0;
+            var usePoints0 = Math.Max(0, Math.Min(Math.Min(pointsUsed, payVm.MaxUsablePoints), (int)(afterPromo0 / payVm.PointValueVnd)));
+            var payable0 = afterPromo0 - (decimal)usePoints0 * payVm.PointValueVnd;
+            if (payable0 <= 0)
+            {
+                var freeResult = await _showtimeService.ConfirmBookingAsync(id, CurrentUserId, "Free", fbId, qty, pointsUsed, promoCode);
+                if (!freeResult.Succeeded)
+                {
+                    TempData["Error"] = freeResult.Error;
+                    return RedirectToAction(nameof(SelectSeats), new { id });
+                }
+                return RedirectToAction(nameof(Success), new { id = freeResult.BookingId });
+            }
+
             // VietQR: hiển thị mã QR chuyển khoản; tạo đơn khi khách bấm "Đã chuyển khoản".
             if (method == "VietQR" && _vietqr.Enabled)
             {
@@ -244,7 +262,7 @@ namespace Cinema_System.Controllers.Public
         public async Task<IActionResult> ApplyPromo(Guid showtimeId, List<Guid> fbId, List<int> qty, string code)
         {
             var res = await _showtimeService.PreviewPromoAsync(showtimeId, CurrentUserId, fbId ?? new(), qty ?? new(), code ?? string.Empty);
-            return Json(new { ok = res.Ok, message = res.Message, discount = res.PromoDiscount, maxPoints = res.MaxUsablePoints, code = res.Code });
+            return Json(new { ok = res.Ok, message = res.Message, discount = res.PromoDiscount, maxPoints = res.MaxUsablePoints, code = res.Code, target = res.Target });
         }
 
         // Tính trước số tiền mã giảm cho luồng VietQR/VNPay (0 nếu mã không hợp lệ).

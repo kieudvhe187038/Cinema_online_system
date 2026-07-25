@@ -23,7 +23,7 @@
         }
 
         <!-- Phương thức thanh toán -->
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div id="payment-methods" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 class="font-heading text-lg font-bold text-tertiary">Phương thức thanh toán</h2>
             <p class="mt-1 text-xs text-slate-400">VNPay dùng môi trường sandbox (tiền thử nghiệm); MoMo là mô phỏng.</p>
 
@@ -106,7 +106,7 @@
             </div>
 
             <div id="promo-row" class="mt-2 hidden justify-between text-sm">
-                <span class="text-slate-500">Giảm bằng mã</span>
+                <span id="promo-label" class="text-slate-500">Giảm bằng mã</span>
                 <span id="promo-discount-amount" class="font-semibold text-emerald-600">-0 ₫</span>
             </div>
 
@@ -145,13 +145,15 @@
 
             <button type="submit" id="confirm-btn"
                     class="mt-4 w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-white transition hover:bg-primary-dark">
-                Thanh toán <span id="pay-amount">@Model.GrandTotal.ToString("N0") ₫</span>
+                <span id="btn-label">Thanh toán</span> <span id="pay-amount">@Model.GrandTotal.ToString("N0") ₫</span>
             </button>
             <a href="@Url.Action("SelectSeats", "Showtime", new { id = Model.ShowtimeId })" id="back-link"
                class="mt-2 block text-center text-xs text-slate-400 hover:text-primary">Hủy & chọn lại</a>
         </div>
     </form>
 </div>
+
+<partial name="_ConfirmModal" />
 
 @section Scripts {
     <script>
@@ -182,12 +184,15 @@
             const pointValue = @Model.PointValueVnd;
             let maxPoints = @Model.MaxUsablePoints;   // có thể giảm sau khi áp mã
             let promoDiscount = 0;                    // số tiền mã giảm hiện tại
+            let promoTarget = null;                   // đối tượng áp dụng của mã: Ticket_Only / Food_Only / All
             const vnd = n => n.toLocaleString('vi-VN') + ' ₫';
             const pointsInput = document.getElementById('points-input');
             const discountRow = document.getElementById('discount-row');
             const discountAmount = document.getElementById('discount-amount');
             const grandDisplay = document.getElementById('grand-display');
             const payAmount = document.getElementById('pay-amount');
+            const methodsBox = document.getElementById('payment-methods');
+            const btnLabel = document.getElementById('btn-label');
 
             // Tính lại tổng: trừ mã giảm giá trước, rồi trừ điểm trên phần còn lại.
             function recompute() {
@@ -200,8 +205,13 @@
 
                 const promoRow = document.getElementById('promo-row');
                 const promoDiscountAmount = document.getElementById('promo-discount-amount');
+                const promoLabel = document.getElementById('promo-label');
                 if (promoDiscount > 0) {
                     promoRow.classList.remove('hidden'); promoRow.classList.add('flex');
+                    // Hiện rõ khoản giảm bị trừ từ đâu: vé / đồ ăn / cả đơn.
+                    promoLabel.textContent = promoTarget === 'Ticket_Only' ? 'Giảm giá vé'
+                                           : promoTarget === 'Food_Only' ? 'Giảm giá đồ ăn'
+                                           : 'Giảm giá (cả đơn)';
                     promoDiscountAmount.textContent = '-' + vnd(promoDiscount);
                 } else {
                     promoRow.classList.add('hidden'); promoRow.classList.remove('flex');
@@ -223,7 +233,18 @@
                 }
 
                 grandDisplay.textContent = vnd(total);
-                payAmount.textContent = vnd(total);
+
+                // Đơn 0đ (điểm/mã phủ hết): ẩn phương thức thanh toán, đổi nút sang xác nhận miễn phí.
+                if (total <= 0) {
+                    methodsBox?.classList.add('hidden');
+                    btnLabel.textContent = 'Xác nhận đặt vé (miễn phí)';
+                    payAmount.classList.add('hidden');
+                } else {
+                    methodsBox?.classList.remove('hidden');
+                    btnLabel.textContent = 'Thanh toán';
+                    payAmount.classList.remove('hidden');
+                    payAmount.textContent = vnd(total);
+                }
             }
             if (pointsInput) {
                 pointsInput.addEventListener('input', recompute);
@@ -240,7 +261,7 @@
                 const code = (promoInput.value || '').trim().toUpperCase();
                 promoMsg.classList.remove('hidden');
                 if (!code) {
-                    promoDiscount = 0; promoHidden.value = '';
+                    promoDiscount = 0; promoTarget = null; promoHidden.value = '';
                     promoMsg.className = 'mt-1 text-xs text-rose-600';
                     promoMsg.textContent = 'Vui lòng nhập mã.';
                     recompute(); return;
@@ -256,26 +277,46 @@
                     const data = await res.json();
                     if (data.ok) {
                         promoDiscount = data.discount;
+                        promoTarget = data.target;
                         promoHidden.value = data.code;
                         maxPoints = data.maxPoints;
                         promoMsg.className = 'mt-1 text-xs text-emerald-600';
                         promoMsg.textContent = data.message;
                     } else {
-                        promoDiscount = 0; promoHidden.value = '';
+                        promoDiscount = 0; promoTarget = null; promoHidden.value = '';
                         maxPoints = @Model.MaxUsablePoints;
                         promoMsg.className = 'mt-1 text-xs text-rose-600';
                         promoMsg.textContent = data.message || 'Mã không hợp lệ.';
                     }
                 } catch {
-                    promoDiscount = 0; promoHidden.value = '';
+                    promoDiscount = 0; promoTarget = null; promoHidden.value = '';
                     promoMsg.className = 'mt-1 text-xs text-rose-600';
                     promoMsg.textContent = 'Không áp dụng được mã, thử lại.';
                 }
                 recompute();
             });
 
-            // Bấm thanh toán / hủy -> rời trang trong luồng, không nhả ghế qua pagehide.
-            document.getElementById('pay-form').addEventListener('submit', () => { proceeding = true; });
+            // Khởi tạo trạng thái hiển thị (đơn 0đ ngay từ đầu sẽ ẩn phương thức luôn).
+            recompute();
+
+            // Bấm thanh toán -> hỏi xác nhận trước; đồng ý mới submit (đặt proceeding=true để pagehide không nhả ghế).
+            document.getElementById('pay-form').addEventListener('submit', function (e) {
+                if (proceeding) return;              // đã xác nhận -> cho submit đi tiếp
+                e.preventDefault();
+                const form = this;
+                const free = payAmount.classList.contains('hidden');   // đơn 0đ
+                const msg = free
+                    ? 'Bạn chắc chắn đặt vé (miễn phí) không?'
+                    : 'Bạn chắc chắn thanh toán và đặt vé không?';
+                const go = () => { proceeding = true; form.submit(); };   // form.submit() bỏ qua listener nên không lặp lại
+                if (window.confirmPopup) {
+                    window.confirmPopup({ title: 'Xác nhận', message: msg, okText: free ? 'Đặt vé' : 'Thanh toán', type: 'warning' })
+                        .then(ok => { if (ok) go(); });
+                } else if (confirm(msg)) {
+                    go();
+                }
+            });
+            // Hủy & chọn lại -> rời trang trong luồng, không nhả ghế qua pagehide.
             document.getElementById('back-link').addEventListener('click', () => { proceeding = true; });
 
             // Đóng tab -> nhả ghế đang giữ.
