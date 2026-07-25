@@ -200,6 +200,9 @@ CREATE TABLE [Seat_Holds] (
   [showtime_id] UNIQUEIDENTIFIER NOT NULL,
   [seat_id] UNIQUEIDENTIFIER NOT NULL,
   [user_id] UNIQUEIDENTIFIER NULL,
+  -- Phiên giữ ghế của từng tab/máy quầy (NULL với luồng khách đặt online): cùng 1 tài khoản
+  -- Staff mở nhiều máy vẫn chặn được nhau vì quyền sở hữu hold = (user_id + hold_token).
+  [hold_token] UNIQUEIDENTIFIER NULL,
   [held_at] DATETIME CONSTRAINT [DF_SeatHolds_held] DEFAULT GETDATE(),
   [expires_at] DATETIME NOT NULL,
   [status] NVARCHAR(50) CONSTRAINT [DF_SeatHolds_status] DEFAULT 'Holding',
@@ -393,18 +396,6 @@ CREATE TABLE [Reviews] (
   CONSTRAINT [CK_Reviews_status] CHECK ([status] IN ('Approved', 'Hidden'))
 );
 
-CREATE TABLE [Chatbot_Logs] (
-  [id] UNIQUEIDENTIFIER CONSTRAINT [DF_Chatbot_id] DEFAULT NEWID(),
-  [user_id] UNIQUEIDENTIFIER NULL,
-  [session_id] VARCHAR(255) NOT NULL,
-  [user_message] NVARCHAR(MAX) NOT NULL,
-  [bot_response] NVARCHAR(MAX) NOT NULL,
-  [intent_detected] NVARCHAR(100),
-  [created_at] DATETIME CONSTRAINT [DF_Chatbot_created] DEFAULT GETDATE(),
-
-  CONSTRAINT [PK_Chatbot_Logs] PRIMARY KEY ([id])
-);
-
 CREATE TABLE [Audit_Logs] (
   [id] UNIQUEIDENTIFIER CONSTRAINT [DF_Audit_id] DEFAULT NEWID(),
   [user_id] UNIQUEIDENTIFIER NOT NULL,
@@ -561,7 +552,6 @@ ALTER TABLE [Reward_Point_History] ADD CONSTRAINT [FK_RewardPoint_Bookings] FORE
 -- Nhóm Khách hàng, Đánh giá & Hệ thống Logs
 ALTER TABLE [Reviews] ADD CONSTRAINT [FK_Reviews_Users] FOREIGN KEY ([user_id]) REFERENCES [Users] ([id]);
 ALTER TABLE [Reviews] ADD CONSTRAINT [FK_Reviews_Movies] FOREIGN KEY ([movie_id]) REFERENCES [Movies] ([id]);
-ALTER TABLE [Chatbot_Logs] ADD CONSTRAINT [FK_ChatbotLogs_Users] FOREIGN KEY ([user_id]) REFERENCES [Users] ([id]);
 ALTER TABLE [Audit_Logs] ADD CONSTRAINT [FK_AuditLogs_Users] FOREIGN KEY ([user_id]) REFERENCES [Users] ([id]);
 
 -- Nhóm Cấu hình giá

@@ -295,20 +295,26 @@ public class ShowtimeService : IShowtimeService
             t => t.ShowtimeId == showtimeId && t.SeatId == seatId && t.Status != "Cancelled");
         if (booked) return Result.Failure("Ghế đã được đặt.");
 
-        // Các hold còn hiệu lực của ghế này.
+        // Lấy MỌI dòng còn mang trạng thái "Holding" của ghế này, KỂ CẢ đã hết hạn: hold hết hạn không tự
+        // đổi trạng thái (không có job dọn), nên vẫn chiếm chỗ trong unique index UX_SeatHolds_Active
+        // (ShowtimeId, SeatId) WHERE status='Holding'. Chèn thêm dòng 'Holding' mới sẽ vi phạm index.
         var holds = (await _unitOfWork.SeatHolds.GetAllAsync(
             predicate: h => h.ShowtimeId == showtimeId && h.SeatId == seatId
-                && h.Status == "Holding" && h.ExpiresAt > now)).ToList();
+                && h.Status == "Holding")).ToList();
 
-        // Người khác đang giữ -> không giữ được.
-        if (holds.Any(h => h.UserId != userId))
+        // Chỉ hold CÒN HẠN của người khác mới thực sự chặn; hold đã hết hạn thì ai giữ trước cũng không tính.
+        if (holds.Any(h => h.UserId != userId && h.ExpiresAt > now))
             return Result.Failure("Ghế đang được người khác giữ.");
 
-        var mine = holds.FirstOrDefault(h => h.UserId == userId);
-        if (mine != null)
+        // Nhờ unique index nên nhiều nhất 1 dòng — tái sử dụng để gia hạn (hold của mình) hoặc
+        // tiếp quản (hold đã hết hạn, kể cả của người khác) thay vì chèn dòng mới gây trùng index.
+        var existing = holds.FirstOrDefault();
+        if (existing != null)
         {
-            mine.ExpiresAt = now.AddMinutes(holdMinutes);   // gia hạn
-            _unitOfWork.SeatHolds.Update(mine);
+            existing.UserId = userId;
+            existing.HeldAt = now;
+            existing.ExpiresAt = now.AddMinutes(holdMinutes);
+            _unitOfWork.SeatHolds.Update(existing);
         }
         else
         {

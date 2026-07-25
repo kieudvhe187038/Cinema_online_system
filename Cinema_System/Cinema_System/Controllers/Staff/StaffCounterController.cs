@@ -17,17 +17,20 @@ public class StaffCounterController : Controller
     private readonly IBookingManagementService _bookingService;
     private readonly IMemberService _memberService;
     private readonly IAuditLogWriter _audit;
+    private readonly IVietQrService _vietQr;
 
     public StaffCounterController(
         ICounterBookingService counterBookingService,
         IBookingManagementService bookingService,
         IMemberService memberService,
-        IAuditLogWriter audit)
+        IAuditLogWriter audit,
+        IVietQrService vietQr)
     {
         _counterBookingService = counterBookingService;
         _bookingService = bookingService;
         _memberService = memberService;
         _audit = audit;
+        _vietQr = vietQr;
     }
 
     // Lấy Id nhân viên đang đăng nhập từ Claims (LoginController set ClaimTypes.NameIdentifier khi đăng nhập).
@@ -51,40 +54,69 @@ public class StaffCounterController : Controller
     }
 
     // --- AJAX: sơ đồ ghế + giá theo suất chiếu ---
+    // holdToken: phiên giữ ghế riêng của tab/máy quầy gọi lên (xem ghi chú ở HoldSeat).
     [HttpGet("Seats/{showtimeId}")]
-    public async Task<IActionResult> Seats(Guid showtimeId)
+    public async Task<IActionResult> Seats(Guid showtimeId, Guid holdToken)
     {
-        var seatMap = await _counterBookingService.GetSeatMapAsync(showtimeId, GetCurrentStaffId());
+        var seatMap = await _counterBookingService.GetSeatMapAsync(showtimeId, GetCurrentStaffId(), holdToken);
         if (seatMap is null) return NotFound();
 
         return Json(seatMap);
     }
 
     // --- AJAX: giữ 1 ghế trong lúc nhân viên nhập thông tin đơn (chặn người khác chọn trùng ghế) ---
+    // holdToken do client sinh cho MỖI tab quầy (sessionStorage): nhiều máy quầy dùng chung 1 tài khoản
+    // Staff nên nếu chỉ khóa theo tài khoản thì máy này coi hold của máy kia là của chính mình → không chặn.
     [HttpPost("HoldSeat")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> HoldSeat(Guid showtimeId, Guid seatId)
+    public async Task<IActionResult> HoldSeat(Guid showtimeId, Guid seatId, Guid holdToken)
     {
-        var result = await _counterBookingService.HoldSeatAsync(showtimeId, seatId, GetCurrentStaffId(), HoldMinutes);
+        var result = await _counterBookingService.HoldSeatAsync(showtimeId, seatId, GetCurrentStaffId(), holdToken, HoldMinutes);
         return Json(new { ok = result.Succeeded, message = result.Error });
     }
 
     // --- AJAX: bỏ giữ 1 ghế (nhân viên bỏ chọn) ---
     [HttpPost("ReleaseSeat")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ReleaseSeat(Guid showtimeId, Guid seatId)
+    public async Task<IActionResult> ReleaseSeat(Guid showtimeId, Guid seatId, Guid holdToken)
     {
-        await _counterBookingService.ReleaseSeatAsync(showtimeId, seatId, GetCurrentStaffId());
+        await _counterBookingService.ReleaseSeatAsync(showtimeId, seatId, GetCurrentStaffId(), holdToken);
         return Json(new { ok = true });
     }
 
     // --- AJAX: bỏ giữ toàn bộ ghế đang giữ của 1 suất (đổi suất chiếu khác / rời trang) ---
     [HttpPost("ReleaseAll")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ReleaseAll(Guid showtimeId)
+    public async Task<IActionResult> ReleaseAll(Guid showtimeId, Guid holdToken)
     {
-        await _counterBookingService.ReleaseAllAsync(showtimeId, GetCurrentStaffId());
+        await _counterBookingService.ReleaseAllAsync(showtimeId, GetCurrentStaffId(), holdToken);
         return Json(new { ok = true });
+    }
+
+    // --- AJAX: xem trước áp mã khuyến mãi trước khi chốt đơn ---
+    [HttpGet("PreviewPromo")]
+    public async Task<IActionResult> PreviewPromo(string code, Guid? customerId, decimal seatTotal, decimal foodTotal)
+    {
+        var result = await _counterBookingService.PreviewPromoAsync(code, customerId, seatTotal, foodTotal);
+        return Json(result);
+    }
+
+    // --- AJAX: sinh mã QR chuyển khoản (VietQR) hiển thị cho khách quét khi chọn thanh toán Chuyển khoản ---
+    [HttpGet("VietQrCode")]
+    public IActionResult VietQrCode(Guid showtimeId, decimal amount)
+    {
+        if (!_vietQr.Enabled) return Json(new { enabled = false });
+
+        var content = "CineStar " + showtimeId.ToString("N")[..8].ToUpper();
+        return Json(new
+        {
+            enabled = true,
+            qrUrl = _vietQr.BuildQrUrl(amount, content),
+            bankCode = _vietQr.BankCode,
+            accountNo = _vietQr.AccountNo,
+            accountName = _vietQr.AccountName,
+            content
+        });
     }
 
     // --- Trang tra cứu thành viên (#41) ---
