@@ -83,6 +83,27 @@ namespace Cinema_System.Controllers.Public
         }
 
         /// <summary>
+        /// Số dòng gợi ý tối đa hiển thị dưới ô tìm kiếm
+        /// </summary>
+        private const int SuggestionLimit = 8;
+
+        /// <summary>
+        /// Trả về danh sách gợi ý tên phim (JSON) cho dropdown của ô tìm kiếm ở header
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> Suggest([FromQuery(Name = "find")] string? searchQuery)
+        {
+            // Từ khóa không hợp lệ thì trả mảng rỗng, không báo lỗi — người dùng vẫn đang gõ dở.
+            if (!IsValidSearchQuery(searchQuery))
+            {
+                return Json(Array.Empty<MovieSuggestionDTO>());
+            }
+
+            var suggestions = await _movieService.SuggestMoviesAsync(searchQuery!.Trim(), SuggestionLimit);
+            return Json(suggestions);
+        }
+
+        /// <summary>
         /// Trang chọn phim để đánh giá (chỉ hiển thị những phim mà người dùng hiện tại đã mua vé và đã xem)
         /// </summary>
         

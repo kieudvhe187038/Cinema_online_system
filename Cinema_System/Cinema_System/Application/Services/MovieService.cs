@@ -219,6 +219,38 @@ public class MovieService : IMovieService
         return PagedResult<MovieDTO>.Create(searchResultsDto, page, pageSize);
     }
 
+    // Gợi ý tên phim khi đang gõ: khớp theo TÊN phim (không phân biệt dấu/hoa-thường),
+    // không bó theo tab vì người dùng gõ để nhảy thẳng tới phim.
+    public async Task<IEnumerable<MovieSuggestionDTO>> SuggestMoviesAsync(string keyword, int limit)
+    {
+        var searchKey = VietnameseText.ToSearchKey(keyword);
+
+        if (searchKey.Length == 0 || limit <= 0)
+        {
+            return Array.Empty<MovieSuggestionDTO>();
+        }
+
+        var visibleMovies = await GetVisibleMoviesAsync();
+
+        // Phim có tên BẮT ĐẦU bằng từ khóa xếp trước (gõ "bi" thì "Bí Mật..." lên trên
+        // "Điều Bí Ẩn"), sau đó tới các phim chỉ chứa từ khóa, cùng nhóm thì xếp theo tên.
+        return visibleMovies
+            .Select(movie => new { Movie = movie, TitleKey = VietnameseText.ToSearchKey(movie.Title) })
+            .Where(entry => entry.TitleKey.Contains(searchKey, StringComparison.Ordinal))
+            .OrderBy(entry => entry.TitleKey.StartsWith(searchKey, StringComparison.Ordinal) ? 0 : 1)
+            .ThenBy(entry => entry.Movie.Title, StringComparer.CurrentCultureIgnoreCase)
+            .Take(limit)
+            .Select(entry => new MovieSuggestionDTO
+            {
+                Title = entry.Movie.Title,
+                Slug = entry.Movie.Slug,
+                PosterUrl = entry.Movie.PosterUrl,
+                Status = entry.Movie.Status,
+                ReleaseYear = entry.Movie.ReleaseDate?.Year
+            })
+            .ToList();
+    }
+
     // ─────────────────────────────────────────────────────────────
     // Quản lý (admin CRUD)
     // ─────────────────────────────────────────────────────────────
