@@ -48,6 +48,26 @@ public class ShowtimeScheduleService : IShowtimeScheduleService
             roomId = availableRooms.First().Id;
         }
 
+        // Từ khóa tên phim/phòng phải khớp cả khi gõ KHÔNG DẤU — SQL Server không so sánh được
+        // như vậy, nên tìm id phim/phòng khớp trước (2 bảng nhỏ) rồi mới lọc suất chiếu ở SQL.
+        var searchKey = VietnameseText.ToSearchKey(search);
+        var hasSearch = searchKey.Length > 0;
+        var searchMovieIds = new List<Guid>();
+        var searchRoomIds = new List<Guid>();
+
+        if (hasSearch)
+        {
+            var allMovies = await _unitOfWork.Movies.GetAllAsync();
+            searchMovieIds = allMovies
+                .Where(m => VietnameseText.Contains(m.Title, searchKey))
+                .Select(m => m.Id)
+                .ToList();
+            searchRoomIds = rooms
+                .Where(r => VietnameseText.Contains(r.Name, searchKey))
+                .Select(r => r.Id)
+                .ToList();
+        }
+
         // Lấy danh sách các suất chiếu nằm trong khoảng thời gian của tuần hiện tại và thỏa mãn bộ lọc
         var showtimes = await _unitOfWork.Showtimes.GetAllAsync(
             predicate: s =>
@@ -55,7 +75,7 @@ public class ShowtimeScheduleService : IShowtimeScheduleService
                 s.StartTime < weekEnd &&
                 (roomId == null || s.RoomId == roomId) &&
                 (string.IsNullOrEmpty(status) || s.Status == status) &&
-                (string.IsNullOrEmpty(search) || s.Movie.Title.Contains(search) || s.Room.Name.Contains(search)),
+                (!hasSearch || searchMovieIds.Contains(s.MovieId) || searchRoomIds.Contains(s.RoomId)),
             includeProperties: new[] { "Movie", "Room" },
             orderBy: q => q.OrderBy(s => s.StartTime));
 
@@ -89,9 +109,9 @@ public class ShowtimeScheduleService : IShowtimeScheduleService
 
         // Tính toán các số liệu thống kê mới theo phòng đang chọn (nếu có)
         int? searchMovieTotalShowtimes = null;
-        if (!string.IsNullOrEmpty(search))
+        if (hasSearch)
         {
-            searchMovieTotalShowtimes = await _unitOfWork.Showtimes.CountAsync(s => s.Movie.Title.Contains(search) && (roomId == null || s.RoomId == roomId));
+            searchMovieTotalShowtimes = await _unitOfWork.Showtimes.CountAsync(s => searchMovieIds.Contains(s.MovieId) && (roomId == null || s.RoomId == roomId));
         }
 
         var weekTotalShowtimes = await _unitOfWork.Showtimes.CountAsync(s => s.EndTime > weekBegin && s.StartTime < weekEnd && (roomId == null || s.RoomId == roomId));

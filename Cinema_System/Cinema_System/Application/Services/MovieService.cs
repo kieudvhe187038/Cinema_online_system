@@ -1,5 +1,3 @@
-using System.Globalization;
-using System.Text;
 using System.Text.RegularExpressions;
 using AutoMapper;
 using Cinema_System.Application.Common;
@@ -183,12 +181,12 @@ public class MovieService : IMovieService
         return _mapper.Map<IEnumerable<MovieDTO>>(specialMovies);
     }
 
-    // Tìm phim theo từ khóa (đẩy điều kiện xuống SQL) và trả về kết quả phân trang.
+    // Tìm phim theo từ khóa (gõ không dấu vẫn ra) và trả về kết quả phân trang.
     public async Task<PagedResult<MovieDTO>> SearchMoviesAsync(string keyword, string? tab, int page, int pageSize)
     {
-        var searchTerm = keyword?.Trim() ?? string.Empty;
+        var searchKey = VietnameseText.ToSearchKey(keyword);
 
-        if (string.IsNullOrWhiteSpace(searchTerm))
+        if (searchKey.Length == 0)
         {
             return PagedResult<MovieDTO>.Create(Array.Empty<MovieDTO>(), page, pageSize);
         }
@@ -201,19 +199,21 @@ public class MovieService : IMovieService
             _ => null
         };
 
-        var pattern = $"%{searchTerm}%";
-
-        var searchResults = await _unitOfWork.Movies.GetAllAsync(
+        // Chỉ đẩy điều kiện trạng thái xuống SQL; từ khóa phải so khớp KHÔNG DẤU nên lọc
+        // trong bộ nhớ (xem VietnameseText). Tập phim của một rạp nhỏ nên chi phí không đáng kể.
+        var candidates = await _unitOfWork.Movies.GetAllAsync(
             predicate: movie =>
                 movie.Status != null &&
-                !EF.Functions.Like(EF.Functions.Collate(movie.Status, "Latin1_General_CI_AS"), "%stopped%") &&
-                (statusFilter == null || EF.Functions.Like(EF.Functions.Collate(movie.Status, "Latin1_General_CI_AS"), statusFilter)) &&
-                ((movie.Title != null && EF.Functions.Like(EF.Functions.Collate(movie.Title, "Latin1_General_CI_AS"), pattern)) ||
-                (movie.Description != null && EF.Functions.Like(EF.Functions.Collate(movie.Description, "Latin1_General_CI_AS"), pattern)) ||
-                (movie.Director != null && EF.Functions.Like(EF.Functions.Collate(movie.Director, "Latin1_General_CI_AS"), pattern)) ||
-                (movie.CastMembers != null && EF.Functions.Like(EF.Functions.Collate(movie.CastMembers, "Latin1_General_CI_AS"), pattern))),
+                movie.Status.ToLower() != MovieStatus.StoppedLower &&
+                (statusFilter == null || movie.Status == statusFilter),
             includeProperties: new[] { ShowtimesIncludeProperty, GenresIncludeProperty }
         );
+
+        var searchResults = candidates.Where(movie =>
+            VietnameseText.Contains(movie.Title, searchKey) ||
+            VietnameseText.Contains(movie.Description, searchKey) ||
+            VietnameseText.Contains(movie.Director, searchKey) ||
+            VietnameseText.Contains(movie.CastMembers, searchKey));
 
         var searchResultsDto = _mapper.Map<List<MovieDTO>>(searchResults);
         return PagedResult<MovieDTO>.Create(searchResultsDto, page, pageSize);
@@ -237,13 +237,14 @@ public class MovieService : IMovieService
     {
         var movies = await _unitOfWork.Movies.GetAllAsync(
             predicate: m =>
-                (string.IsNullOrEmpty(search) || m.Title.Contains(search)) &&
                 (string.IsNullOrEmpty(status) || m.Status == status) &&
                 (string.IsNullOrEmpty(genre) || m.Genres.Any(g => g.Name == genre)),
             include: q => q.Include(m => m.Genres),
             orderBy: q => q.OrderByDescending(m => m.CreatedAt));
 
-        var list = movies.ToList();
+        // Tên phim so khớp KHÔNG DẤU nên lọc trong bộ nhớ, không đẩy được xuống SQL.
+        var searchKey = VietnameseText.ToSearchKey(search);
+        var list = movies.Where(m => VietnameseText.Contains(m.Title, searchKey)).ToList();
         var total = list.Count;
         var totalPages = total == 0 ? 1 : (int)Math.Ceiling(total / (double)pageSize);
         page = Math.Clamp(page, 1, totalPages);
@@ -402,14 +403,7 @@ public class MovieService : IMovieService
     // Sinh slug từ tên phim: bỏ dấu tiếng Việt, thay khoảng trắng bằng "-".
     private static string GenerateSlug(string title)
     {
-        var normalized = title.Normalize(NormalizationForm.FormD);
-        var sb = new StringBuilder();
-        foreach (var c in normalized)
-        {
-            if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
-                sb.Append(c);
-        }
-        var result = sb.ToString().Normalize(NormalizationForm.FormC).ToLower();
+        var result = VietnameseText.RemoveDiacritics(title).ToLower();
         result = Regex.Replace(result, @"[^a-z0-9\s-]", "");
         result = Regex.Replace(result, @"\s+", "-");
         result = Regex.Replace(result, @"-+", "-");

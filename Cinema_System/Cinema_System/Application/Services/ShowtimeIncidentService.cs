@@ -62,13 +62,13 @@ namespace Cinema_System.Application.Services
             else if (scope == "incident")   // "Đã có sự cố" = suất đã được khai báo sự cố
                 showtimes = showtimes.Where(s => incidentIds.Contains(s.Id)).ToList();
 
-            // Tìm kiếm theo tên phim hoặc tên phòng
-            if (!string.IsNullOrEmpty(keyword))
+            // Tìm kiếm theo tên phim hoặc tên phòng (gõ không dấu vẫn ra)
+            var searchKey = VietnameseText.ToSearchKey(keyword);
+            if (searchKey.Length > 0)
             {
-                var kw = keyword.ToLower();
                 showtimes = showtimes.Where(s =>
-                    (s.Movie?.Title ?? string.Empty).ToLower().Contains(kw) ||
-                    (s.Room?.Name ?? string.Empty).ToLower().Contains(kw)).ToList();
+                    VietnameseText.Contains(s.Movie?.Title, searchKey) ||
+                    VietnameseText.Contains(s.Room?.Name, searchKey)).ToList();
             }
 
             var paged = PagedResult<Showtime>.Create(showtimes, page, pageSize);
