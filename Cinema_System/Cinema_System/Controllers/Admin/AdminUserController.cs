@@ -115,8 +115,10 @@ public class AdminUserController : Controller
         // KHÔNG ghi mật khẩu tạm vào audit log.
         await _audit.LogAsync("RESET_PASSWORD", "Users", id);
 
-        TempData["TempPassword"] = result.Data;
-        TempData["Success"] = "Đã đặt lại mật khẩu. Vui lòng gửi mật khẩu tạm cho người dùng.";
+        TempData["TempPassword"] = result.Data.TempPassword;
+        TempData["Success"] = result.Data.EmailSent
+            ? "Đã đặt lại mật khẩu và gửi mật khẩu tạm tới email người dùng."
+            : "Đã đặt lại mật khẩu nhưng gửi email thất bại. Vui lòng gửi mật khẩu tạm cho người dùng theo cách khác.";
         return RedirectToAction(nameof(Details), new { id });
     }
 }
