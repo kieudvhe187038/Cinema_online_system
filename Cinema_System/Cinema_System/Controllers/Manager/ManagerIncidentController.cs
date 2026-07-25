@@ -6,8 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Cinema_System.Controllers.Manager
 {
-    // Manager khai báo sự cố suất chiếu + hoàn điểm. Chỉ MANAGER/ADMIN.
-    [Authorize(Roles = "MANAGER,ADMIN")]
+    // Manager khai báo sự cố suất chiếu + hoàn điểm. Chỉ MANAGER (đồng bộ với các màn quản lý khác).
+    [Authorize(Roles = "MANAGER")]
     [Route("Manager/Incident")]
     public class ManagerIncidentController : Controller
     {
