@@ -49,10 +49,6 @@
     </a>
 
     <nav class="flex-1 overflow-y-auto py-3">
-        <a class="@navBase @(ctrl == "RoomManagement" ? navActive : navIdle)" asp-controller="RoomManagement" asp-action="Index">
-            <span class="material-symbols-outlined">meeting_room</span>
-            <span>Quản lý phòng chiếu</span>
-        </a>
         <a class="@navBase @(ctrl == "StaffCounter" && action != "Member" ? navActive : navIdle)" asp-controller="StaffCounter" asp-action="Index">
             <span class="material-symbols-outlined">point_of_sale</span>
             <span>Đặt vé tại quầy</span>

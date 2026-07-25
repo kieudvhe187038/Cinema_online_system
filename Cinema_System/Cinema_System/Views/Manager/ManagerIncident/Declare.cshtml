@@ -21,10 +21,24 @@
 
         <div>
             <label class="mb-1 block text-sm font-semibold text-secondary-dark">Suất chiếu <span class="text-red-500">*</span></label>
-            <select asp-for="ShowtimeId" asp-items="Model.ShowtimeOptions"
-                    class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-primary focus:outline-none">
-                <option value="">-- Chọn suất chiếu --</option>
-            </select>
+            @* Combobox gõ để tìm suất chiếu (phim/phòng/giờ): ô text lọc + input hidden giữ ShowtimeId thật để submit. *@
+            @{ var selectedShowtime = Model.ShowtimeOptions.FirstOrDefault(o => o.Value == Model.ShowtimeId?.ToString()); }
+            <div class="relative" data-combobox="showtime">
+                <input type="text" data-combobox-input autocomplete="off" placeholder="Gõ tên phim / phòng để tìm suất chiếu..."
+                       value="@selectedShowtime?.Text"
+                       class="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:border-primary focus:outline-none" />
+                <input type="hidden" asp-for="ShowtimeId" data-combobox-value />
+                <div class="absolute z-20 mt-1 hidden max-h-60 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg" data-combobox-list>
+                    @foreach (var opt in Model.ShowtimeOptions)
+                    {
+                        <div class="cursor-pointer px-3 py-2 text-sm hover:bg-primary/10" data-combobox-option data-id="@opt.Value" data-name="@opt.Text">@opt.Text</div>
+                    }
+                </div>
+                @if (!Model.ShowtimeOptions.Any())
+                {
+                    <p class="mt-1 text-xs text-gray-400">Không có suất chiếu khả dụng để khai báo sự cố.</p>
+                }
+            </div>
         </div>
 
         <div>
@@ -50,10 +64,15 @@
             </div>
         </div>
 
-        <label class="flex items-center gap-2 text-sm text-gray-700">
-            <input asp-for="CancelShowtime" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" />
-            Hủy suất chiếu này (đổi trạng thái sang "Đã hủy")
-        </label>
+        <div>
+            <label class="flex items-center gap-2 text-sm text-gray-700">
+                <input asp-for="CancelShowtime" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" />
+                Hủy suất chiếu này (đổi trạng thái sang "Đã hủy")
+            </label>
+            <p class="mt-1 pl-6 text-xs text-gray-400">
+                Khi hủy, hệ thống sẽ gửi email báo <strong>lý do</strong> (chính là phần "Mô tả sự cố" ở trên) tới toàn bộ khách đã thanh toán suất này.
+            </p>
+        </div>
 
         <div class="flex gap-3 pt-2">
             <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 font-semibold text-white hover:bg-primary-dark transition">
@@ -63,3 +82,39 @@
         </div>
     </form>
 </div>
+
+<script>
+    // Combobox tìm suất chiếu: ô text để gõ lọc + input hidden giữ ShowtimeId thật để submit/validate.
+    document.querySelectorAll('[data-combobox]').forEach(function (box) {
+        var input = box.querySelector('[data-combobox-input]');
+        var hidden = box.querySelector('[data-combobox-value]');
+        var list = box.querySelector('[data-combobox-list]');
+        var options = Array.prototype.slice.call(box.querySelectorAll('[data-combobox-option]'));
+
+        function filter() {
+            var keyword = input.value.trim().toLowerCase();
+            options.forEach(function (opt) {
+                opt.classList.toggle('hidden', keyword !== '' && opt.dataset.name.toLowerCase().indexOf(keyword) === -1);
+            });
+        }
+        function open() { filter(); list.classList.remove('hidden'); }
+        function close() {
+            list.classList.add('hidden');
+            // Rời ô mà không chọn lại: khôi phục tên theo giá trị hidden hiện có.
+            var selected = options.find(function (opt) { return opt.dataset.id === hidden.value; });
+            input.value = selected ? selected.dataset.name : '';
+        }
+
+        input.addEventListener('focus', open);
+        input.addEventListener('input', open);
+        options.forEach(function (opt) {
+            opt.addEventListener('mousedown', function (e) {
+                e.preventDefault(); // giữ focus để 'blur' không chạy trước khi gán giá trị
+                hidden.value = opt.dataset.id;
+                input.value = opt.dataset.name;
+                close();
+            });
+        });
+        input.addEventListener('blur', close);
+    });
+</script>

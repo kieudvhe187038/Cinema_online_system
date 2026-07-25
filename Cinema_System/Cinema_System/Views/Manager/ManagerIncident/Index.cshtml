@@ -20,9 +20,6 @@
         <p class="text-sm text-gray-500">Khai báo sự cố, hoàn điểm và gán voucher bồi thường cho khách.</p>
     </div>
     <div class="flex gap-2">
-        <a asp-action="Maintain" class="inline-flex items-center gap-2 rounded-xl border border-secondary px-4 py-2.5 font-semibold text-secondary hover:bg-secondary hover:text-white transition">
-            <span class="material-symbols-outlined">build</span> Bảo trì phòng theo lịch
-        </a>
         <a asp-action="Declare" class="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 font-semibold text-white hover:bg-primary-dark transition">
             <span class="material-symbols-outlined">add_alert</span> Khai báo sự cố
         </a>
@@ -47,20 +44,50 @@
 
 <!-- Bộ lọc + danh sách suất chiếu -->
 <div class="rounded-2xl bg-white p-6 shadow-sm">
-    <div class="mb-4 flex items-center justify-between">
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 class="font-head font-bold text-secondary-dark">Suất chiếu gần đây</h2>
-        <div class="flex gap-1 rounded-lg bg-gray-100 p-1 text-sm">
-            @foreach (var opt in new[] { ("all", "Tất cả"), ("live", "Đang chiếu"), ("today", "Hôm nay") })
-            {
-                <a asp-action="Index" asp-route-scope="@opt.Item1"
-                   class="rounded-md px-3 py-1.5 font-medium transition @(Model.Scope == opt.Item1 ? "bg-white text-primary shadow-sm" : "text-gray-500 hover:text-gray-700")">@opt.Item2</a>
-            }
+        <div class="flex flex-wrap items-center gap-3">
+            @* Ô tìm kiếm phim/phòng (giữ nguyên tab đang chọn) *@
+            <form asp-action="Index" method="get" class="relative">
+                <input type="hidden" name="scope" value="@Model.Scope" />
+                <span class="material-symbols-outlined pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[18px] text-gray-400">search</span>
+                <input type="text" name="search" value="@Model.Search" autocomplete="off"
+                       placeholder="Tìm theo phim / phòng..."
+                       class="w-56 rounded-lg border border-gray-300 py-1.5 pl-9 pr-3 text-sm focus:border-primary focus:outline-none" />
+                @if (!string.IsNullOrEmpty(Model.Search))
+                {
+                    <a asp-action="Index" asp-route-scope="@Model.Scope"
+                       class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary" title="Xóa tìm kiếm">
+                        <span class="material-symbols-outlined text-[18px]">close</span>
+                    </a>
+                }
+            </form>
+            <div class="flex gap-1 rounded-lg bg-gray-100 p-1 text-sm">
+                @foreach (var opt in new[] { ("all", "Tất cả"), ("live", "Đang chiếu"), ("today", "Hôm nay"), ("incident", "Đã có sự cố") })
+                {
+                    <a asp-action="Index" asp-route-scope="@opt.Item1" asp-route-search="@Model.Search"
+                       class="rounded-md px-3 py-1.5 font-medium transition @(Model.Scope == opt.Item1 ? "bg-white text-primary shadow-sm" : "text-gray-500 hover:text-gray-700")">@opt.Item2</a>
+                }
+            </div>
         </div>
     </div>
 
     @if (!Model.Items.Any())
     {
-        <p class="py-8 text-center text-gray-500">Không có suất chiếu nào.</p>
+        <p class="py-8 text-center text-gray-500">
+            @if (!string.IsNullOrEmpty(Model.Search))
+            {
+                <text>Không tìm thấy suất chiếu nào khớp với "<strong>@Model.Search</strong>".</text>
+            }
+            else if (Model.Scope == "incident")
+            {
+                <text>Chưa có suất chiếu nào được khai báo sự cố.</text>
+            }
+            else
+            {
+                <text>Không có suất chiếu nào.</text>
+            }
+        </p>
     }
     else
     {
@@ -120,6 +147,11 @@
                                         </button>
                                     </form>
                                 }
+                                else if (s.IsEnded)
+                                {
+                                    @* Suất đã kết thúc (chỉ còn hiển thị nếu đã có sự cố): không có thao tác nào. *@
+                                    <span class="text-xs text-gray-300" title="Suất đã kết thúc — chỉ lưu lại để xem lịch sử sự cố">—</span>
+                                }
                                 else
                                 {
                                     <a asp-action="Declare" asp-route-showtimeId="@s.ShowtimeId"
@@ -159,7 +191,7 @@
                     }
                     else
                     {
-                        <a asp-action="Index" asp-route-scope="@Model.Scope" asp-route-page="@p"
+                        <a asp-action="Index" asp-route-scope="@Model.Scope" asp-route-search="@Model.Search" asp-route-page="@p"
                            class="rounded-lg border border-gray-300 px-3 py-1 text-sm text-gray-600 hover:bg-primary hover:text-white hover:border-primary">@p</a>
                     }
                     prev = p;

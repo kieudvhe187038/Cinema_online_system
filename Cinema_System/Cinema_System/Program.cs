@@ -114,7 +114,6 @@ builder.Services.AddSession(options =>
 });
 
 builder.Services.AddScoped<IBookingService, BookingService>();
-builder.Services.AddScoped<IRoomManagementService, RoomManagementService>();
 
 // Cookie Authentication.
 var authBuilder = builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

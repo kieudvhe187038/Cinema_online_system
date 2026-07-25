@@ -12,16 +12,19 @@ namespace Cinema_System.Application.Services
     {
         private const string RewardRateKey = "reward_point_rate";
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IEmailService _emailService;
 
-        public ShowtimeIncidentService(IUnitOfWork unitOfWork)
+        public ShowtimeIncidentService(IUnitOfWork unitOfWork, IEmailService emailService)
         {
             _unitOfWork = unitOfWork;
+            _emailService = emailService;
         }
 
         // Thống kê + danh sách suất chiếu (kèm cờ đã có sự cố)
-        public async Task<IncidentListViewModel> GetIndexAsync(string? scope, int page, int pageSize = 8)
+        public async Task<IncidentListViewModel> GetIndexAsync(string? scope, int page, int pageSize = 8, string? search = null)
         {
             scope = string.IsNullOrWhiteSpace(scope) ? "all" : scope.ToLower();
+            var keyword = search?.Trim();
 
             var now = DateTime.Now;
             var today = DateTime.Today;
@@ -36,19 +39,36 @@ namespace Cinema_System.Application.Services
                 TotalIncidents = await _unitOfWork.ShowtimeIncidents.CountAsync()
             };
 
-            // Lọc theo phạm vi
-            Expression<Func<Showtime, bool>>? predicate = scope switch
-            {
-                // "Đang chiếu" = suất đang diễn ra theo giờ thực (hoặc được đánh dấu Live)
-                "live" => s => (s.StartTime <= now && s.EndTime > now) || s.Status == "Live",
-                "today" => s => s.StartTime >= today && s.StartTime < tomorrow,
-                _ => null
-            };
+            // Màn này là màn THAO TÁC (khai báo sự cố / hủy / khôi phục) → chỉ hiển thị suất còn
+            // thao tác được, tức CHƯA kết thúc. Suất đã kết thúc thì mọi thao tác đều bị chặn
+            // (không khai báo/hủy được, khôi phục cũng bị từ chối) nên bỏ hẳn khỏi danh sách,
+            // kể cả suất đã có sự cố (lịch sử sự cố xem ở Báo cáo & Thống kê / Audit Log).
+            var incidentIds = (await _unitOfWork.ShowtimeIncidents.GetAllAsync(i => i.ShowtimeId != null))
+                .Select(i => i.ShowtimeId!.Value).ToHashSet();
 
             var showtimes = (await _unitOfWork.Showtimes.GetAllAsync(
-                predicate,
                 includeProperties: new[] { "Movie", "Room", "Room.RoomType" },
                 orderBy: q => q.OrderByDescending(s => s.StartTime))).ToList();
+
+            bool IsEnded(Showtime s) => s.Status == "Completed" || s.EndTime < now;
+            showtimes = showtimes.Where(s => !IsEnded(s)).ToList();
+
+            // Lọc theo phạm vi
+            if (scope == "live")   // "Đang chiếu" = đang diễn ra theo giờ thực (hoặc đánh dấu Live)
+                showtimes = showtimes.Where(s => (s.StartTime <= now && s.EndTime > now) || s.Status == "Live").ToList();
+            else if (scope == "today")
+                showtimes = showtimes.Where(s => s.StartTime >= today && s.StartTime < tomorrow).ToList();
+            else if (scope == "incident")   // "Đã có sự cố" = suất đã được khai báo sự cố
+                showtimes = showtimes.Where(s => incidentIds.Contains(s.Id)).ToList();
+
+            // Tìm kiếm theo tên phim hoặc tên phòng
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                var kw = keyword.ToLower();
+                showtimes = showtimes.Where(s =>
+                    (s.Movie?.Title ?? string.Empty).ToLower().Contains(kw) ||
+                    (s.Room?.Name ?? string.Empty).ToLower().Contains(kw)).ToList();
+            }
 
             var paged = PagedResult<Showtime>.Create(showtimes, page, pageSize);
             var pageIds = paged.Items.Select(s => s.Id).ToList();
@@ -72,6 +92,7 @@ namespace Cinema_System.Application.Services
                 RoomName = s.Room?.Name ?? "-",
                 RoomTypeName = s.Room?.RoomType?.Name ?? "-",
                 StartTime = s.StartTime,
+                EndTime = s.EndTime,
                 Status = s.Status,
                 RoomStatus = s.Room?.Status,
                 SeatsSold = seatsByShowtime.GetValueOrDefault(s.Id),
@@ -84,6 +105,7 @@ namespace Cinema_System.Application.Services
                 Stats = stats,
                 Items = items,
                 Scope = scope,
+                Search = keyword,
                 CurrentPage = paged.CurrentPage,
                 TotalPages = paged.TotalPages,
                 TotalItems = paged.TotalCount
@@ -117,8 +139,13 @@ namespace Cinema_System.Application.Services
         public async Task<Result> DeclareAsync(DeclareIncidentViewModel form, Guid managerId)
         {
             var showtimeId = form.ShowtimeId!.Value;
-            var showtime = await _unitOfWork.Showtimes.FirstOrDefaultAsync(s => s.Id == showtimeId);
+            var showtime = await _unitOfWork.Showtimes.FirstOrDefaultAsync(
+                s => s.Id == showtimeId, includeProperties: new[] { "Movie", "Room" });
             if (showtime is null) return Result.Failure("Không tìm thấy suất chiếu.");
+
+            // Sự cố chỉ áp dụng cho suất CHƯA kết thúc (đồng bộ với danh sách suất trong form).
+            if (showtime.Status == "Completed" || showtime.EndTime < DateTime.Now)
+                return Result.Failure("Không thể khai báo sự cố cho suất chiếu đã kết thúc.");
 
             if (form.RefundPointsRate < 0 || form.RefundPointsRate > 5)
                 return Result.Failure("Hệ số hoàn điểm phải từ 0 đến 5.");
@@ -144,14 +171,58 @@ namespace Cinema_System.Application.Services
                 CreatedAt = now
             });
 
-            if (form.CancelShowtime && showtime.Status != "Cancelled")
+            var willCancel = form.CancelShowtime && showtime.Status != "Cancelled";
+            if (willCancel)
             {
                 showtime.Status = "Cancelled";
                 _unitOfWork.Showtimes.Update(showtime);
             }
 
             await _unitOfWork.SaveChangesAsync();
+
+            // Chỉ khi HỦY suất mới gửi email báo lý do cho toàn bộ khách đã thanh toán.
+            if (willCancel)
+                await NotifyCancelledShowtimeAsync(showtime, form.Description);
+
             return Result.Success();
+        }
+
+        // Gửi email thông báo hủy suất + lý do cho mọi khách đã thanh toán suất đó.
+        private async Task NotifyCancelledShowtimeAsync(Showtime showtime, string reason)
+        {
+            var paidBookings = (await _unitOfWork.Bookings.GetAllAsync(
+                b => b.ShowtimeId == showtime.Id && b.PaymentStatus == "Paid" && b.UserId != null)).ToList();
+
+            // Mỗi khách chỉ nhận 1 email dù đặt nhiều đơn.
+            var userIds = paidBookings.Select(b => b.UserId!.Value).Distinct().ToList();
+            if (userIds.Count == 0) return;
+
+            var movieTitle = showtime.Movie?.Title ?? "phim";
+            var roomName = showtime.Room?.Name ?? "phòng chiếu";
+            var timeText = showtime.StartTime.ToString("HH:mm dd/MM/yyyy");
+            var subject = $"[CineStar] Thông báo hủy suất chiếu {movieTitle}";
+
+            foreach (var uid in userIds)
+            {
+                var user = await _unitOfWork.Users.GetByIdAsync(uid);
+                if (user is null || string.IsNullOrWhiteSpace(user.Email)) continue;
+
+                var body = $@"
+<p>Xin chào <strong>{user.FullName}</strong>,</p>
+<p>CineStar rất tiếc phải thông báo suất chiếu bạn đã đặt vé đã bị <strong>hủy</strong>:</p>
+<ul>
+  <li>Phim: <strong>{movieTitle}</strong></li>
+  <li>Phòng: {roomName}</li>
+  <li>Thời gian: {timeText}</li>
+</ul>
+<p><strong>Lý do:</strong> {reason}</p>
+<p>Điểm thưởng bồi thường đã được cộng vào tài khoản của bạn. Xin lỗi vì sự bất tiện này.</p>
+<p>Trân trọng,<br/>CineStar</p>";
+
+                // Một email lỗi không được làm hỏng cả quá trình khai báo sự cố.
+                try { await _emailService.SendAsync(user.Email, subject, body); }
+                catch { /* bỏ qua, đã hoàn điểm + ghi nhận sự cố thành công */ }
+            }
         }
 
         // Nạp dropdown cho form
@@ -239,94 +310,5 @@ namespace Cinema_System.Application.Services
             await _unitOfWork.SaveChangesAsync();
             return Result.Success();
         }
-
-        // Dựng form bảo trì (mặc định từ bây giờ -> +2 giờ)
-        public async Task<MaintainRoomViewModel> BuildMaintainFormAsync()
-        {
-            var vm = new MaintainRoomViewModel
-            {
-                FromTime = DateTime.Now,
-                ToTime = DateTime.Now.AddHours(2)
-            };
-            await FillRoomAndPromoOptionsAsync(vm);
-            return vm;
-        }
-
-        // Hủy + hoàn hàng loạt: mọi suất CHƯA diễn của phòng nằm trong [Từ; Đến]
-        public async Task<Result<string>> MaintainRoomAsync(MaintainRoomViewModel form, Guid managerId)
-        {
-            var roomId = form.RoomId!.Value;
-            if (!await _unitOfWork.Rooms.ExistsAsync(r => r.Id == roomId))
-                return Result<string>.Failure("Không tìm thấy phòng.");
-
-            var now = DateTime.Now;
-            var from = form.FromTime!.Value;
-            var to = form.ToTime!.Value;
-
-            if (from < now) return Result<string>.Failure("Không được chọn thời gian trong quá khứ.");
-            if (to <= from) return Result<string>.Failure("Thời gian kết thúc phải sau thời gian bắt đầu.");
-
-            if (form.CompensationPromoId.HasValue &&
-                !await _unitOfWork.Promotions.ExistsAsync(p => p.Id == form.CompensationPromoId.Value))
-                return Result<string>.Failure("Voucher bồi thường không hợp lệ.");
-
-            var rateConfig = await _unitOfWork.SystemConfigs.FirstOrDefaultAsync(c => c.ConfigKey == RewardRateKey);
-            var rewardRate = ParseDecimal(rateConfig?.ConfigValue);
-
-            var showtimes = (await _unitOfWork.Showtimes.GetAllAsync(
-                s => s.RoomId == roomId && s.Status != "Cancelled" &&
-                     s.StartTime > now && s.StartTime >= from && s.StartTime <= to)).ToList();
-
-            if (showtimes.Count == 0)
-                return Result<string>.Failure("Không có suất chiếu nào của phòng trong khoảng thời gian đã chọn.");
-
-            int totalCustomers = 0;
-            var userCache = new Dictionary<Guid, User>();   // dùng chung cả vòng lặp -> tránh track trùng User
-            foreach (var st in showtimes)
-            {
-                totalCustomers += await RefundShowtimePaidCustomersAsync(st.Id, form.RefundPointsRate, rewardRate, now, userCache);
-
-                await _unitOfWork.ShowtimeIncidents.AddAsync(new ShowtimeIncident
-                {
-                    Id = Guid.NewGuid(),
-                    ShowtimeId = st.Id,
-                    Description = form.Description,
-                    RefundPointsRate = form.RefundPointsRate,
-                    CompensationPromo = form.CompensationPromoId,
-                    CreatedBy = managerId,
-                    CreatedAt = now
-                });
-
-                st.Status = "Cancelled";
-                _unitOfWork.Showtimes.Update(st);
-            }
-
-            await _unitOfWork.SaveChangesAsync();
-            return Result<string>.Success($"Đã bảo trì phòng: hủy {showtimes.Count} suất chiếu, hoàn điểm cho {totalCustomers} lượt khách.");
-        }
-
-        // Nạp dropdown phòng + voucher cho form bảo trì
-        private async Task FillRoomAndPromoOptionsAsync(MaintainRoomViewModel vm)
-        {
-            var rooms = (await _unitOfWork.Rooms.GetAllAsync(
-                includeProperties: new[] { "RoomType" },
-                orderBy: q => q.OrderBy(r => r.Name))).ToList();
-            vm.RoomOptions = rooms.Select(r => new SelectListItem
-            {
-                Value = r.Id.ToString(),
-                Text = $"{r.Name} ({r.RoomType?.Name})"
-            }).ToList();
-
-            var promos = (await _unitOfWork.Promotions.GetAllAsync(
-                p => p.Status == "Active", orderBy: q => q.OrderBy(p => p.Code))).ToList();
-            vm.PromoOptions = promos.Select(p => new SelectListItem
-            {
-                Value = p.Id.ToString(),
-                Text = p.DiscountType == "Percent"
-                    ? $"{p.Code} (giảm {p.DiscountAmount}%)"
-                    : $"{p.Code} (giảm {p.DiscountAmount:#,##0}đ)"
-            }).ToList();
-        }
-
     }
 }
