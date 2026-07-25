@@ -693,3 +693,17 @@ Nhật ký thay đổi mã nguồn / CSDL / quyết định kỹ thuật của d
   - `resetMember()` chạy ở **mỗi lần gõ phím** trong ô SĐT (`$('#phoneInput').on('input', ...)`) → nó xoá luôn `appliedPromo`, nội dung ô mã và thông báo. Cố ý: khối mã ẩn đi thì không được để lại khoản giảm mà server sẽ từ chối.
   - Đây chỉ là lớp giao diện — **chặn thật vẫn nằm ở `ResolvePromoAsync`** (server), đừng bỏ.
   - **Đã kiểm bằng cách chạy trực tiếp `toggleOfferBoxes`/`resetMember` trích từ trang đã render** qua 5 trạng thái: mới vào trang (chỉ hiện hướng dẫn) → tra ra thành viên (hiện mã + điểm) → tra không ra (ẩn lại) → tra lại ra (hiện) → đổi SĐT (ẩn, `appliedPromo=null`, ô mã và thông báo trống). Script inline của trang quầy parse OK. Build pass 0/0.
+
+### [2026-07-26] Chuẩn hóa phương thức thanh toán: DB + báo cáo chỉ dùng cái hệ thống thật sự có (By: vkieu)
+- **What changed:**
+  1. **Hằng số dùng chung** `Application/Common/PaymentConstants.cs` → `PaymentMethod`: `Cash`/`Transfer` (quầy), `VNPay`/`VietQR` (online), `Free` (đơn 0đ). Kèm `CounterMethods`, `OnlineMethods`, `DisplayOrder`, `Label()`, `SortIndex()`. Thay hết chuỗi hardcode ở `CounterBookingService` (bỏ `AllowedPaymentMethods` riêng) và `ShowtimeController` (bỏ `new[] { "VNPay", "VietQR" }`, 5 chỗ literal).
+  2. **DB:** thêm `CK_Payments_method CHECK (payment_method IN ('Cash','Transfer','VNPay','VietQR','Free'))` vào `CinemaWebDB_v2.sql`; migration `[2026-07-26]` trong `Migrations.sql` remap dữ liệu cũ rồi mới thêm constraint. Seed `CinemaWebDB_SeedData_Large.sql` thay 2448 dòng: **Momo (833) + Credit Card (770) → VNPay, ZaloPay (845) → VietQR**.
+  3. **Báo cáo:** `PaymentMethodItem` thêm `Label`; `ReportService` sắp theo `SortIndex` rồi tới số tiền, hiện nhãn tiếng Việt ở cả biểu đồ (`Views/Manager/Report/Index.cshtml`) lẫn file Excel xuất ra.
+- **Why:** Bảng `Payments` chứa Momo/ZaloPay/Credit Card — **những cổng chưa bao giờ được tích hợp**; hệ thống chỉ sinh ra 5 giá trị kể trên. Báo cáo group thẳng theo cột nên vẽ ra các mục không có thật, và hiện mã tiếng Anh thô.
+- **Impact/Notes for Team:**
+  - **BẪY khi chạy migration bằng `sqlcmd`:** `[Payments]` có filtered unique index trên `transaction_ref` nên UPDATE đòi `QUOTED_IDENTIFIER ON`; sqlcmd mặc định TẮT → lỗi `Msg 1934`. Đã thêm sẵn `SET QUOTED_IDENTIFIER ON` vào section migration (hoặc chạy `sqlcmd -I`). SSMS không dính vì bật sẵn.
+  - **Đã áp lên DB dev**: 4341 dòng và tổng tiền **1.568.314.818₫ giữ NGUYÊN trước/sau** (chỉ đổi nhãn, không mất doanh thu); còn đúng 4 phương thức VNPay/Cash/VietQR/Transfer; đã test constraint chặn `Momo` và cho `Transfer` qua (2 transaction đều rollback).
+  - **Seed KHÔNG có dòng `Transfer` nào** (1044 dòng quầy đều là `Cash`) — cố ý không đổi bớt sang Transfer vì các dòng Cash có `cash_received`/`change_amount`, chuyển khoản thì 2 cột đó phải NULL.
+  - `Label()` **giữ nguyên mã** với giá trị lạ thay vì bỏ dòng — báo cáo mà giấu giao dịch thì tổng tiền sẽ sai. `SortIndex()` đẩy chúng xuống cuối.
+  - Thêm phương thức mới phải sửa **3 nơi**: hằng số `PaymentMethod`, `CK_Payments_method` trong `CinemaWebDB_v2.sql` (+ migration), và UI chọn phương thức.
+  - Build pass 0/0. Đã kiểm trang báo cáo (`payLabels = ["Tiền mặt","Chuyển khoản (quầy)","VNPay","VietQR"]`) và file Excel xuất ra (có nhãn tiếng Việt, không còn Momo/ZaloPay/Credit Card).
