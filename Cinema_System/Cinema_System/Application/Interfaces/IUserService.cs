@@ -21,5 +21,5 @@ public interface IUserService
 
     Task<Result> AssignRoleAsync(Guid id, Guid roleId);
 
-    Task<Result<string>> ResetPasswordAsync(Guid id);
+    Task<Result<(string TempPassword, bool EmailSent)>> ResetPasswordAsync(Guid id);
 }

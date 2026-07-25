@@ -537,8 +537,9 @@ public class ShowtimeService : IShowtimeService
         if (promo.MaxDiscountAmount.HasValue)
             discount = Math.Min(discount, promo.MaxDiscountAmount.Value);
 
-        // Không giảm quá tổng đơn và làm tròn về đồng.
-        discount = Math.Min(discount, grandTotal);
+        // Không giảm quá phần được áp dụng: mã "chỉ vé" ≤ tiền vé, "chỉ đồ ăn" ≤ tiền đồ ăn,
+        // "cả đơn" ≤ tổng đơn (target = grandTotal). Sau đó làm tròn về đồng.
+        discount = Math.Min(discount, target);
         discount = Math.Round(discount, 0, MidpointRounding.AwayFromZero);
         if (discount <= 0) return (null, 0m, "Mã không tạo ra khoản giảm cho đơn này.");
 
@@ -575,9 +576,18 @@ public class ShowtimeService : IShowtimeService
             PromoDiscount = discount,
             FinalAmount = afterPromo,
             MaxUsablePoints = maxUsablePoints,
-            Message = $"Áp dụng mã {promo.Code}: giảm {discount:N0}₫."
+            Target = promo.ApplicableTarget,
+            Message = $"Áp dụng mã {promo.Code}: giảm {discount:N0}₫ ({PromoTargetLabel(promo.ApplicableTarget)})."
         };
     }
+
+    // Nhãn tiếng Việt cho đối tượng áp dụng của mã giảm giá.
+    private static string PromoTargetLabel(string? target) => target switch
+    {
+        "Ticket_Only" => "vé",
+        "Food_Only" => "đồ ăn",
+        _ => "cả đơn"
+    };
 
     // Lấy dữ liệu trang thanh toán.
     public async Task<PaymentViewModel?> GetPaymentAsync(Guid showtimeId, Guid userId, List<Guid> foodIds, List<int> foodQtys)
