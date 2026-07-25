@@ -212,6 +212,7 @@
                         <button type="button" id="applyPromoBtn" class="@btnCls">Áp dụng</button>
                     </div>
                     <div id="promoMsg" class="mt-1.5 text-xs"></div>
+                    <p class="mt-1 text-xs text-gray-500">Chỉ áp dụng cho khách đã có tài khoản — nhập SĐT ở mục "Khách hàng" và bấm "Tra" trước.</p>
 
                     <div id="pointsBox" class="mt-4" style="display:none;">
                         <label class="@labelCls" for="pointsInput">Dùng điểm thưởng (khách còn <span id="pointsAvailable">0</span> điểm)</label>
@@ -574,6 +575,13 @@
             $('#clearMemberBtn').hide();
             $('#pointsBox').hide();
             $('#pointsInput').val(0);
+
+            // Mã giảm giá gắn với tài khoản khách -> đổi/bỏ khách thì phải áp lại mã,
+            // nếu không giao diện vẫn hiện khoản giảm mà lúc chốt đơn server sẽ từ chối.
+            if (appliedPromo) {
+                appliedPromo = null;
+                $('#promoMsg').removeClass('ok').addClass('no').text('Đã đổi khách hàng — vui lòng áp dụng lại mã.');
+            }
         }
 
         $('#lookupBtn').on('click', function () {
@@ -616,8 +624,11 @@
                 if (q > 0) foodTotal += q * parseFloat($(this).data('price'));
             });
 
+            // Gửi kèm SĐT đang gõ: mã giảm giá bắt buộc có tài khoản khách hàng, mà nhân viên
+            // có thể chưa bấm "Tra" — để server tra y như lúc chốt đơn cho khỏi lệch kết quả.
             $.getJSON('/Staff/Counter/PreviewPromo', {
-                code: code, customerId: memberId || '', seatTotal: seatTotal, foodTotal: foodTotal
+                code: code, customerId: memberId || '', customerPhone: $('#phoneInput').val().trim(),
+                seatTotal: seatTotal, foodTotal: foodTotal
             }, function (res) {
                 if (res.ok) {
                     appliedPromo = { code: res.code, discount: res.discount, subtotal: seatTotal + foodTotal };
