@@ -1,4 +1,4 @@
-@{
+﻿@{
     // Layout riêng cho khu vực tài khoản (CineStar). Trang nào muốn dùng thì đặt: Layout = "_CineStarLayout".
     // Thông tin người dùng cho sidebar/topbar được trang con truyền vào qua ViewData.
     var userName = ViewData["UserName"] as string ?? "";
@@ -139,6 +139,9 @@
 </div>
 @* Modal xác nhận/thông báo dùng chung — thay cho confirm()/alert() của trình duyệt. *@
 <partial name="_ConfirmModal" />
+@* Chặn nhập chữ vào các ô chỉ nhận số (xem wwwroot/js/numeric-input.js). *@
+<script src="~/js/numeric-input.js" asp-append-version="true"></script>
+
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

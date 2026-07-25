@@ -1,4 +1,4 @@
-@{
+﻿@{
     var ctrl = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
     var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
     var staffName = User.Identity?.Name ?? "Nhân viên";
@@ -109,6 +109,9 @@
 
 @* Modal xác nhận/thông báo dùng chung — thay cho confirm()/alert() của trình duyệt. *@
 <partial name="_ConfirmModal" />
+@* Chặn nhập chữ vào các ô chỉ nhận số (xem wwwroot/js/numeric-input.js). *@
+<script src="~/js/numeric-input.js" asp-append-version="true"></script>
+
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

@@ -48,7 +48,7 @@
 
             <div class="ue-field">
                 <label asp-for="Phone"></label>
-                <input asp-for="Phone" />
+                <input asp-for="Phone" type="tel" inputmode="numeric" maxlength="11" />
                 <span asp-validation-for="Phone" class="ue-error"></span>
             </div>
 
