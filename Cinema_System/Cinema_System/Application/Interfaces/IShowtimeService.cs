@@ -9,6 +9,13 @@ public interface IShowtimeService
     // Lấy dữ liệu trang lịch chiếu: lọc theo phim, thể loại, độ tuổi, loại phòng và ngày (mặc định hôm nay).
     Task<ShowtimePageViewModel> GetShowtimePageAsync(Guid? movieId, Guid? genreId, string? ageRating, Guid? roomTypeId, DateOnly? date);
 
+    // Lấy ngày + suất chiếu (14 ngày tới, từ hiện tại) của MỘT phim cho popup "đặt vé nhanh". Null nếu không có phim.
+    Task<MovieShowtimesViewModel?> GetMovieShowtimesAsync(Guid movieId);
+
+    // Kiểm tra khách có đủ tuổi đặt vé cho suất chiếu này không (theo phân loại độ tuổi của phim).
+    // Success nếu đủ tuổi / phim không giới hạn / không xác định được; Failure kèm thông báo nếu chưa đủ tuổi.
+    Task<Result> CheckAgeRestrictionAsync(Guid showtimeId, Guid userId);
+
     // Lấy sơ đồ ghế của 1 suất chiếu kèm trạng thái (trống/đã đặt/đang giữ/hỏng); null nếu không tìm thấy suất.
     // currentUserId: ghế do chính user này đang giữ sẽ không bị tính là "đang giữ" (để họ chọn lại được).
     Task<SeatSelectionViewModel?> GetSeatSelectionAsync(Guid showtimeId, Guid? currentUserId = null);

@@ -14,6 +14,7 @@ public class ShowtimeService : IShowtimeService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
     private readonly IPricingService _pricingService;
+    private readonly IEmailService _email;
 
     // Giá trị quy đổi 1 điểm thưởng khi dùng để giảm giá (₫).
     private const int PointValueVnd = 100;
@@ -22,11 +23,12 @@ public class ShowtimeService : IShowtimeService
     private const int MaxFoodPerItem = 20;
 
     // Nhận UnitOfWork + AutoMapper qua DI (mapping các mảnh phẳng; phần tính toán vẫn dựng tay).
-    public ShowtimeService(IUnitOfWork unitOfWork, IMapper mapper, IPricingService pricingService)
+    public ShowtimeService(IUnitOfWork unitOfWork, IMapper mapper, IPricingService pricingService, IEmailService email)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _pricingService = pricingService;
+        _email = email;
     }
 
     // Lấy dữ liệu trang lịch chiếu: lọc theo phim/thể loại/độ tuổi/loại phòng + ngày + tùy chọn dropdown.
@@ -112,6 +114,81 @@ public class ShowtimeService : IShowtimeService
                 .ToList(),
             Showtimes = showtimeDtos
         };
+    }
+
+    // Lấy ngày + suất chiếu (14 ngày tới, từ hiện tại) của một phim cho popup "đặt vé nhanh".
+    public async Task<MovieShowtimesViewModel?> GetMovieShowtimesAsync(Guid movieId)
+    {
+        var movie = (await _unitOfWork.Movies.GetAllAsync(predicate: m => m.Id == movieId)).FirstOrDefault();
+        if (movie is null) return null;
+
+        var now = DateTime.Now;
+        var today = DateOnly.FromDateTime(now);
+        var windowEnd = today.AddDays(14).ToDateTime(TimeOnly.MinValue);
+
+        // Suất chiếu của phim từ hiện tại tới 14 ngày tới, bỏ suất đã hủy.
+        var showtimes = await _unitOfWork.Showtimes.GetAllAsync(
+            predicate: s => s.MovieId == movieId && s.StartTime >= now && s.StartTime < windowEnd && s.Status != "Cancelled",
+            include: q => q
+                .Include(s => s.Room).ThenInclude(r => r.RoomType)
+                .Include(s => s.Room).ThenInclude(r => r.Cinema),
+            orderBy: q => q.OrderBy(s => s.StartTime));
+
+        var dtos = _mapper.Map<List<ShowtimeDTO>>(showtimes);
+
+        return new MovieShowtimesViewModel
+        {
+            MovieId = movie.Id,
+            MovieTitle = movie.Title,
+            MoviePosterUrl = movie.PosterUrl,
+            Days = dtos
+                .GroupBy(s => DateOnly.FromDateTime(s.StartTime))
+                .OrderBy(g => g.Key)
+                .Select(g => new MovieShowtimeDay
+                {
+                    Date = g.Key,
+                    Showtimes = g.OrderBy(s => s.StartTime).ThenBy(s => s.RoomName).ToList()
+                })
+                .ToList()
+        };
+    }
+
+    // Kiểm tra khách có đủ tuổi đặt vé theo phân loại độ tuổi của phim (P/C13/C16/C18...).
+    public async Task<Result> CheckAgeRestrictionAsync(Guid showtimeId, Guid userId)
+    {
+        var showtime = (await _unitOfWork.Showtimes.GetAllAsync(
+            predicate: s => s.Id == showtimeId,
+            include: q => q.Include(s => s.Movie))).FirstOrDefault();
+        if (showtime is null) return Result.Success();   // suất không tồn tại -> để caller xử lý sau
+
+        var minAge = MinAgeFromRating(showtime.Movie.AgeRating);
+        if (minAge <= 0) return Result.Success();         // phim không giới hạn độ tuổi
+
+        var user = await _unitOfWork.Users.GetByIdAsync(userId);
+        if (user is null) return Result.Success();
+
+        var age = CalcAge(user.DateOfBirth, DateTime.Today);
+        if (age < minAge)
+            return Result.Failure($"Phim này được phân loại {showtime.Movie.AgeRating} (từ {minAge} tuổi trở lên). Bạn chưa đủ tuổi để đặt vé.");
+
+        return Result.Success();
+    }
+
+    // Suy ra tuổi tối thiểu từ nhãn phân loại: lấy số trong nhãn (C13->13, C16->16, C18->18); không có số (P) -> 0.
+    private static int MinAgeFromRating(string? rating)
+    {
+        if (string.IsNullOrWhiteSpace(rating)) return 0;
+        var digits = new string(rating.Where(char.IsDigit).ToArray());
+        return int.TryParse(digits, out var n) ? n : 0;
+    }
+
+    // Tính tuổi (đủ năm) từ ngày sinh tới hôm nay.
+    private static int CalcAge(DateOnly dob, DateTime today)
+    {
+        var t = DateOnly.FromDateTime(today);
+        var age = t.Year - dob.Year;
+        if (dob > t.AddYears(-age)) age--;   // chưa tới sinh nhật năm nay thì trừ 1
+        return age;
     }
 
     // Lấy sơ đồ ghế cho 1 suất chiếu, đánh dấu trạng thái từng ghế.
@@ -582,6 +659,7 @@ public class ShowtimeService : IShowtimeService
         var grand = afterPromo - pointsDiscount;
 
         var bookingId = Guid.NewGuid();
+        var bookingQr = "BK-" + bookingId.ToString("N")[..12].ToUpper();
         await _unitOfWork.Bookings.AddAsync(new Booking
         {
             Id = bookingId,
@@ -596,7 +674,7 @@ public class ShowtimeService : IShowtimeService
             PaymentStatus = "Paid",
             BookingType = "Online",
             CreatedAt = now,
-            QrCode = "BK-" + bookingId.ToString("N")[..12].ToUpper()
+            QrCode = bookingQr
         });
 
         foreach (var s in ctx.Seats)
@@ -687,7 +765,78 @@ public class ShowtimeService : IShowtimeService
         }
 
         await _unitOfWork.SaveChangesAsync();
+
+        // Gửi email xác nhận đặt vé kèm mã QR (không để lỗi email làm hỏng việc đặt vé đã thành công).
+        await SendBookingConfirmationEmailAsync(user, ctx, bookingQr, method, grand);
+
         return BookingConfirmResult.Ok(bookingId, points);
+    }
+
+    // Gửi email xác nhận đặt vé kèm mã QR tới email khách. Bọc try/catch: vé đã đặt xong nên không rollback dù email lỗi.
+    private async Task SendBookingConfirmationEmailAsync(User? user, HeldContext ctx, string bookingQr, string method, decimal total)
+    {
+        var email = user?.Email;
+        if (string.IsNullOrWhiteSpace(email)) return;
+
+        try
+        {
+            var html = BuildBookingEmailHtml(user!, ctx, bookingQr, method, total);
+            await _email.SendAsync(email, "CineStar - Xác nhận đặt vé thành công", html);
+        }
+        catch
+        {
+            // Nuốt lỗi gửi email: booking đã lưu thành công, không được để email làm hỏng kết quả.
+        }
+    }
+
+    // Dựng nội dung HTML email xác nhận. Ảnh QR sinh qua dịch vụ ngoài (api.qrserver.com) để email hiển thị được.
+    private static string BuildBookingEmailHtml(User user, HeldContext ctx, string bookingQr, string method, decimal total)
+    {
+        var name = string.IsNullOrWhiteSpace(user.FullName) ? "bạn" : user.FullName;
+        var movie = ctx.Showtime.Movie.Title;
+        var room = ctx.Showtime.Room.Name;
+        var cinema = ctx.Showtime.Room.Cinema?.Name ?? string.Empty;
+        var start = ctx.Showtime.StartTime.ToString("HH:mm - dd/MM/yyyy");
+        var seats = string.Join(", ", ctx.Seats.Select(s => s.Label));
+        var totalText = total.ToString("#,##0") + "₫";
+        var qrImg = "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=" + Uri.EscapeDataString(bookingQr);
+
+        string Row(string label, string value) =>
+            $@"<tr>
+                 <td style=""padding:6px 0;color:#64748b;font-size:14px;"">{label}</td>
+                 <td style=""padding:6px 0;color:#0f172a;font-size:14px;font-weight:600;text-align:right;"">{value}</td>
+               </tr>";
+
+        return $@"
+<div style=""max-width:560px;margin:0 auto;font-family:Arial,Helvetica,sans-serif;background:#f8fafc;padding:24px;"">
+  <div style=""background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;"">
+    <div style=""background:#001c3a;padding:20px 24px;"">
+      <div style=""color:#f37021;font-size:22px;font-weight:800;letter-spacing:1px;"">CINESTAR</div>
+      <div style=""color:#cbd5e1;font-size:13px;margin-top:2px;"">Xác nhận đặt vé thành công</div>
+    </div>
+    <div style=""padding:24px;"">
+      <p style=""margin:0 0 16px;color:#0f172a;font-size:15px;"">Xin chào <b>{name}</b>, cảm ơn bạn đã đặt vé tại CineStar. Vé của bạn đã được xác nhận.</p>
+
+      <div style=""text-align:center;margin:8px 0 20px;"">
+        <img src=""{qrImg}"" alt=""Mã QR vé"" width=""200"" height=""200"" style=""border:1px solid #e2e8f0;border-radius:12px;padding:8px;background:#fff;"" />
+        <div style=""margin-top:8px;color:#0f172a;font-size:16px;font-weight:700;letter-spacing:1px;"">{bookingQr}</div>
+        <div style=""color:#64748b;font-size:12px;"">Đưa mã này tại quầy để check-in</div>
+      </div>
+
+      <table style=""width:100%;border-collapse:collapse;border-top:1px solid #e2e8f0;padding-top:8px;"">
+        {Row("Phim", movie)}
+        {Row("Suất chiếu", start)}
+        {Row("Phòng", string.IsNullOrEmpty(cinema) ? room : $"{room} · {cinema}")}
+        {Row("Ghế", seats)}
+        {Row("Phương thức", method)}
+        {Row("Tổng thanh toán", totalText)}
+      </table>
+    </div>
+    <div style=""background:#f1f5f9;padding:14px 24px;color:#94a3b8;font-size:12px;text-align:center;"">
+      Email tự động từ hệ thống CineStar. Vui lòng không trả lời email này.
+    </div>
+  </div>
+</div>";
     }
 
     // Lấy dữ liệu trang đặt vé thành công (chỉ chủ booking mới xem được).

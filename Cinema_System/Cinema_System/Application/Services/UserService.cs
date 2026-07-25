@@ -3,6 +3,7 @@ using Cinema_System.Application.Common;
 using Cinema_System.Application.DTOs;
 using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
+using Microsoft.Extensions.Logging;
 
 namespace Cinema_System.Application.Services;
 
@@ -13,11 +14,15 @@ public class UserService : IUserService
 
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly IEmailService _emailService;
+    private readonly ILogger<UserService> _logger;
 
-    public UserService(IUnitOfWork unitOfWork, IMapper mapper)
+    public UserService(IUnitOfWork unitOfWork, IMapper mapper, IEmailService emailService, ILogger<UserService> logger)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _emailService = emailService;
+        _logger = logger;
     }
 
     public async Task<UserListViewModel> GetUsersAsync(
@@ -146,11 +151,11 @@ public class UserService : IUserService
         return Result.Success();
     }
 
-    public async Task<Result<string>> ResetPasswordAsync(Guid id)
+    public async Task<Result<(string TempPassword, bool EmailSent)>> ResetPasswordAsync(Guid id)
     {
         var user = await _unitOfWork.Users.GetByIdAsync(id);
         if (user is null)
-            return Result<string>.Failure("Không tìm thấy người dùng.");
+            return Result<(string, bool)>.Failure("Không tìm thấy người dùng.");
 
         var tempPassword = GenerateTempPassword();
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(tempPassword);
@@ -159,7 +164,36 @@ public class UserService : IUserService
         _unitOfWork.Users.Update(user);
         await _unitOfWork.SaveChangesAsync();
 
-        return Result<string>.Success(tempPassword);
+        // Gửi mật khẩu tạm qua email cho user — best-effort: nếu gửi lỗi (email sai, SMTP down...)
+        // KHÔNG rollback/fail thao tác reset, vì mật khẩu đã đổi xong; Admin sẽ được báo để tự gửi tay nếu email lỗi.
+        var emailSent = await TrySendResetPasswordEmailAsync(user.Email, user.FullName, tempPassword);
+
+        return Result<(string, bool)>.Success((tempPassword, emailSent));
+    }
+
+    private async Task<bool> TrySendResetPasswordEmailAsync(string email, string fullName, string tempPassword)
+    {
+        const string subject = "Mật khẩu mới cho tài khoản CineStar của bạn";
+        var body = $@"
+<div style='font-family:Arial,sans-serif;max-width:480px;margin:auto'>
+  <h2 style='color:#a04100'>CineStar</h2>
+  <p>Xin chào <b>{fullName}</b>,</p>
+  <p>Quản trị viên vừa đặt lại mật khẩu cho tài khoản của bạn. Mật khẩu tạm thời của bạn là:</p>
+  <p style='font-size:28px;font-weight:bold;letter-spacing:2px;color:#f37021'>{tempPassword}</p>
+  <p>Vui lòng đăng nhập và đổi lại mật khẩu ngay để bảo mật tài khoản.</p>
+  <p style='color:#888;font-size:13px'>Nếu bạn không yêu cầu thay đổi này, hãy liên hệ quản trị viên ngay.</p>
+</div>";
+
+        try
+        {
+            await _emailService.SendAsync(email, subject, body);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Gửi email mật khẩu tạm tới {Email} thất bại.", email);
+            return false;
+        }
     }
 
     private static string GenerateTempPassword()

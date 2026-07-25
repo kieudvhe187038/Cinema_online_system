@@ -10,6 +10,9 @@ namespace Cinema_System.Controllers.Public;
 /// </summary>
 public class SupportController : Controller
 {
+    // Giới hạn độ dài tin nhắn gửi tới chatbot (tránh spam payload khổng lồ gây tốn phí API / nghẽn xử lý).
+    private const int MaxMessageLength = 2000;
+
     private readonly IChatbotService _chatbotService;
 
     public SupportController(IChatbotService chatbotService)
@@ -33,6 +36,10 @@ public class SupportController : Controller
         if (request == null || string.IsNullOrWhiteSpace(request.Message))
             return BadRequest(new { success = false, error = "Message is required" });
 
+        var message = request.Message.Trim();
+        if (message.Length > MaxMessageLength)
+            return BadRequest(new { success = false, error = $"Tin nhắn tối đa {MaxMessageLength} ký tự." });
+
         Guid? currentUserId = null;
         var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (Guid.TryParse(userIdClaim, out var parsedUserId))
@@ -40,7 +47,7 @@ public class SupportController : Controller
             currentUserId = parsedUserId;
         }
 
-        var botReply = await _chatbotService.HandleMessageAsync(request.Message.Trim(), currentUserId, HttpContext.Session.Id);
+        var botReply = await _chatbotService.HandleMessageAsync(message, currentUserId, HttpContext.Session.Id);
 
         return Ok(new
         {

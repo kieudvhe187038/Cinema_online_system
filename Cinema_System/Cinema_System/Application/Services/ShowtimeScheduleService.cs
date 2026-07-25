@@ -153,8 +153,9 @@ public class ShowtimeScheduleService : IShowtimeScheduleService
     /// <returns>Danh sách các phim với ID và tên</returns>
     public async Task<IEnumerable<ItemOptionDTO>> GetMovieOptionsAsync()
     {
+        // Chỉ lấy phim được phép xếp lịch: loại phim đã ngừng chiếu và phim sắp chiếu (chưa phát hành).
         var movies = await _unitOfWork.Movies.GetAllAsync(
-            predicate: m => m.Status != MovieStatus.Stopped,
+            predicate: m => m.Status != MovieStatus.Stopped && m.Status != MovieStatus.ComingSoon,
             orderBy: q => q.OrderBy(m => m.Title));
         return _mapper.Map<List<ItemOptionDTO>>(movies);
     }
@@ -185,8 +186,11 @@ public class ShowtimeScheduleService : IShowtimeScheduleService
             return Result.Failure("Phim không tồn tại.");
 
         // 2. Movie Status Restriction
-        if (movie.Status == "Stopped")
+        if (movie.Status == MovieStatus.Stopped)
             return Result.Failure("Không thể xếp lịch cho phim đã ngừng chiếu.");
+
+        if (movie.Status == MovieStatus.ComingSoon)
+            return Result.Failure("Không thể xếp lịch cho phim sắp chiếu.");
 
         var roomExists = await _unitOfWork.Rooms.ExistsAsync(r => r.Id == model.RoomId);
         if (!roomExists)
@@ -254,8 +258,11 @@ public class ShowtimeScheduleService : IShowtimeScheduleService
         if (movie is null)
             return Result.Failure("Phim không tồn tại.");
 
-        if (hasCoreChanges && movie.Status == "Stopped")
+        if (hasCoreChanges && movie.Status == MovieStatus.Stopped)
             return Result.Failure("Không thể xếp lịch cho phim đã ngừng chiếu.");
+
+        if (hasCoreChanges && movie.Status == MovieStatus.ComingSoon)
+            return Result.Failure("Không thể xếp lịch cho phim sắp chiếu.");
 
         var roomExists = await _unitOfWork.Rooms.ExistsAsync(r => r.Id == model.RoomId);
         if (!roomExists)

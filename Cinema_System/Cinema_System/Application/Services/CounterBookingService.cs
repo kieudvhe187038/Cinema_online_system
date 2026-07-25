@@ -16,6 +16,9 @@ public class CounterBookingService : ICounterBookingService
     private const string OutOfStock = "Out of Stock";
     private const string ShowtimeScheduled = "Scheduled";
 
+    // Số lượng tối đa cho mỗi loại món/nước trong 1 đơn (khớp giới hạn ở luồng đặt vé online - ShowtimeService.MaxFoodPerItem).
+    private const int MaxQuantityPerFood = 20;
+
     // Phương thức thanh toán hợp lệ tại quầy (khớp với UI: Tiền mặt / Chuyển khoản).
     // Chặn giá trị tùy ý / quá dài tràn vào cột Payments.payment_method NVARCHAR(100).
     private static readonly HashSet<string> AllowedPaymentMethods =
@@ -202,6 +205,9 @@ public class CounterBookingService : ICounterBookingService
             .GroupBy(f => f.FbId)
             .Select(g => new { FbId = g.Key, Quantity = g.Sum(x => x.Quantity) })
             .ToList();
+
+        if (mergedFoods.Any(f => f.Quantity > MaxQuantityPerFood))
+            return Result<Guid>.Failure($"Số lượng mỗi món/nước tối đa {MaxQuantityPerFood}.");
 
         if (mergedFoods.Count > 0)
         {

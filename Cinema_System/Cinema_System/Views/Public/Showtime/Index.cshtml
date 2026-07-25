@@ -16,6 +16,14 @@
 
 <div class="mx-auto max-w-7xl space-y-8 px-4 py-10 sm:px-6 lg:px-8">
 
+    @if (TempData["Error"] is string errorMsg && !string.IsNullOrEmpty(errorMsg))
+    {
+        <div class="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+            <span class="material-symbols-outlined text-[20px]">error</span>
+            <span>@errorMsg</span>
+        </div>
+    }
+
     <div>
         <h1 class="font-heading text-3xl font-black uppercase tracking-tight text-tertiary">Lịch Chiếu Phim</h1>
         <p class="mt-1 text-sm text-slate-500">Xem suất chiếu theo phim, thể loại, độ tuổi và loại phòng.</p>
@@ -43,14 +51,20 @@
 
         <div class="flex flex-col gap-1.5">
             <label class="text-xs font-bold uppercase tracking-wide text-slate-500">Phim</label>
-            <select name="movieId" class="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
-                <option value="">Tất cả phim</option>
-                @foreach (var m in Model.Movies)
-                {
-                    if (m.Id == Model.MovieId) { <option value="@m.Id" selected>@m.Name</option> }
-                    else { <option value="@m.Id">@m.Name</option> }
-                }
-            </select>
+            @* Combobox gõ để tìm phim: ô text hiển thị + input hidden giữ movieId thật để submit bộ lọc. *@
+            <div class="relative" data-combobox="movie">
+                <input type="text" data-combobox-input autocomplete="off" placeholder="Tất cả phim"
+                       value="@(Model.Movies.FirstOrDefault(m => m.Id == Model.MovieId)?.Name)"
+                       class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                <input type="hidden" name="movieId" data-combobox-value value="@Model.MovieId" />
+                <div class="absolute z-20 mt-1 hidden max-h-60 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg" data-combobox-list>
+                    <div class="cursor-pointer px-3 py-2 text-sm text-slate-500 hover:bg-primary/10" data-combobox-option data-id="" data-name="">Tất cả phim</div>
+                    @foreach (var m in Model.Movies)
+                    {
+                        <div class="cursor-pointer px-3 py-2 text-sm hover:bg-primary/10" data-combobox-option data-id="@m.Id" data-name="@m.Name">@m.Name</div>
+                    }
+                </div>
+            </div>
         </div>
         <div class="flex flex-col gap-1.5">
             <label class="text-xs font-bold uppercase tracking-wide text-slate-500">Thể loại</label>
@@ -156,3 +170,43 @@
         </div>
     }
 </div>
+
+<script>
+    // Combobox tìm phim: ô text để gõ + danh sách thả xuống; input hidden giữ movieId thật để submit bộ lọc.
+    document.querySelectorAll('[data-combobox]').forEach(function (box) {
+        var input = box.querySelector('[data-combobox-input]');
+        var hidden = box.querySelector('[data-combobox-value]');
+        var list = box.querySelector('[data-combobox-list]');
+        var options = Array.prototype.slice.call(box.querySelectorAll('[data-combobox-option]'));
+
+        function filter() {
+            var keyword = input.value.trim().toLowerCase();
+            options.forEach(function (opt) {
+                // Luôn giữ hiển thị mục "Tất cả phim" (data-id rỗng) để người dùng bỏ lọc được.
+                var keep = opt.dataset.id === '' || keyword === '' || opt.dataset.name.toLowerCase().indexOf(keyword) !== -1;
+                opt.classList.toggle('hidden', !keep);
+            });
+        }
+
+        function open() { filter(); list.classList.remove('hidden'); }
+
+        function close() {
+            list.classList.add('hidden');
+            // Rời ô mà không chọn lại: khôi phục tên phim theo giá trị hidden hiện có (rỗng -> hiện placeholder).
+            var selected = options.find(function (opt) { return opt.dataset.id === hidden.value; });
+            input.value = selected ? selected.dataset.name : '';
+        }
+
+        input.addEventListener('focus', open);
+        input.addEventListener('input', open);
+        options.forEach(function (opt) {
+            opt.addEventListener('mousedown', function (e) {
+                e.preventDefault(); // giữ focus để 'blur' không chạy trước khi gán giá trị
+                hidden.value = opt.dataset.id;
+                input.value = opt.dataset.name;
+                close();
+            });
+        });
+        input.addEventListener('blur', close);
+    });
+</script>
