@@ -32,6 +32,8 @@
         }
     </style>
     @await RenderSectionAsync("Styles", required: false)
+    @* Bỏ dấu tiếng Việt phía client — nạp ở head vì nhiều view đặt script trong body. *@
+    <script src="~/js/vietnamese-text.js" asp-append-version="true"></script>
 </head>
 <body class="bg-[#f4f6f8] overflow-x-hidden text-[#191c1d]">
     @{

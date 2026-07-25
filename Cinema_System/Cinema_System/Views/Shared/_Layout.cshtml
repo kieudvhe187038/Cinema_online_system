@@ -39,6 +39,8 @@
 
     <partial name="_DarkMode" />
     @await RenderSectionAsync("Styles", required: false)
+    @* Bỏ dấu tiếng Việt phía client — nạp ở head vì nhiều view đặt script trong body. *@
+    <script src="~/js/vietnamese-text.js" asp-append-version="true"></script>
 </head>
 <body class="bg-slate-50 text-slate-900 font-body antialiased">
 
@@ -271,23 +273,6 @@
             let activeIndex = -1;
             let lastQuery = '';
 
-            // Bỏ dấu phía client để tô đậm đúng đoạn khớp (server đã khớp không dấu rồi).
-            // Trả về mảng ký tự gốc + khóa đã bỏ dấu có ĐỘ DÀI BẰNG NHAU để cắt chuỗi theo chỉ số.
-            function fold(text) {
-                const chars = Array.from(text);
-                const folded = chars.map(function (ch) {
-                    if (ch === 'đ') return 'd';
-                    if (ch === 'Đ') return 'd';
-                    const base = ch.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-                    return (base || ch).toLowerCase();
-                });
-                return {
-                    chars: chars,
-                    key: folded.join(''),
-                    aligned: folded.every(function (piece) { return piece.length === 1; })
-                };
-            }
-
             function closePanel() {
                 panel.classList.add('hidden');
                 panel.replaceChildren();
@@ -313,7 +298,8 @@
                 const holder = document.createElement('span');
                 holder.className = 'block truncate text-sm font-semibold text-slate-800 dark:text-slate-100';
 
-                const folded = fold(title);
+                // Bỏ dấu để tô đậm đúng đoạn khớp — server đã khớp không dấu rồi.
+                const folded = VietnameseText.fold(title);
                 const at = folded.aligned ? folded.key.indexOf(key) : -1;
                 if (at < 0) {
                     holder.textContent = title;
@@ -410,7 +396,7 @@
                     .then(function (movies) {
                         // Người dùng đã gõ tiếp trong lúc chờ -> bỏ qua kết quả cũ.
                         if (query !== lastQuery || document.activeElement !== searchInput) return;
-                        render(movies, fold(query).key);
+                        render(movies, VietnameseText.searchKey(query));
                     })
                     .catch(function () { /* huỷ request hoặc lỗi mạng -> giữ nguyên dropdown */ });
             }

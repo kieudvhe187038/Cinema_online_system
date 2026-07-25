@@ -59,6 +59,8 @@
         }
     </script>
     <partial name="_DarkMode" />
+    @* Bỏ dấu tiếng Việt phía client — nạp ở head vì nhiều view đặt script trong body. *@
+    <script src="~/js/vietnamese-text.js" asp-append-version="true"></script>
 </head>
 <body class="bg-light font-body text-tertiary">
 <!-- Bố cục = 2 phần đặt cạnh nhau (flex): SIDEBAR trái + KHU NỘI DUNG phải -->
