@@ -22,4 +22,14 @@ public class ReportController : Controller
         var vm = await _reportService.GetReportAsync(from, to);
         return View(vm);
     }
+
+    // Xuất báo cáo (theo đúng khoảng ngày đang xem) ra file Excel .xlsx.
+    [HttpGet("Export")]
+    public async Task<IActionResult> Export(DateOnly? from, DateOnly? to)
+    {
+        var (content, fileName) = await _reportService.ExportExcelAsync(from, to);
+        return File(content,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            fileName);
+    }
 }

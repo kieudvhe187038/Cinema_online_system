@@ -43,6 +43,11 @@
             <button type="submit" class="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-dark">
                 <span class="material-symbols-outlined" style="font-size:18px">filter_list</span> Xem
             </button>
+            @* Xuất Excel theo đúng khoảng ngày đang xem *@
+            <a href="@Url.Action("Export", "Report", new { from = Model.DateFrom.ToString("yyyy-MM-dd"), to = Model.DateTo.ToString("yyyy-MM-dd") })"
+               class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-600 bg-white px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50">
+                <span class="material-symbols-outlined" style="font-size:18px">download</span> Xuất Excel
+            </a>
         </form>
     </div>
 
