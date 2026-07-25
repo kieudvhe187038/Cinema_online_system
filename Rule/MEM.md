@@ -671,3 +671,16 @@ Nhật ký thay đổi mã nguồn / CSDL / quyết định kỹ thuật của d
   - `contains(source, '')` trả **true** (từ khóa rỗng = không lọc), nên bỏ được điều kiện `keyword !== ''` rườm rà ở chỗ gọi.
   - `fold()` giữ `aligned` để bên gọi biết có cắt chuỗi theo chỉ số được không (dùng cho tô đậm ở dropdown header); `searchKey()` có trim còn `fold()` thì không — **đừng dùng `searchKey()` để tính chỉ số tô đậm trên tên gốc**.
   - **Đã smoke-test với DB thật** trên combobox 15 phim của trang tạo suất chiếu: "bi"/"bí"/"BI" đều ra `Bí Mật Phố Cổ | Biệt Đội Tốc Độ`; "song" ra cả `Hoàng Cung Dậy Sóng`; "dem" ra `Đêm Kinh Hoàng | Điệp Vụ Bóng Đêm | Phim Demo Quầy`. Script inline của 4 trang liên quan đều parse OK. Build pass 0/0.
+
+### [2026-07-26] Mã giảm giá tại quầy: bắt buộc có tài khoản khách hàng (By: vkieu)
+- **What changed:**
+  1. `CounterBookingService.ResolvePromoAsync`: **`customerId is null` → trả lỗi ngay** ("Cần xác minh tài khoản khách hàng (tra cứu theo số điện thoại) mới dùng được mã giảm giá."). Thay cho hành vi cũ là *bỏ qua* check "mỗi người 1 lần" khi là khách lẻ. Check đặt **SAU** `if (string.IsNullOrWhiteSpace(code)) return` — khách lẻ KHÔNG nhập mã vẫn mua bình thường.
+  2. Gom việc tra khách hàng thành `ResolveCustomerAsync(customerId, customerPhone)` (ưu tiên Id, không có thì tìm theo SĐT đã bỏ khoảng trắng) — **dùng chung cho cả `CreateAsync` lẫn `PreviewPromoAsync`**.
+  3. `PreviewPromoAsync` thêm tham số `customerPhone` (đổi cả `ICounterBookingService` + action `StaffCounterController.PreviewPromo`); view gửi kèm `$('#phoneInput').val()`.
+  4. View quầy: thêm dòng gợi ý dưới ô mã, và `resetMember()` **tự huỷ mã đang áp** khi đổi/xoá SĐT khách.
+- **Why:** Khách lẻ không có định danh nên không chống được việc dùng lại mã nhiều lần — mã có `UsageLimit = null` về lý thuyết dùng vô hạn ở quầy. Theo yêu cầu: phải xác minh có tài khoản mới được dùng mã.
+- **Impact/Notes for Team:**
+  - **Lỗi lệch preview/checkout đã sửa luôn trong lần này** (bắt buộc phải sửa, nếu không tính năng vô dụng): trước đây xem trước chỉ gửi `customerId` (chỉ có khi nhân viên bấm nút "Tra"), còn lúc chốt đơn `CreateAsync` lại tự tra thành viên từ `CustomerPhone` → gõ SĐT mà quên bấm "Tra" thì xem trước báo hợp lệ, tới lúc thanh toán mới báo lỗi. Giờ hai bước dùng chung `ResolveCustomerAsync` nên luôn cho cùng kết quả. **Thêm tham số nào cho việc xác định khách thì phải sửa cả 2 chỗ.**
+  - **Thứ tự kiểm tra:** tài khoản được kiểm TRƯỚC khi kiểm mã có tồn tại/còn hạn hay không → khách lẻ gõ mã sai vẫn nhận thông báo "cần xác minh tài khoản" (không lộ mã nào có thật).
+  - Luồng online (`ShowtimeService.ResolvePromoAsync`) **không đổi** — khách online luôn đăng nhập nên vốn đã có `userId`.
+  - **Đã smoke-test HTTP với DB thật** (6 ca): khách lẻ không SĐT → chặn; gõ SĐT thành viên mà chưa bấm "Tra" → **áp được** (đây là ca lệch cũ); đã tra cứu → áp được; SĐT không phải thành viên → chặn; SĐT có khoảng trắng giữa → vẫn nhận ra thành viên; mã hết hạn + có tài khoản → báo đúng "Mã giảm giá không còn hiệu lực". Build pass 0/0.
