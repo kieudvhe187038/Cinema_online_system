@@ -191,10 +191,29 @@
 
         const fmt = n => (Math.round(n)).toLocaleString('vi-VN') + ' đ';
 
+        // --- Giữ ghế tại quầy (cùng cơ chế Seat_Holds với luồng khách đặt online) ---
+        function afToken() { return $('#createForm input[name="__RequestVerificationToken"]').val(); }
+
+        function postSeatAction(action, showtimeId, seatId) {
+            const fd = new FormData();
+            fd.append('__RequestVerificationToken', afToken());
+            fd.append('showtimeId', showtimeId);
+            if (seatId) fd.append('seatId', seatId);
+            return fetch('/Staff/Counter/' + action, { method: 'POST', body: fd }).then(r => r.json());
+        }
+
+        // Bỏ giữ toàn bộ ghế đang giữ của 1 suất (đổi suất khác / rời trang) — không chặn UI nếu lỗi mạng.
+        function releaseAllHeld(showtimeId) {
+            if (!showtimeId) return;
+            postSeatAction('ReleaseAll', showtimeId).catch(function () {});
+        }
+
         // --- Bước 1: chọn phim → tải suất chiếu ---
         $('#movieSelect').on('change', function () {
             const movieId = this.value;
             hideError();
+            releaseAllHeld(selectedShowtimeId);
+            selectedShowtimeId = null;
             resetSeats();
             $('#seatCard,#foodCard').hide();
             const $list = $('#showtimeList');
@@ -246,9 +265,11 @@
 
         // --- Bước 1b: chọn suất → tải sơ đồ ghế ---
         $('#showtimeList').on('click', '.ct-show', function () {
+            const newShowtimeId = $(this).data('id');
+            if (selectedShowtimeId && selectedShowtimeId !== newShowtimeId) releaseAllHeld(selectedShowtimeId);
             $('.ct-show').removeClass('active');
             $(this).addClass('active');
-            selectedShowtimeId = $(this).data('id');
+            selectedShowtimeId = newShowtimeId;
             hideError();
             resetSeats();
             loadSeatMap(selectedShowtimeId);
@@ -299,12 +320,37 @@
             $('#ctErrorAlert').hide();
         }
 
-        // --- Chọn / bỏ ghế ---
+        // --- Chọn / bỏ ghế: chọn phải giữ được ghế ở server trước (Seat_Holds), tránh 2 nhân viên
+        // (hoặc nhân viên và khách đặt online) cùng chốt trùng 1 ghế trong lúc đang nhập thông tin đơn ---
         $('#seatMap').on('click', '.seat:not(.occupied)', function () {
-            const id = $(this).data('id');
-            if (selectedSeats[id]) { delete selectedSeats[id]; $(this).removeClass('selected'); }
-            else { selectedSeats[id] = { label: $(this).data('label'), price: parseFloat($(this).data('price')) }; $(this).addClass('selected'); }
-            recalc();
+            const $seat = $(this);
+            const id = $seat.data('id');
+
+            if (selectedSeats[id]) {
+                // Bỏ chọn -> bỏ giữ ghế ngay (không chặn UI chờ phản hồi).
+                delete selectedSeats[id];
+                $seat.removeClass('selected');
+                recalc();
+                postSeatAction('ReleaseSeat', selectedShowtimeId, id).catch(function () {});
+                return;
+            }
+
+            $seat.prop('disabled', true);
+            postSeatAction('HoldSeat', selectedShowtimeId, id).then(function (res) {
+                $seat.prop('disabled', false);
+                if (res.ok) {
+                    selectedSeats[id] = { label: $seat.data('label'), price: parseFloat($seat.data('price')) };
+                    $seat.addClass('selected');
+                    recalc();
+                } else {
+                    // Ghế vừa bị người khác giữ/đặt trong lúc thao tác -> khóa lại, không cho chọn nữa.
+                    $seat.addClass('occupied').prop('disabled', true);
+                    showError(res.message || 'Ghế vừa được người khác chọn. Vui lòng chọn ghế khác.');
+                }
+            }).catch(function () {
+                $seat.prop('disabled', false);
+                showError('Không thể kết nối máy chủ, vui lòng thử lại.');
+            });
         });
 
         // --- Đồ ăn ---
@@ -449,5 +495,15 @@
 
         function resetSeats() { selectedSeats = {}; recalc(); }
         recalc();
+
+        // Rời trang (đóng tab/chuyển trang khác) -> bỏ giữ toàn bộ ghế đang giữ.
+        // Dùng sendBeacon vì trang đang unload, fetch thường có thể bị hủy giữa chừng.
+        window.addEventListener('pagehide', function () {
+            if (!selectedShowtimeId || Object.keys(selectedSeats).length === 0) return;
+            const fd = new FormData();
+            fd.append('__RequestVerificationToken', afToken());
+            fd.append('showtimeId', selectedShowtimeId);
+            navigator.sendBeacon('/Staff/Counter/ReleaseAll', fd);
+        });
     </script>
 }

@@ -104,14 +104,15 @@ public class CounterBookingService : ICounterBookingService
         return result;
     }
 
-    public async Task<SeatMapDTO?> GetSeatMapAsync(Guid showtimeId)
+    public async Task<SeatMapDTO?> GetSeatMapAsync(Guid showtimeId, Guid staffId)
     {
         var showtime = await _unitOfWork.Showtimes.GetWithRoomAndMovieAsync(showtimeId);
         if (showtime is null) return null;
 
         var seats = await _unitOfWork.Seats.GetByRoomWithTypeAsync(showtime.RoomId);
 
-        var occupied = await GetOccupiedSeatIdsAsync(showtimeId);
+        // Ghế chính nhân viên này đang tự giữ thì KHÔNG tính là "đã chiếm" (vẫn phải hiện chọn được/đang chọn).
+        var occupied = await GetOccupiedSeatIdsAsync(showtimeId, excludeHoldUserId: staffId);
         var pricing = await _pricing.GetPricingAsync(showtime);
 
         var cells = seats.Select(s =>
@@ -328,6 +329,16 @@ public class CounterBookingService : ICounterBookingService
         foreach (var bf in bookingFoods) await _unitOfWork.BookingFoods.AddAsync(bf);
         await _unitOfWork.Payments.AddAsync(payment);
 
+        // Ghế nhân viên đang tự giữ cho suất này đã thành vé -> chuyển hold sang Converted (khớp cách
+        // luồng khách đặt online xử lý, xem ShowtimeService.ConfirmBookingAsync).
+        var myHolds = await _unitOfWork.SeatHolds.GetAllAsync(
+            h => h.ShowtimeId == showtime.Id && h.UserId == staffId && h.Status == HoldHolding && seatIds.Contains(h.SeatId));
+        foreach (var h in myHolds)
+        {
+            h.Status = "Converted";
+            _unitOfWork.SeatHolds.Update(h);
+        }
+
         // TrySaveChangesAsync trả về false khi vi phạm unique index (UX_Tickets_Showtime_Seat)
         // — backstop chống đặt trùng ghế khi có đơn khác chốt cùng lúc.
         if (!await _unitOfWork.TrySaveChangesAsync())
@@ -336,8 +347,9 @@ public class CounterBookingService : ICounterBookingService
         return Result<Guid>.Success(bookingId);
     }
 
-    /// <summary>Tập hợp Id ghế đã có vé (chưa hủy) hoặc đang được giữ chỗ còn hiệu lực.</summary>
-    private async Task<HashSet<Guid>> GetOccupiedSeatIdsAsync(Guid showtimeId)
+    /// <summary>Tập hợp Id ghế đã có vé (chưa hủy) hoặc đang được giữ chỗ còn hiệu lực.
+    /// <paramref name="excludeHoldUserId"/>: bỏ qua hold của chính người này (đang tự giữ, không tính là chiếm chỗ).</summary>
+    private async Task<HashSet<Guid>> GetOccupiedSeatIdsAsync(Guid showtimeId, Guid? excludeHoldUserId = null)
     {
         var now = DateTime.Now;
 
@@ -346,10 +358,85 @@ public class CounterBookingService : ICounterBookingService
             .Select(t => t.SeatId);
 
         var holdSeatIds = (await _unitOfWork.SeatHolds.GetAllAsync(
-            h => h.ShowtimeId == showtimeId && h.Status == HoldHolding && h.ExpiresAt > now))
+            h => h.ShowtimeId == showtimeId && h.Status == HoldHolding && h.ExpiresAt > now
+                && (excludeHoldUserId == null || h.UserId != excludeHoldUserId)))
             .Select(h => h.SeatId);
 
         return ticketSeatIds.Concat(holdSeatIds).ToHashSet();
+    }
+
+    // Giữ 1 ghế cho nhân viên trong holdMinutes phút (tạo mới hoặc gia hạn nếu đã giữ) — cùng cơ chế
+    // với luồng khách đặt online (ShowtimeService.HoldSeatAsync), áp cho quầy để tránh 2 nhân viên
+    // (hoặc nhân viên và khách online) cùng chọn trùng 1 ghế trong lúc đang nhập thông tin đơn.
+    public async Task<Result> HoldSeatAsync(Guid showtimeId, Guid seatId, Guid staffId, int holdMinutes)
+    {
+        var now = DateTime.Now;
+
+        var showtime = await _unitOfWork.Showtimes.GetByIdAsync(showtimeId);
+        if (showtime is null) return Result.Failure("Không tìm thấy suất chiếu.");
+        if (!ShowtimeSalePolicy.IsOpenForSale(showtime.StartTime, showtime.Status, now))
+            return Result.Failure(ShowtimeSalePolicy.ClosedMessage);
+
+        var booked = await _unitOfWork.Tickets.ExistsAsync(
+            t => t.ShowtimeId == showtimeId && t.SeatId == seatId && t.Status != TicketCancelled);
+        if (booked) return Result.Failure("Ghế đã được đặt.");
+
+        var holds = (await _unitOfWork.SeatHolds.GetAllAsync(
+            predicate: h => h.ShowtimeId == showtimeId && h.SeatId == seatId
+                && h.Status == HoldHolding && h.ExpiresAt > now)).ToList();
+
+        if (holds.Any(h => h.UserId != staffId))
+            return Result.Failure("Ghế đang được người khác giữ.");
+
+        var mine = holds.FirstOrDefault(h => h.UserId == staffId);
+        if (mine != null)
+        {
+            mine.ExpiresAt = now.AddMinutes(holdMinutes);
+            _unitOfWork.SeatHolds.Update(mine);
+        }
+        else
+        {
+            await _unitOfWork.SeatHolds.AddAsync(new SeatHold
+            {
+                Id = Guid.NewGuid(),
+                ShowtimeId = showtimeId,
+                SeatId = seatId,
+                UserId = staffId,
+                HeldAt = now,
+                ExpiresAt = now.AddMinutes(holdMinutes),
+                Status = HoldHolding
+            });
+        }
+
+        await _unitOfWork.SaveChangesAsync();
+        return Result.Success();
+    }
+
+    // Bỏ giữ 1 ghế (nhân viên bỏ chọn).
+    public async Task ReleaseSeatAsync(Guid showtimeId, Guid seatId, Guid staffId)
+    {
+        var holds = await _unitOfWork.SeatHolds.GetAllAsync(
+            predicate: h => h.ShowtimeId == showtimeId && h.SeatId == seatId
+                && h.UserId == staffId && h.Status == HoldHolding);
+        foreach (var h in holds)
+        {
+            h.Status = "Released";
+            _unitOfWork.SeatHolds.Update(h);
+        }
+        await _unitOfWork.SaveChangesAsync();
+    }
+
+    // Bỏ giữ toàn bộ ghế nhân viên đang giữ của 1 suất (đổi suất chiếu khác / rời trang).
+    public async Task ReleaseAllAsync(Guid showtimeId, Guid staffId)
+    {
+        var holds = await _unitOfWork.SeatHolds.GetAllAsync(
+            predicate: h => h.ShowtimeId == showtimeId && h.UserId == staffId && h.Status == HoldHolding);
+        foreach (var h in holds)
+        {
+            h.Status = "Released";
+            _unitOfWork.SeatHolds.Update(h);
+        }
+        await _unitOfWork.SaveChangesAsync();
     }
 
     private static string NewCode(string prefix)
