@@ -21,11 +21,6 @@ public class CounterBookingService : ICounterBookingService
     // Số ghế tối đa cho 1 đơn tại quầy (khớp giới hạn MAX_SEATS phía luồng khách đặt online).
     private const int MaxSeatsPerBooking = 6;
 
-    // Phương thức thanh toán hợp lệ tại quầy (khớp với UI: Tiền mặt / Chuyển khoản).
-    // Chặn giá trị tùy ý / quá dài tràn vào cột Payments.payment_method NVARCHAR(100).
-    private static readonly HashSet<string> AllowedPaymentMethods =
-        new(StringComparer.OrdinalIgnoreCase) { "Cash", "Transfer" };
-
     private readonly IUnitOfWork _unitOfWork;
     private readonly IPricingService _pricing;
     private readonly IStaffContextService _staffContext;
@@ -280,12 +275,13 @@ public class CounterBookingService : ICounterBookingService
         var finalAmount = afterPromo - pointsDiscount;
 
         // --- Thanh toán tại quầy ---
-        var method = string.IsNullOrWhiteSpace(request.PaymentMethod) ? "Cash" : request.PaymentMethod.Trim();
-        if (!AllowedPaymentMethods.Contains(method))
+        // Chặn giá trị tùy ý / quá dài tràn vào cột Payments.payment_method NVARCHAR(100).
+        var method = string.IsNullOrWhiteSpace(request.PaymentMethod) ? PaymentMethod.Cash : request.PaymentMethod.Trim();
+        if (!PaymentMethod.CounterMethods.Contains(method))
             return Result<Guid>.Failure("Phương thức thanh toán không hợp lệ.");
         decimal? cashReceived = null;
         decimal? changeAmount = null;
-        if (method.Equals("Cash", StringComparison.OrdinalIgnoreCase))
+        if (method.Equals(PaymentMethod.Cash, StringComparison.OrdinalIgnoreCase))
         {
             if (request.CashReceived is null || request.CashReceived < finalAmount)
                 return Result<Guid>.Failure("Số tiền khách đưa không đủ để thanh toán.");

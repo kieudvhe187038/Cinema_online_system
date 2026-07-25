@@ -59,3 +59,42 @@ GO
 IF OBJECT_ID('Chatbot_Logs', 'U') IS NOT NULL
     DROP TABLE [Chatbot_Logs];
 GO
+
+-- =====================================================================================
+-- [2026-07-26] Chuẩn hóa [Payments].payment_method về đúng các phương thức hệ thống có
+-- =====================================================================================
+-- Hệ thống CHỈ sinh ra 5 giá trị: Cash/Transfer (quầy — CounterBookingService),
+-- VNPay/VietQR (online — ShowtimeController), Free (đơn 0đ do mã giảm giá/điểm phủ hết tiền).
+-- Dữ liệu seed cũ còn Momo/ZaloPay/Credit Card — những cổng KHÔNG hề được tích hợp, làm báo
+-- cáo "Phương thức thanh toán" hiện ra các mục không có thật.
+-- Quy ước quy đổi: Momo + Credit Card -> VNPay (cổng thanh toán thật của hệ thống),
+-- ZaloPay -> VietQR (chuyển khoản quét QR). Toàn bộ các dòng này đều là payment_source='Online'.
+-- Chạy remap TRƯỚC rồi mới thêm CHECK constraint, nếu không constraint sẽ bị từ chối.
+--
+-- BẪY: [Payments] có filtered unique index trên [transaction_ref] nên UPDATE đòi
+-- QUOTED_IDENTIFIER ON. SSMS bật sẵn, nhưng chạy bằng `sqlcmd` thì mặc định TẮT và sẽ
+-- báo "Msg 1934 ... SET options have incorrect settings: 'QUOTED_IDENTIFIER'".
+-- Dòng SET dưới đây xử lý sẵn (hoặc chạy sqlcmd kèm cờ -I).
+-- =====================================================================================
+SET QUOTED_IDENTIFIER ON;
+GO
+
+UPDATE [Payments] SET [payment_method] = N'VNPay'
+WHERE [payment_method] IN (N'Momo', N'Credit Card');
+GO
+
+UPDATE [Payments] SET [payment_method] = N'VietQR'
+WHERE [payment_method] = N'ZaloPay';
+GO
+
+-- Kiểm tra còn giá trị lạ nào không trước khi khóa lại (nên trả về 0 dòng).
+SELECT [payment_method], COUNT(*) AS so_dong
+FROM [Payments]
+WHERE [payment_method] NOT IN (N'Cash', N'Transfer', N'VNPay', N'VietQR', N'Free')
+GROUP BY [payment_method];
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_Payments_method')
+    ALTER TABLE [Payments] ADD CONSTRAINT [CK_Payments_method]
+        CHECK ([payment_method] IN ('Cash', 'Transfer', 'VNPay', 'VietQR', 'Free'));
+GO

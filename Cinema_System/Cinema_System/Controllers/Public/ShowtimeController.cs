@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text.Json;
+using Cinema_System.Application.Common;
 using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
 using Microsoft.AspNetCore.Authorization;
@@ -108,8 +109,8 @@ namespace Cinema_System.Controllers.Public
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Confirm(Guid id, string method, List<Guid> fbId, List<int> qty, int pointsUsed = 0, string? promoCode = null)
         {
-            var allowed = new[] { "VNPay", "VietQR" };
-            if (string.IsNullOrEmpty(method) || !allowed.Contains(method)) method = "VietQR";
+            if (string.IsNullOrEmpty(method) || !PaymentMethod.OnlineMethods.Contains(method))
+                method = PaymentMethod.VietQr;
             fbId ??= new();
             qty ??= new();
             if (pointsUsed < 0) pointsUsed = 0;
@@ -124,7 +125,7 @@ namespace Cinema_System.Controllers.Public
             var payable0 = afterPromo0 - (decimal)usePoints0 * payVm.PointValueVnd;
             if (payable0 <= 0)
             {
-                var freeResult = await _showtimeService.ConfirmBookingAsync(id, CurrentUserId, "Free", fbId, qty, pointsUsed, promoCode);
+                var freeResult = await _showtimeService.ConfirmBookingAsync(id, CurrentUserId, PaymentMethod.Free, fbId, qty, pointsUsed, promoCode);
                 if (!freeResult.Succeeded)
                 {
                     TempData["Error"] = freeResult.Error;
@@ -134,7 +135,7 @@ namespace Cinema_System.Controllers.Public
             }
 
             // VietQR: hiển thị mã QR chuyển khoản; tạo đơn khi khách bấm "Đã chuyển khoản".
-            if (method == "VietQR" && _vietqr.Enabled)
+            if (method == PaymentMethod.VietQr && _vietqr.Enabled)
             {
                 var pvm = await _showtimeService.GetPaymentAsync(id, CurrentUserId, fbId, qty);
                 if (pvm is null) return RedirectToAction(nameof(SelectSeats), new { id });
@@ -166,7 +167,7 @@ namespace Cinema_System.Controllers.Public
             }
 
             // VNPay thật (sandbox): tạo URL thanh toán rồi redirect sang cổng.
-            if (method == "VNPay" && _vnpay.Enabled)
+            if (method == PaymentMethod.VnPay && _vnpay.Enabled)
             {
                 var vm = await _showtimeService.GetPaymentAsync(id, CurrentUserId, fbId, qty);
                 if (vm is null) return RedirectToAction(nameof(SelectSeats), new { id });
@@ -226,7 +227,7 @@ namespace Cinema_System.Controllers.Public
             }
 
             var result = await _showtimeService.ConfirmBookingAsync(
-                pending.ShowtimeId, CurrentUserId, "VNPay", pending.FoodIds, pending.FoodQtys, pending.PointsUsed, pending.PromoCode);
+                pending.ShowtimeId, CurrentUserId, PaymentMethod.VnPay, pending.FoodIds, pending.FoodQtys, pending.PointsUsed, pending.PromoCode);
             if (!result.Succeeded)
             {
                 TempData["Error"] = result.Error;
@@ -251,7 +252,7 @@ namespace Cinema_System.Controllers.Public
         public async Task<IActionResult> VietQrPaid(Guid id, List<Guid> fbId, List<int> qty, int pointsUsed = 0, string? promoCode = null)
         {
             var result = await _showtimeService.ConfirmBookingAsync(
-                id, CurrentUserId, "VietQR", fbId ?? new(), qty ?? new(), pointsUsed, promoCode);
+                id, CurrentUserId, PaymentMethod.VietQr, fbId ?? new(), qty ?? new(), pointsUsed, promoCode);
             if (!result.Succeeded)
             {
                 TempData["Error"] = result.Error;

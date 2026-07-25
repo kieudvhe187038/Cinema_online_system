@@ -1,4 +1,5 @@
 using ClosedXML.Excel;
+using Cinema_System.Application.Common;
 using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
 using Microsoft.EntityFrameworkCore;
@@ -67,15 +68,19 @@ public class ReportService : IReportService
         // ── Tỉ lệ phương thức thanh toán (từ các payment thành công trong khoảng) ──
         var payments = await _unitOfWork.Payments.GetAllAsync(
             predicate: p => p.Status == "Success" && p.PaidAt >= fromDt && p.PaidAt < toEndDt);
+        // Xếp theo thứ tự phương thức hệ thống đang có; giá trị lạ (dữ liệu cũ chưa chuẩn hóa)
+        // rơi xuống cuối và giữ nguyên mã — không bỏ đi để tổng tiền báo cáo không bị hụt.
         var payMethods = payments
             .GroupBy(p => p.PaymentMethod)
             .Select(g => new PaymentMethodItem
             {
                 Method = g.Key,
+                Label = PaymentMethod.Label(g.Key),
                 Count = g.Count(),
                 Amount = g.Sum(x => x.Amount)
             })
-            .OrderByDescending(x => x.Amount)
+            .OrderBy(x => PaymentMethod.SortIndex(x.Method))
+            .ThenByDescending(x => x.Amount)
             .ToList();
 
         return new ReportViewModel
@@ -153,7 +158,7 @@ public class ReportService : IReportService
         row = WriteHeader(ws, row, "Phương thức", "Số giao dịch", "Số tiền");
         foreach (var p in vm.PaymentMethods)
         {
-            ws.Cell(row, 1).Value = p.Method;
+            ws.Cell(row, 1).Value = p.Label;
             ws.Cell(row, 2).Value = p.Count;
             ws.Cell(row, 3).Value = p.Amount;
             ws.Cell(row, 3).Style.NumberFormat.Format = moneyFmt;
