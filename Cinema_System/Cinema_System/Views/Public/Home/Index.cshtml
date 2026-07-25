@@ -90,7 +90,7 @@
 
     @{
         // Hàm dựng 1 slider phim cuộn ngang (4 phim/hàng), dùng lại cho cả 3 danh sách.
-        async Task MovieSliderAsync(IEnumerable<MovieDTO> movies, string eyebrow, string heading, string subtitle, string emptyText, string? badge = null, string? badgeClass = null, bool hideBuy = false)
+        async Task MovieSliderAsync(IEnumerable<MovieDTO> movies, string eyebrow, string heading, string subtitle, string emptyText, string? badge = null, string? badgeClass = null)
         {
             <section class="px-4 sm:px-6 lg:px-8">
                 <div class="mx-auto max-w-7xl rounded-[2rem] bg-white p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.2)]">
@@ -112,7 +112,6 @@
                                         @{
                                             var cardViewData = new ViewDataDictionary(ViewData);
                                             if (!string.IsNullOrEmpty(badge)) { cardViewData["Badge"] = badge; cardViewData["BadgeClass"] = badgeClass; }
-                                            if (hideBuy) { cardViewData["HideBuyButton"] = true; }
                                         }
                                         @await Html.PartialAsync("_MovieCard", movie, cardViewData)
                                     </div>
@@ -133,8 +132,8 @@
     }
 
     @{ await MovieSliderAsync(Model.NowShowingMovies, "Phim đang chiếu", "PHIM ĐANG CHIẾU", "Trải nghiệm điện ảnh đỉnh cao cùng CineStar.", "Hiện chưa có phim nào đang chiếu."); }
-    @{ await MovieSliderAsync(Model.ComingSoonMovies, "Phim sắp chiếu", "PHIM SẮP CHIẾU", "Những bộ phim chờ đợi bạn sắp tới.", "Hiện chưa có phim sắp chiếu.", "SẮP CHIẾU", "from-orange-500 to-red-500", hideBuy: true); }
-    @{ await MovieSliderAsync(Model.SpecialMovies, "Suất chiếu đặc biệt", "SUẤT CHIẾU ĐẶC BIỆT", "Những suất chiếu đặc biệt dành cho bạn.", "Hiện chưa có suất chiếu đặc biệt.", "ĐẶC BIỆT", "from-purple-500 to-pink-500"); }
+    @{ await MovieSliderAsync(Model.ComingSoonMovies, "Phim sắp chiếu", "PHIM SẮP CHIẾU", "Những bộ phim chờ đợi bạn sắp tới — phim đã có lịch chiếu có thể đặt vé trước.", "Hiện chưa có phim sắp chiếu.", "SẮP CHIẾU", "from-orange-500 to-red-500"); }
+    @{ await MovieSliderAsync(Model.SpecialMovies, "Phim chiếu sớm", "PHIM CHIẾU SỚM", "Xem trước ngày khởi chiếu chính thức.", "Hiện chưa có phim chiếu sớm.", "CHIẾU SỚM", "from-purple-500 to-pink-500"); }
 
 </div>
 
@@ -205,6 +204,3 @@
         });
     </script>
 }
-
-@* Include floating support widget on homepage *@
-@await Html.PartialAsync("_SupportWidget")

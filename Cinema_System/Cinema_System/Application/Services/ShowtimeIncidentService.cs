@@ -10,14 +10,15 @@ namespace Cinema_System.Application.Services
 {
     public class ShowtimeIncidentService : IShowtimeIncidentService
     {
-        private const string RewardRateKey = "reward_point_rate";
         private readonly IUnitOfWork _unitOfWork;
         private readonly IEmailService _emailService;
+        private readonly IPointConfigService _pointConfig;
 
-        public ShowtimeIncidentService(IUnitOfWork unitOfWork, IEmailService emailService)
+        public ShowtimeIncidentService(IUnitOfWork unitOfWork, IEmailService emailService, IPointConfigService pointConfig)
         {
             _unitOfWork = unitOfWork;
             _emailService = emailService;
+            _pointConfig = pointConfig;
         }
 
         // Thống kê + danh sách suất chiếu (kèm cờ đã có sự cố)
@@ -154,8 +155,8 @@ namespace Cinema_System.Application.Services
                 !await _unitOfWork.Promotions.ExistsAsync(p => p.Id == form.CompensationPromoId.Value))
                 return Result.Failure("Voucher bồi thường không hợp lệ.");
 
-            var rateConfig = await _unitOfWork.SystemConfigs.FirstOrDefaultAsync(c => c.ConfigKey == RewardRateKey);
-            var rewardRate = ParseDecimal(rateConfig?.ConfigValue);
+            // Tỉ lệ tích điểm lấy từ cấu hình dùng chung (Manager > Cấu hình điểm thưởng).
+            var rewardRate = (await _pointConfig.GetPolicyAsync()).EarnRate;
             var now = DateTime.Now;
 
             await RefundShowtimePaidCustomersAsync(showtimeId, form.RefundPointsRate, rewardRate, now, new Dictionary<Guid, User>());
@@ -251,9 +252,6 @@ namespace Cinema_System.Application.Services
                     : $"{p.Code} (giảm {p.DiscountAmount:#,##0}đ)"
             }).ToList();
         }
-
-        private static decimal ParseDecimal(string? value)
-            => decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var d) ? d : 0m;
 
         // Hoàn điểm cho mọi đơn ĐÃ THANH TOÁN của 1 suất. Trả về số lượt khách được hoàn.
         // userCache: dùng CHUNG 1 instance User qua nhiều suất (tránh EF track trùng key khi 1 khách có vé ở nhiều suất).

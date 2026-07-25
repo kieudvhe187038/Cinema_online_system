@@ -384,7 +384,7 @@
 
                             var widthPercent = 100.0 / cols;
                             var leftPercent = b.Column * widthPercent;
-                            var tooltipText = $"{b.Show.MovieTitle} — {b.Show.RoomName} {b.Show.StartTime:HH:mm}-{b.Show.EndTime:HH:mm}";
+                            var tooltipText = $"{b.Show.MovieTitle} — {b.Show.RoomName} {b.Show.StartTime:HH:mm}-{b.Show.EndTime:HH:mm} · {b.Show.SeatsSold}/{b.Show.Capacity} vé";
                             var editUrl = Url.Action("Edit","ManagerShowtime", new { id = b.Show.Id });
                             
                             <div class="show-block absolute rounded-lg shadow-sm border border-l-4 overflow-hidden" 
@@ -394,8 +394,14 @@
                                 <div class="text-[11px] font-bold text-[#1e293b] truncate uppercase tracking-wide leading-tight" title="@b.Show.MovieTitle">@b.Show.MovieTitle</div>
                                 <div class="text-[10px] text-gray-500 mt-0.5 font-medium">@b.Show.RoomName</div>
                                 <div class="text-[10px] text-blue-600 font-semibold mt-0.5">@b.Show.StartTime.ToString("HH:mm") - @b.Show.EndTime.ToString("HH:mm")</div>
-                                <div class="inline-flex items-center gap-1 text-[8px] font-bold uppercase text-white px-2 py-0.5 rounded-full mt-1.5 @StatusClass(b.Show.Status)" style="width:fit-content;">
-                                    @b.Show.Status
+                                <div class="flex items-center gap-1 mt-1.5 flex-wrap">
+                                    <span class="inline-flex items-center gap-1 text-[8px] font-bold uppercase text-white px-2 py-0.5 rounded-full @StatusClass(b.Show.Status)" style="width:fit-content;">
+                                        @b.Show.Status
+                                    </span>
+                                    <span class="inline-flex items-center gap-1 text-[8px] font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full" style="width:fit-content;">
+                                        <span class="material-symbols-outlined" style="font-size:9px">confirmation_number</span>
+                                        @b.Show.SeatsSold/@b.Show.Capacity
+                                    </span>
                                 </div>
                             </div>
                         }
@@ -418,6 +424,7 @@
                             <div>
                                 <div class="font-semibold">@st.MovieTitle</div>
                                 <div class="text-xs text-gray-500">@st.RoomName — @st.StartTime.ToString("HH:mm") - @st.EndTime.ToString("HH:mm")</div>
+                                <div class="text-xs text-gray-500 mt-0.5">@st.SeatsSold/@st.Capacity vé đã bán</div>
                             </div>
                             <div class="text-xs font-semibold px-2 py-1 rounded-full text-white @StatusClass(st.Status)">@st.Status</div>
                         </div>

@@ -59,6 +59,15 @@ namespace Cinema_System.Controllers.Public
         [Authorize(Roles = "CUSTOMER")]
         public async Task<IActionResult> SelectSeats(Guid id)
         {
+            // Suất đã qua giờ / đang chiếu / đã hủy thì không cho vào trang chọn ghế
+            // (lịch chiếu đã lọc sẵn, nhưng trang có thể mở từ trước hoặc vào bằng link cũ).
+            var saleOpen = await _showtimeService.CheckSaleOpenAsync(id);
+            if (!saleOpen.Succeeded)
+            {
+                TempData["Error"] = saleOpen.Error;
+                return RedirectToAction(nameof(Index));
+            }
+
             // Chặn đặt vé online khi khách chưa đủ tuổi theo phân loại phim.
             var ageCheck = await _showtimeService.CheckAgeRestrictionAsync(id, CurrentUserId);
             if (!ageCheck.Succeeded)

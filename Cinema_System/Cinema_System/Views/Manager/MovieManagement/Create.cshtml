@@ -32,13 +32,12 @@
 
                 <div class="mb-3.5">
                     <label asp-for="Status" class="@fieldLabel"></label>
-                    <select asp-for="Status" class="@fieldInput">
-                        <option value="Coming Soon">Sắp chiếu</option>
-                        <option value="Now Showing">Đang chiếu</option>
-                        <option value="Special">Suất chiếu đặc biệt</option>
-                        <option value="Stopped">Tạm ngừng</option>
-                    </select>
-                    <span asp-validation-for="Status" class="@fieldError"></span>
+                    @* Không cho chọn tay: chỉ hiển thị trạng thái sẽ được gán theo ngày khởi chiếu. *@
+                    <div class="flex items-center gap-2 px-3 py-2.5 border border-dashed border-[#e0c0b2] rounded-lg bg-[#fff7f0]">
+                        <span id="status-badge" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">Chưa xác định</span>
+                        <span class="text-xs text-[#584237]">Tự động theo ngày khởi chiếu</span>
+                    </div>
+                    <p class="text-xs text-[#584237] mt-1">Xếp suất chiếu trước ngày khởi chiếu thì phim sẽ thành <b>Chiếu sớm</b>.</p>
                 </div>
 
                 <div class="mb-3.5">
@@ -165,6 +164,28 @@
             var max = ta.getAttribute('maxlength') || 3000;
             function upd() { c.textContent = ta.value.length + '/' + max + ' ký tự'; }
             ta.addEventListener('input', upd); upd();
+        })();
+
+        // Xem trước trạng thái theo ngày khởi chiếu (cùng quy tắc MovieStatusPolicy ở server).
+        // Phim mới chưa có suất chiếu nên chỉ có 2 khả năng: Sắp chiếu / Đang chiếu.
+        (function () {
+            var dateInput = document.getElementById('ReleaseDate'), badge = document.getElementById('status-badge');
+            if (!dateInput || !badge) return;
+            var styles = {
+                none: ['Chưa xác định', 'bg-gray-100 text-gray-600'],
+                coming: ['Sắp chiếu', 'bg-orange-50 text-orange-700'],
+                now: ['Đang chiếu', 'bg-green-100 text-green-700']
+            };
+            function upd() {
+                var today = new Date(); today.setHours(0, 0, 0, 0);
+                var picked = dateInput.value ? new Date(dateInput.value + 'T00:00:00') : null;
+                var key = (!picked || isNaN(picked.getTime())) ? 'none' : (picked > today ? 'coming' : 'now');
+                badge.textContent = styles[key][0];
+                badge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ' + styles[key][1];
+            }
+            dateInput.addEventListener('change', upd);
+            dateInput.addEventListener('input', upd);
+            upd();
         })();
     </script>
 }

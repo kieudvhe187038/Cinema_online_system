@@ -14,11 +14,13 @@ public class ShowtimeScheduleService : IShowtimeScheduleService
 {
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly IMovieStatusService _movieStatusService;
 
-    public ShowtimeScheduleService(IUnitOfWork unitOfWork, IMapper mapper)
+    public ShowtimeScheduleService(IUnitOfWork unitOfWork, IMapper mapper, IMovieStatusService movieStatusService)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _movieStatusService = movieStatusService;
     }
 
     /// <summary>
@@ -57,18 +59,26 @@ public class ShowtimeScheduleService : IShowtimeScheduleService
             includeProperties: new[] { "Movie", "Room" },
             orderBy: q => q.OrderBy(s => s.StartTime));
 
+        // Đếm số vé đã bán theo từng suất chiếu (1 truy vấn duy nhất, tránh N+1).
+        var showtimeIds = showtimes.Select(s => s.Id).ToList();
+        var seatsSoldByShowtime = (await _unitOfWork.Tickets.GetAllAsync(t => showtimeIds.Contains(t.ShowtimeId)))
+            .GroupBy(t => t.ShowtimeId)
+            .ToDictionary(g => g.Key, g => g.Count());
+
         var showtimeDtos = new List<ShowtimeScheduleDTO>();
         var bookedCount = 0;
 
         foreach (var showtime in showtimes)
         {
+            var seatsSold = seatsSoldByShowtime.GetValueOrDefault(showtime.Id);
+
             // Kiểm tra xem suất chiếu này đã có khách hàng đặt vé/đặt chỗ chưa
-            var hasBookings = await _unitOfWork.Bookings.ExistsAsync(b => b.ShowtimeId == showtime.Id) ||
-                              await _unitOfWork.Tickets.ExistsAsync(t => t.ShowtimeId == showtime.Id);
+            var hasBookings = seatsSold > 0 || await _unitOfWork.Bookings.ExistsAsync(b => b.ShowtimeId == showtime.Id);
             if (hasBookings) bookedCount++;
 
             var dto = _mapper.Map<ShowtimeScheduleDTO>(showtime);
             dto.HasBookings = hasBookings;
+            dto.SeatsSold = seatsSold;
             showtimeDtos.Add(dto);
         }
 
@@ -124,7 +134,8 @@ public class ShowtimeScheduleService : IShowtimeScheduleService
     /// <returns>ViewModel chứa thông tin suất chiếu và danh sách phim/phòng khả dụng</returns>
     public async Task<ShowtimeFormViewModel?> GetForEditAsync(Guid id)
     {
-        var showtime = await _unitOfWork.Showtimes.GetByIdAsync(id);
+        var showtime = await _unitOfWork.Showtimes.FirstOrDefaultAsync(
+            s => s.Id == id, includeProperties: new[] { "Room" });
         if (showtime is null)
             return null;
 
@@ -137,27 +148,38 @@ public class ShowtimeScheduleService : IShowtimeScheduleService
         }
         var rooms = await GetRoomOptionsAsync();
 
-        var hasBookings = await _unitOfWork.Bookings.ExistsAsync(b => b.ShowtimeId == id) ||
-                          await _unitOfWork.Tickets.ExistsAsync(t => t.ShowtimeId == id);
+        var seatsSold = await _unitOfWork.Tickets.CountAsync(t => t.ShowtimeId == id);
+        var hasBookings = seatsSold > 0 || await _unitOfWork.Bookings.ExistsAsync(b => b.ShowtimeId == id);
 
         var vm = _mapper.Map<ShowtimeFormViewModel>(showtime);
         vm.HasBookings = hasBookings;
+        vm.SeatsSold = seatsSold;
+        vm.Capacity = showtime.Room?.TotalSeats ?? 0;
         vm.AvailableMovies = movies;
         vm.AvailableRooms = rooms;
         return vm;
     }
 
     /// <summary>
-    /// Lấy danh sách phim khả dụng cho dropdown
+    /// Lấy danh sách phim khả dụng cho dropdown. Phim chưa tới ngày khởi chiếu VẪN được xếp lịch
+    /// (xếp trước ngày khởi chiếu = suất chiếu sớm) nên tên phim kèm luôn ngày khởi chiếu để Manager biết.
     /// </summary>
     /// <returns>Danh sách các phim với ID và tên</returns>
     public async Task<IEnumerable<ItemOptionDTO>> GetMovieOptionsAsync()
     {
-        // Chỉ lấy phim được phép xếp lịch: loại phim đã ngừng chiếu và phim sắp chiếu (chưa phát hành).
+        // Chỉ loại phim đã ngừng chiếu.
         var movies = await _unitOfWork.Movies.GetAllAsync(
-            predicate: m => m.Status != MovieStatus.Stopped && m.Status != MovieStatus.ComingSoon,
+            predicate: m => m.Status != MovieStatus.Stopped,
             orderBy: q => q.OrderBy(m => m.Title));
-        return _mapper.Map<List<ItemOptionDTO>>(movies);
+
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        return movies.Select(m => new ItemOptionDTO
+        {
+            Id = m.Id,
+            Name = m.ReleaseDate.HasValue && m.ReleaseDate.Value > today
+                ? $"{m.Title} (Khởi chiếu {m.ReleaseDate.Value:dd/MM/yyyy})"
+                : m.Title
+        }).ToList();
     }
 
     /// <summary>
@@ -185,12 +207,10 @@ public class ShowtimeScheduleService : IShowtimeScheduleService
         if (movie is null)
             return Result.Failure("Phim không tồn tại.");
 
-        // 2. Movie Status Restriction
+        // 2. Movie Status Restriction — chỉ chặn phim đã ngừng chiếu.
+        // Phim sắp chiếu được phép xếp lịch: nếu suất chiếu trước ngày khởi chiếu thì phim thành "chiếu sớm".
         if (movie.Status == MovieStatus.Stopped)
             return Result.Failure("Không thể xếp lịch cho phim đã ngừng chiếu.");
-
-        if (movie.Status == MovieStatus.ComingSoon)
-            return Result.Failure("Không thể xếp lịch cho phim sắp chiếu.");
 
         var roomExists = await _unitOfWork.Rooms.ExistsAsync(r => r.Id == model.RoomId);
         if (!roomExists)
@@ -225,6 +245,9 @@ public class ShowtimeScheduleService : IShowtimeScheduleService
 
         await _unitOfWork.Showtimes.AddAsync(showtime);
         await _unitOfWork.SaveChangesAsync();
+
+        // Có lịch mới -> cập nhật lại trạng thái phim (có thể chuyển Sắp chiếu -> Chiếu sớm).
+        await _movieStatusService.SyncAndSaveAsync(showtime.MovieId);
         return Result.Success();
     }
 
@@ -258,11 +281,9 @@ public class ShowtimeScheduleService : IShowtimeScheduleService
         if (movie is null)
             return Result.Failure("Phim không tồn tại.");
 
+        // Chỉ chặn phim đã ngừng chiếu; phim sắp chiếu vẫn được xếp lịch (suất trước ngày khởi chiếu = chiếu sớm).
         if (hasCoreChanges && movie.Status == MovieStatus.Stopped)
             return Result.Failure("Không thể xếp lịch cho phim đã ngừng chiếu.");
-
-        if (hasCoreChanges && movie.Status == MovieStatus.ComingSoon)
-            return Result.Failure("Không thể xếp lịch cho phim sắp chiếu.");
 
         var roomExists = await _unitOfWork.Rooms.ExistsAsync(r => r.Id == model.RoomId);
         if (!roomExists)
@@ -294,6 +315,8 @@ public class ShowtimeScheduleService : IShowtimeScheduleService
                 return Result.Failure("Phòng đã có suất chiếu khác hoặc đang trong thời gian dọn dẹp.");
         }
 
+        var previousMovieId = showtime.MovieId;
+
         showtime.MovieId = model.MovieId;
         showtime.RoomId = model.RoomId;
         showtime.StartTime = model.StartTime;
@@ -301,6 +324,12 @@ public class ShowtimeScheduleService : IShowtimeScheduleService
 
         _unitOfWork.Showtimes.Update(showtime);
         await _unitOfWork.SaveChangesAsync();
+
+        // Lịch đổi giờ/đổi phim -> cập nhật lại trạng thái của cả phim mới lẫn phim cũ.
+        await _movieStatusService.SyncAndSaveAsync(showtime.MovieId);
+        if (previousMovieId != showtime.MovieId)
+            await _movieStatusService.SyncAndSaveAsync(previousMovieId);
+
         return Result.Success();
     }
 
@@ -308,6 +337,13 @@ public class ShowtimeScheduleService : IShowtimeScheduleService
     /// Hủy suất chiếu (Khi đã có vé/khách đặt, đổi trạng thái sang Cancelled thay vì xóa)
     /// </summary>
     /// <param name="id">ID suất chiếu cần hủy</param>
+    /// <summary>
+    /// Kiểm tra suất chiếu đã có khách đặt vé thành công (đã thanh toán) hay chưa.
+    /// Dùng để quyết định hủy trực tiếp hay phải chuyển sang Quản lý sự cố (có hoàn điểm + báo khách).
+    /// </summary>
+    public Task<bool> HasPaidBookingsAsync(Guid id)
+        => _unitOfWork.Bookings.ExistsAsync(b => b.ShowtimeId == id && b.PaymentStatus == "Paid");
+
     public async Task<Result> CancelAsync(Guid id)
     {
         var showtime = await _unitOfWork.Showtimes.GetByIdAsync(id);
@@ -320,10 +356,17 @@ public class ShowtimeScheduleService : IShowtimeScheduleService
         if (showtime.Status == "Cancelled")
             return Result.Failure("Suất chiếu này đã bị hủy từ trước.");
 
+        // Suất đã có khách đặt vé -> phải hủy qua Quản lý sự cố để hoàn điểm và báo khách,
+        // không cho hủy "chay" ở màn Lịch chiếu.
+        if (await HasPaidBookingsAsync(id))
+            return Result.Failure("Suất chiếu đã có khách đặt vé. Vui lòng thực hiện hủy qua Quản lý sự cố để hoàn điểm và thông báo cho khách hàng.");
+
         showtime.Status = "Cancelled";
         _unitOfWork.Showtimes.Update(showtime);
         await _unitOfWork.SaveChangesAsync();
 
+        // Hủy suất chiếu sớm cuối cùng -> phim quay lại Sắp chiếu.
+        await _movieStatusService.SyncAndSaveAsync(showtime.MovieId);
         return Result.Success();
     }
 
@@ -349,8 +392,12 @@ public class ShowtimeScheduleService : IShowtimeScheduleService
         if (hasBookings || hasTickets || hasHolds)
             return Result.Failure("Không thể xóa suất chiếu khi đã có vé, đặt chỗ hoặc giữ ghế.");
 
+        var movieId = showtime.MovieId;
         _unitOfWork.Showtimes.Remove(showtime);
         await _unitOfWork.SaveChangesAsync();
+
+        // Xóa suất chiếu sớm cuối cùng -> phim quay lại Sắp chiếu.
+        await _movieStatusService.SyncAndSaveAsync(movieId);
         return Result.Success();
     }
 }

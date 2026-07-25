@@ -19,9 +19,12 @@
                         secondary: '#004b8d',
                         'secondary-dark': '#001c3a',
                     },
+                    // Bộ phông dùng chung toàn hệ thống — giữ GIỐNG NHAU ở mọi layout.
                     fontFamily: {
-                        head: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        sans: ['"Be Vietnam Pro"', 'sans-serif'],
                         body: ['"Be Vietnam Pro"', 'sans-serif'],
+                        head: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        heading: ['"Plus Jakarta Sans"', 'sans-serif'],
                     },
                 },
             },
@@ -237,6 +240,10 @@
         {
             <div class="px-4 py-3 rounded-lg mb-4 text-sm bg-red-50 text-red-700 border border-red-200">@TempData["Error"]</div>
         }
+        @if (TempData["Info"] != null)
+        {
+            <div class="px-4 py-3 rounded-lg mb-4 text-sm bg-blue-50 text-blue-700 border border-blue-200">@TempData["Info"]</div>
+        }
         @RenderBody()
     </main>
 </div>
@@ -268,6 +275,8 @@
         });
     })();
 </script>
+@* Modal xác nhận/thông báo dùng chung — thay cho confirm()/alert() của trình duyệt. *@
+<partial name="_ConfirmModal" />
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

@@ -1,10 +1,12 @@
 @*
-    Modal xác nhận dùng chung (thay cho confirm() mặc định của trình duyệt).
+    Modal dùng chung, thay cho confirm()/alert() mặc định của trình duyệt.
+    Đã được nạp sẵn ở mọi layout nên KHÔNG cần thêm <partial name="_ConfirmModal" /> trong từng view.
     Cách dùng:
     1) Khai báo trên form/link:  data-confirm="Nội dung" [data-confirm-title="..."]
-       [data-confirm-type="danger|warning|info"] [data-confirm-ok="Nhãn nút đồng ý"]
+       [data-confirm-type="danger|warning|info|success"] [data-confirm-ok="Nhãn nút đồng ý"]
        → tự chặn submit/điều hướng và hiện modal; bấm đồng ý mới thực thi.
     2) Gọi bằng JS:  confirmPopup({ title, message, type, okText }).then(ok => { if (ok) ... });
+                     alertPopup({ title, message, type });   // 1 nút, thay cho alert()
 *@
 <div id="confirmModal" class="fixed inset-0 z-[200] hidden items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/50 backdrop-blur-[2px] opacity-0 transition-opacity duration-150" data-confirm-backdrop></div>
@@ -20,7 +22,7 @@
             </div>
         </div>
         <div class="flex justify-end gap-3 mt-6">
-            <button type="button" data-confirm-cancel
+            <button type="button" id="confirmCancel" data-confirm-cancel
                     class="px-4 py-2.5 rounded-lg text-sm font-semibold bg-gray-100 hover:bg-gray-200 text-[#191c1d] transition-colors">
                 Hủy
             </button>
@@ -34,6 +36,9 @@
 
 <script>
     (function () {
+        // Layout đã nạp partial này; nếu view nào nạp lại thì bỏ qua để không gắn sự kiện 2 lần.
+        if (window.confirmPopup) return;
+
         const modal = document.getElementById('confirmModal');
         const box = document.getElementById('confirmBox');
         const backdrop = modal.querySelector('[data-confirm-backdrop]');
@@ -42,13 +47,15 @@
         const titleEl = document.getElementById('confirmTitle');
         const msgEl = document.getElementById('confirmMessage');
         const okBtn = document.getElementById('confirmOk');
+        const cancelBtn = document.getElementById('confirmCancel');
         const cancelEls = modal.querySelectorAll('[data-confirm-cancel], [data-confirm-backdrop]');
 
-        // Bảng màu/icon theo loại cảnh báo.
+        // Bảng màu/icon theo loại thông báo.
         const themes = {
-            danger:  { icon: 'delete',  wrap: 'bg-red-100 text-red-600',     ok: 'bg-red-600 hover:bg-red-700' },
-            warning: { icon: 'warning', wrap: 'bg-amber-100 text-amber-600', ok: 'bg-primary hover:bg-primary-dark' },
-            info:    { icon: 'info',    wrap: 'bg-blue-100 text-blue-600',   ok: 'bg-secondary hover:bg-secondary-dark' }
+            danger:  { icon: 'delete',       wrap: 'bg-red-100 text-red-600',     ok: 'bg-red-600 hover:bg-red-700' },
+            warning: { icon: 'warning',      wrap: 'bg-amber-100 text-amber-600', ok: 'bg-primary hover:bg-primary-dark' },
+            info:    { icon: 'info',         wrap: 'bg-blue-100 text-blue-600',   ok: 'bg-secondary hover:bg-secondary-dark' },
+            success: { icon: 'check_circle', wrap: 'bg-green-100 text-green-600', ok: 'bg-green-600 hover:bg-green-700' }
         };
 
         let resolver = null;
@@ -75,20 +82,25 @@
             if (r) r(result);
         }
 
-        // API toàn cục: trả Promise<boolean>.
-        window.confirmPopup = function (opts) {
+        // okOnly = true -> chỉ 1 nút (dạng thông báo), false -> Hủy + Xác nhận (dạng hỏi).
+        function show(opts, okOnly) {
             opts = opts || {};
-            const theme = themes[opts.type] || themes.warning;
+            const theme = themes[opts.type] || (okOnly ? themes.info : themes.warning);
             iconWrap.className = 'w-12 h-12 rounded-full flex items-center justify-center shrink-0 ' + theme.wrap;
             iconGlyph.textContent = theme.icon;
             okBtn.className = 'px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-colors ' + theme.ok;
-            okBtn.textContent = opts.okText || 'Xác nhận';
-            titleEl.textContent = opts.title || 'Xác nhận';
+            okBtn.textContent = opts.okText || (okOnly ? 'Đã hiểu' : 'Xác nhận');
+            cancelBtn.classList.toggle('hidden', !!okOnly);
+            titleEl.textContent = opts.title || (okOnly ? 'Thông báo' : 'Xác nhận');
             msgEl.textContent = opts.message || '';
             open();
             okBtn.focus();
             return new Promise(resolve => { resolver = resolve; });
-        };
+        }
+
+        // API toàn cục.
+        window.confirmPopup = opts => show(opts, false);   // Promise<boolean>
+        window.alertPopup = opts => show(opts, true);      // Promise<true> khi khách đóng
 
         okBtn.addEventListener('click', () => close(true));
         cancelEls.forEach(el => el.addEventListener('click', () => close(false)));
@@ -96,27 +108,39 @@
             if (e.key === 'Escape' && modal.classList.contains('flex')) close(false);
         });
 
-        // Tự đấu nối cho mọi form/link có data-confirm.
-        document.querySelectorAll('[data-confirm]').forEach(el => {
-            const opts = {
+        function optionsOf(el) {
+            return {
                 message: el.getAttribute('data-confirm'),
                 title: el.getAttribute('data-confirm-title') || 'Xác nhận',
                 type: el.getAttribute('data-confirm-type') || 'warning',
                 okText: el.getAttribute('data-confirm-ok') || 'Xác nhận'
             };
+        }
 
-            if (el.tagName === 'FORM') {
-                el.addEventListener('submit', e => {
-                    e.preventDefault();
-                    // el.submit() bỏ qua listener nên không lặp lại modal.
-                    confirmPopup(opts).then(ok => { if (ok) el.submit(); });
-                });
-            } else if (el.tagName === 'A') {
-                el.addEventListener('click', e => {
-                    e.preventDefault();
-                    confirmPopup(opts).then(ok => { if (ok) window.location.href = el.href; });
-                });
-            }
-        });
+        // Đấu nối bằng event delegation nên áp dụng được cho cả nội dung nạp sau bằng AJAX.
+        // Dùng pha capture để chặn trước các handler submit khác của trang.
+        document.addEventListener('submit', function (e) {
+            const form = e.target.closest ? e.target.closest('form[data-confirm]') : null;
+            if (!form || form.dataset.confirmed === '1') return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            // form.submit() bỏ qua jQuery-validate nên phải validate tay trước khi hỏi.
+            if (window.jQuery && jQuery(form).data('validator') && !jQuery(form).valid()) return;
+
+            confirmPopup(optionsOf(form)).then(ok => {
+                if (!ok) return;
+                form.dataset.confirmed = '1';   // submit lập trình không bắn lại sự kiện, cờ này chỉ để chắc chắn
+                form.submit();
+            });
+        }, true);
+
+        document.addEventListener('click', function (e) {
+            const link = e.target.closest ? e.target.closest('a[data-confirm]') : null;
+            if (!link) return;
+            e.preventDefault();
+            confirmPopup(optionsOf(link)).then(ok => { if (ok) window.location.href = link.href; });
+        }, true);
     })();
 </script>

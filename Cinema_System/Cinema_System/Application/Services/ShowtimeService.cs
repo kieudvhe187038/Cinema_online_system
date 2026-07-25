@@ -15,20 +15,20 @@ public class ShowtimeService : IShowtimeService
     private readonly IMapper _mapper;
     private readonly IPricingService _pricingService;
     private readonly IEmailService _email;
-
-    // Giá trị quy đổi 1 điểm thưởng khi dùng để giảm giá (₫).
-    private const int PointValueVnd = 100;
+    private readonly IPointConfigService _pointConfig;
 
     // Số lượng tối đa cho mỗi loại đồ ăn trong một đơn.
     private const int MaxFoodPerItem = 20;
 
     // Nhận UnitOfWork + AutoMapper qua DI (mapping các mảnh phẳng; phần tính toán vẫn dựng tay).
-    public ShowtimeService(IUnitOfWork unitOfWork, IMapper mapper, IPricingService pricingService, IEmailService email)
+    public ShowtimeService(IUnitOfWork unitOfWork, IMapper mapper, IPricingService pricingService,
+        IEmailService email, IPointConfigService pointConfig)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
         _pricingService = pricingService;
         _email = email;
+        _pointConfig = pointConfig;
     }
 
     // Lấy dữ liệu trang lịch chiếu: lọc theo phim/thể loại/độ tuổi/loại phòng + ngày + tùy chọn dropdown.
@@ -43,19 +43,19 @@ public class ShowtimeService : IShowtimeService
         var selectedDate = date ?? today;
         if (selectedDate < today) selectedDate = today;
 
-        // Khi chưa chọn ngày: nhảy tới ngày gần nhất (trong 14 ngày tới) chắc chắn có suất chiếu
+        // Khi chưa chọn ngày: nhảy tới ngày gần nhất (trong phạm vi đặt trước) chắc chắn có suất chiếu
         // theo đúng bộ lọc hiện tại — để bấm "Mua vé" luôn thấy giờ chiếu thay vì trang trống.
         if (autoPick)
         {
-            var windowEnd = today.AddDays(14).ToDateTime(TimeOnly.MinValue);
+            var windowEnd = today.AddDays(ShowtimeBrowsing.AdvanceDays).ToDateTime(TimeOnly.MinValue);
             var upcoming = await _unitOfWork.Showtimes.GetAllAsync(
                 predicate: s =>
-                    s.StartTime >= now && s.StartTime < windowEnd &&
+                    s.StartTime > now && s.StartTime < windowEnd &&
                     (movieId == null || s.MovieId == movieId) &&
                     (genreId == null || s.Movie.Genres.Any(g => g.Id == genreId)) &&
                     (ageRating == null || s.Movie.AgeRating == ageRating) &&
                     (roomTypeId == null || s.Room.RoomTypeId == roomTypeId) &&
-                    s.Status != "Cancelled",
+                    s.Status == ShowtimeStatus.Scheduled,
                 orderBy: q => q.OrderBy(s => s.StartTime));
             var first = upcoming.FirstOrDefault();
             if (first != null) selectedDate = DateOnly.FromDateTime(first.StartTime);
@@ -66,6 +66,7 @@ public class ShowtimeService : IShowtimeService
         var lowerBound = selectedDate == today ? now : selectedDate.ToDateTime(TimeOnly.MinValue);
 
         // Suất chiếu trong ngày đã chọn (từ hiện tại trở đi), lọc thêm theo phim/thể loại/độ tuổi/loại phòng nếu có.
+        // Chỉ lấy suất còn bán được: bỏ suất đã qua giờ, đang chiếu (Live), đã chiếu xong (Completed) và đã hủy.
         var showtimes = await _unitOfWork.Showtimes.GetAllAsync(
             predicate: s =>
                 s.StartTime >= lowerBound && s.StartTime < dayEnd &&
@@ -73,7 +74,7 @@ public class ShowtimeService : IShowtimeService
                 (genreId == null || s.Movie.Genres.Any(g => g.Id == genreId)) &&
                 (ageRating == null || s.Movie.AgeRating == ageRating) &&
                 (roomTypeId == null || s.Room.RoomTypeId == roomTypeId) &&
-                s.Status != "Cancelled",
+                s.Status == ShowtimeStatus.Scheduled,
             include: q => q
                 .Include(s => s.Movie).ThenInclude(m => m.Genres)
                 .Include(s => s.Room).ThenInclude(r => r.RoomType)
@@ -108,15 +109,15 @@ public class ShowtimeService : IShowtimeService
             Genres = genres.Select(g => new ShowtimeFilterOption { Id = g.Id, Name = g.Name }).ToList(),
             AgeRatings = ageRatings,
             RoomTypes = roomTypes.Select(rt => new ShowtimeFilterOption { Id = rt.Id, Name = rt.Name }).ToList(),
-            // Thanh chọn ngày: 14 ngày kể từ hôm nay (không có ngày quá khứ).
-            AvailableDates = Enumerable.Range(0, 14)
+            // Thanh chọn ngày: phạm vi đặt trước kể từ hôm nay (không có ngày quá khứ).
+            AvailableDates = Enumerable.Range(0, ShowtimeBrowsing.AdvanceDays)
                 .Select(i => today.AddDays(i))
                 .ToList(),
             Showtimes = showtimeDtos
         };
     }
 
-    // Lấy ngày + suất chiếu (14 ngày tới, từ hiện tại) của một phim cho popup "đặt vé nhanh".
+    // Lấy ngày + suất chiếu (trong phạm vi đặt trước, từ hiện tại) của một phim cho popup "đặt vé nhanh".
     public async Task<MovieShowtimesViewModel?> GetMovieShowtimesAsync(Guid movieId)
     {
         var movie = (await _unitOfWork.Movies.GetAllAsync(predicate: m => m.Id == movieId)).FirstOrDefault();
@@ -124,11 +125,13 @@ public class ShowtimeService : IShowtimeService
 
         var now = DateTime.Now;
         var today = DateOnly.FromDateTime(now);
-        var windowEnd = today.AddDays(14).ToDateTime(TimeOnly.MinValue);
+        var windowEnd = today.AddDays(ShowtimeBrowsing.AdvanceDays).ToDateTime(TimeOnly.MinValue);
 
-        // Suất chiếu của phim từ hiện tại tới 14 ngày tới, bỏ suất đã hủy.
+        // Suất chiếu của phim trong phạm vi đặt trước; chỉ suất còn bán được (bỏ suất đã qua giờ,
+        // đang chiếu, đã chiếu xong và đã hủy).
         var showtimes = await _unitOfWork.Showtimes.GetAllAsync(
-            predicate: s => s.MovieId == movieId && s.StartTime >= now && s.StartTime < windowEnd && s.Status != "Cancelled",
+            predicate: s => s.MovieId == movieId && s.StartTime > now && s.StartTime < windowEnd
+                && s.Status == ShowtimeStatus.Scheduled,
             include: q => q
                 .Include(s => s.Room).ThenInclude(r => r.RoomType)
                 .Include(s => s.Room).ThenInclude(r => r.Cinema),
@@ -152,6 +155,24 @@ public class ShowtimeService : IShowtimeService
                 .ToList()
         };
     }
+
+    // Chặn mọi thao tác đặt vé cho suất đã qua giờ / đang chiếu / đã hủy — dùng cho trang chọn ghế,
+    // giữ ghế và xác nhận đơn (danh sách lịch chiếu đã lọc sẵn, nhưng trang có thể mở từ trước
+    // hoặc vào bằng link trực tiếp).
+    public async Task<Result> CheckSaleOpenAsync(Guid showtimeId)
+    {
+        var showtime = (await _unitOfWork.Showtimes.GetAllAsync(predicate: s => s.Id == showtimeId))
+            .FirstOrDefault();
+        if (showtime is null) return Result.Failure("Không tìm thấy suất chiếu.");
+
+        return EnsureOpenForSale(showtime);
+    }
+
+    // Kiểm tra một suất chiếu đã tải sẵn có còn nhận đặt vé không.
+    private static Result EnsureOpenForSale(Showtime showtime)
+        => ShowtimeSalePolicy.IsOpenForSale(showtime.StartTime, showtime.Status, DateTime.Now)
+            ? Result.Success()
+            : Result.Failure(ShowtimeSalePolicy.ClosedMessage);
 
     // Kiểm tra khách có đủ tuổi đặt vé theo phân loại độ tuổi của phim (P/C13/C16/C18...).
     public async Task<Result> CheckAgeRestrictionAsync(Guid showtimeId, Guid userId)
@@ -264,6 +285,10 @@ public class ShowtimeService : IShowtimeService
     public async Task<Result> HoldSeatAsync(Guid showtimeId, Guid seatId, Guid userId, int holdMinutes)
     {
         var now = DateTime.Now;
+
+        // Suất đã bắt đầu / đang chiếu / đã hủy -> không giữ ghế được (trang có thể mở từ trước giờ chiếu).
+        var saleOpen = await CheckSaleOpenAsync(showtimeId);
+        if (!saleOpen.Succeeded) return saleOpen;
 
         // Ghế đã có vé (chưa hủy) -> không giữ được.
         var booked = await _unitOfWork.Tickets.ExistsAsync(
@@ -464,17 +489,6 @@ public class ShowtimeService : IShowtimeService
             }).ToList();
     }
 
-    // Tỷ lệ cộng điểm thưởng đọc từ SystemConfig (reward_point_rate).
-    private async Task<decimal> GetRewardRateAsync()
-    {
-        var cfg = (await _unitOfWork.SystemConfigs.GetAllAsync(
-            predicate: c => c.ConfigKey == "reward_point_rate")).FirstOrDefault();
-        if (cfg?.ConfigValue != null && decimal.TryParse(cfg.ConfigValue,
-                System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var r))
-            return r;
-        return 0m;
-    }
-
     // Lấy VAT áp dụng: ưu tiên default_vat_id trong config, nếu không có thì lấy VAT đang Active.
     private async Task<(Guid? VatId, decimal Rate)> GetVatAsync()
     {
@@ -567,7 +581,8 @@ public class ShowtimeService : IShowtimeService
         var afterPromo = grandTotal - discount;
         var user = await _unitOfWork.Users.GetByIdAsync(userId);
         var availablePoints = user?.RewardPoints ?? 0;
-        var maxUsablePoints = Math.Min(availablePoints, (int)(afterPromo / PointValueVnd));
+        var pointPolicy = await _pointConfig.GetPolicyAsync();
+        var maxUsablePoints = pointPolicy.MaxUsablePoints(availablePoints, afterPromo);
 
         return new PromoPreviewResult
         {
@@ -608,7 +623,8 @@ public class ShowtimeService : IShowtimeService
         // Điểm thưởng có thể dùng: không vượt số điểm đang có và không làm tổng âm.
         var user = await _unitOfWork.Users.GetByIdAsync(userId);
         var availablePoints = user?.RewardPoints ?? 0;
-        var maxUsablePoints = Math.Min(availablePoints, (int)(grandTotal / PointValueVnd));
+        var pointPolicy = await _pointConfig.GetPolicyAsync();
+        var maxUsablePoints = pointPolicy.MaxUsablePoints(availablePoints, grandTotal);
 
         return new PaymentViewModel
         {
@@ -626,7 +642,7 @@ public class ShowtimeService : IShowtimeService
             VatAmount = vatAmount,
             GrandTotal = grandTotal,
             AvailablePoints = availablePoints,
-            PointValueVnd = PointValueVnd,
+            PointValueVnd = pointPolicy.PointValueVnd,
             MaxUsablePoints = maxUsablePoints,
             HoldSecondsLeft = ctx.SecondsLeft
         };
@@ -637,6 +653,11 @@ public class ShowtimeService : IShowtimeService
     {
         var ctx = await LoadHeldContextAsync(showtimeId, userId);
         if (ctx is null) return BookingConfirmResult.Fail("Hết thời gian giữ ghế, vui lòng đặt lại.");
+
+        // Chốt chặn cuối: không bán vé cho suất đã tới giờ chiếu / đang chiếu / đã hủy
+        // (khách có thể giữ ghế trước giờ chiếu rồi mới bấm thanh toán sau đó).
+        var saleOpen = EnsureOpenForSale(ctx.Showtime);
+        if (!saleOpen.Succeeded) return BookingConfirmResult.Fail(saleOpen.Error!);
 
         // An toàn: chặn nếu có ghế vừa bị người khác đặt thành vé.
         var seatIds = ctx.Seats.Select(s => s.SeatId).ToList();
@@ -663,8 +684,9 @@ public class ShowtimeService : IShowtimeService
         // Dùng điểm để giảm tiếp trên phần còn lại: kẹp trong [0, số điểm đang có] và không làm tổng âm.
         var user = await _unitOfWork.Users.GetByIdAsync(userId);
         var availablePoints = user?.RewardPoints ?? 0;
-        var usePoints = Math.Max(0, Math.Min(pointsUsed, Math.Min(availablePoints, (int)(afterPromo / PointValueVnd))));
-        var pointsDiscount = (decimal)usePoints * PointValueVnd;
+        var pointPolicy = await _pointConfig.GetPolicyAsync();
+        var usePoints = Math.Min(Math.Max(0, pointsUsed), pointPolicy.MaxUsablePoints(availablePoints, afterPromo));
+        var pointsDiscount = pointPolicy.DiscountFor(usePoints);
         var discount = promoDiscount + pointsDiscount;     // tổng giảm (mã + điểm) lưu vào Booking
         var grand = afterPromo - pointsDiscount;
 
@@ -750,9 +772,8 @@ public class ShowtimeService : IShowtimeService
             });
         }
 
-        // Cộng điểm thưởng (booking CONFIRMED): điểm = số tiền thực trả × tỷ lệ config.
-        var rate = await GetRewardRateAsync();
-        var points = (int)Math.Floor(grand * rate);
+        // Cộng điểm thưởng (booking CONFIRMED): điểm = số tiền thực trả × tỷ lệ trong cấu hình.
+        var points = pointPolicy.PointsEarnedFor(grand);
         if (points > 0)
         {
             await _unitOfWork.RewardPointHistories.AddAsync(new RewardPointHistory
@@ -892,7 +913,8 @@ public class ShowtimeService : IShowtimeService
         var redeemed = (await _unitOfWork.RewardPointHistories.GetAllAsync(
             predicate: r => r.BookingId == bookingId && r.ActionType == "Redeemed")).Sum(r => r.PointsChanged);
         var pointsUsed = -redeemed;                                   // PointsChanged âm khi tiêu điểm
-        var pointsDiscount = (decimal)pointsUsed * PointValueVnd;
+        var pointPolicy = await _pointConfig.GetPolicyAsync();
+        var pointsDiscount = pointPolicy.DiscountFor(pointsUsed);
         var promoDiscount = totalDiscount - pointsDiscount;
 
         return new PaymentSuccessViewModel

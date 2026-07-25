@@ -14,7 +14,6 @@ public class CounterBookingService : ICounterBookingService
     private const string HoldHolding = "Holding";
     private const string TicketCancelled = "Cancelled";
     private const string OutOfStock = "Out of Stock";
-    private const string ShowtimeScheduled = "Scheduled";
 
     // Số lượng tối đa cho mỗi loại món/nước trong 1 đơn (khớp giới hạn ở luồng đặt vé online - ShowtimeService.MaxFoodPerItem).
     private const int MaxQuantityPerFood = 20;
@@ -156,11 +155,10 @@ public class CounterBookingService : ICounterBookingService
         var showtime = await _unitOfWork.Showtimes.GetWithRoomAndMovieAsync(request.ShowtimeId);
         if (showtime is null)
             return Result<Guid>.Failure("Không tìm thấy suất chiếu.");
-        // Chỉ cho đặt suất còn lịch chiếu và chưa bắt đầu (khớp filter ở danh sách suất chiếu).
-        if (!string.Equals(showtime.Status, ShowtimeScheduled, StringComparison.OrdinalIgnoreCase))
-            return Result<Guid>.Failure("Suất chiếu không còn nhận đặt vé.");
-        if (showtime.StartTime <= DateTime.Now)
-            return Result<Guid>.Failure("Suất chiếu đã bắt đầu, không thể đặt vé.");
+        // Chỉ cho đặt suất còn lịch chiếu và chưa bắt đầu (khớp filter ở danh sách suất chiếu):
+        // suất ở quá khứ, đang chiếu (Live) hay đã hủy đều bị chặn.
+        if (!ShowtimeSalePolicy.IsOpenForSale(showtime.StartTime, showtime.Status, DateTime.Now))
+            return Result<Guid>.Failure(ShowtimeSalePolicy.ClosedMessage);
 
         var seatIds = request.SeatIds.Distinct().ToList();
         var seats = await _unitOfWork.Seats.GetByIdsWithTypeAsync(seatIds);
@@ -305,8 +303,7 @@ public class CounterBookingService : ICounterBookingService
         // --- Tích điểm cho thành viên ---
         if (customer is not null && finalAmount > 0)
         {
-            var rate = (await _pointConfig.GetRateAsync()).Rate;
-            var points = (int)Math.Floor(finalAmount * rate);
+            var points = (await _pointConfig.GetPolicyAsync()).PointsEarnedFor(finalAmount);
             if (points > 0)
             {
                 customer.RewardPoints = (customer.RewardPoints ?? 0) + points;

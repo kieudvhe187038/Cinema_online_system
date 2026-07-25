@@ -137,7 +137,8 @@
                                 @if (s.Status == "Cancelled")
                                 {
                                     <form asp-action="Restore" method="post" class="inline"
-                                          onsubmit="return confirm('Khôi phục suất chiếu này về trạng thái Đã lên lịch?');">
+                                          data-confirm="Khôi phục suất chiếu này về trạng thái Đã lên lịch?"
+                                          data-confirm-title="Khôi phục suất chiếu" data-confirm-type="info" data-confirm-ok="Khôi phục">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="showtimeId" value="@s.ShowtimeId" />
                                         <input type="hidden" name="scope" value="@Model.Scope" />

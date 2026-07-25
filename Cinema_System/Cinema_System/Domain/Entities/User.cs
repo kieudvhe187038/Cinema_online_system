@@ -35,8 +35,6 @@ public partial class User
 
     public virtual ICollection<Booking> BookingUsers { get; set; } = new List<Booking>();
 
-    public virtual ICollection<ChatbotLog> ChatbotLogs { get; set; } = new List<ChatbotLog>();
-
     public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
 
     public virtual ICollection<RewardPointHistory> RewardPointHistories { get; set; } = new List<RewardPointHistory>();

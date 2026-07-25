@@ -138,19 +138,21 @@
 
                                 <form method="post"
                                       action="@Url.Action("ToggleVisibility", "FoodBeverages", new { id = item.Id })"
-                                      class="inline">
+                                      class="inline"
+                                      data-confirm="@(item.StockStatus == "Discontinued" ? "Hiện lại món này?" : "Ẩn món này khỏi menu?")"
+                                      data-confirm-title="@(item.StockStatus == "Discontinued" ? "Hiện món" : "Ẩn món")"
+                                      data-confirm-type="@(item.StockStatus == "Discontinued" ? "info" : "warning")"
+                                      data-confirm-ok="@(item.StockStatus == "Discontinued" ? "Hiện món" : "Ẩn món")">
                                     @Html.AntiForgeryToken()
                                     @if (item.StockStatus == "Discontinued")
                                     {
-                                        <button type="submit" class="w-8 h-8 rounded-md flex items-center justify-center bg-gray-100 text-green-500 hover:bg-green-100 transition-colors" title="Hiện món"
-                                                onclick="return confirm('Hiện lại món này?')">
+                                        <button type="submit" class="w-8 h-8 rounded-md flex items-center justify-center bg-gray-100 text-green-500 hover:bg-green-100 transition-colors" title="Hiện món">
                                             <span class="material-symbols-outlined" style="font-size:18px">visibility</span>
                                         </button>
                                     }
                                     else
                                     {
-                                        <button type="submit" class="w-8 h-8 rounded-md flex items-center justify-center bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors" title="Ẩn món"
-                                                onclick="return confirm('Ẩn món này khỏi menu?')">
+                                        <button type="submit" class="w-8 h-8 rounded-md flex items-center justify-center bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors" title="Ẩn món">
                                             <span class="material-symbols-outlined" style="font-size:18px">visibility_off</span>
                                         </button>
                                     }
@@ -160,10 +162,11 @@
                                 {
                                     <form method="post"
                                           action="@Url.Action("Delete", "FoodBeverages", new { id = item.Id })"
-                                          class="inline">
+                                          class="inline"
+                                          data-confirm="Xóa vĩnh viễn món này?" data-confirm-title="Xóa món"
+                                          data-confirm-type="danger" data-confirm-ok="Xóa">
                                         @Html.AntiForgeryToken()
-                                        <button type="submit" class="w-8 h-8 rounded-md flex items-center justify-center bg-gray-100 text-red-500 hover:bg-red-100 transition-colors" title="Xóa vĩnh viễn"
-                                                onclick="return confirm('Xóa vĩnh viễn món này?')">
+                                        <button type="submit" class="w-8 h-8 rounded-md flex items-center justify-center bg-gray-100 text-red-500 hover:bg-red-100 transition-colors" title="Xóa vĩnh viễn">
                                             <span class="material-symbols-outlined" style="font-size:18px">delete</span>
                                         </button>
                                     </form>

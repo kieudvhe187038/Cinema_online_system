@@ -8,9 +8,9 @@ namespace Cinema_System.Application.Services;
 
 /// <summary>
 /// Tự động đồng bộ trạng thái Suất chiếu (Scheduled -> Live -> Completed) và
-/// Phim (Coming Soon -> Now Showing) theo thời gian thực. Không tự động chuyển
-/// Now Showing -> Stopped — việc dừng chiếu do Manager chủ động thao tác
-/// (Edit/ToggleStatus trong MovieManagement).
+/// Phim (Sắp chiếu / Chiếu sớm -> Đang chiếu khi tới ngày khởi chiếu) theo thời gian thực.
+/// Không tự động chuyển sang Stopped — việc dừng chiếu do Manager chủ động thao tác
+/// (ToggleStatus trong MovieManagement).
 /// </summary>
 public class ShowtimeStatusBackgroundService : BackgroundService
 {
@@ -36,10 +36,11 @@ public class ShowtimeStatusBackgroundService : BackgroundService
                 // Vì BackgroundService là Singleton, ta cần tạo Scope để resolve các Scoped Services (như IUnitOfWork)
                 using var scope = _serviceProvider.CreateScope();
                 var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+                var movieStatusService = scope.ServiceProvider.GetRequiredService<IMovieStatusService>();
                 var now = DateTime.Now;
 
                 await UpdateShowtimeStatusesAsync(unitOfWork, now);
-                await UpdateMovieStatusesAsync(unitOfWork, now);
+                await UpdateMovieStatusesAsync(unitOfWork, movieStatusService);
             }
             catch (Exception ex)
             {
@@ -80,30 +81,33 @@ public class ShowtimeStatusBackgroundService : BackgroundService
     }
 
     /// <summary>
-    /// Cập nhật trạng thái Phim: chỉ "Coming Soon" -> "Now Showing" khi đến/qua ngày khởi chiếu.
+    /// Cập nhật trạng thái Phim CHƯA tới ngày khởi chiếu (Sắp chiếu / Chiếu sớm): tới ngày khởi chiếu
+    /// thì thành "Đang chiếu", có suất chiếu trước ngày khởi chiếu thì thành "Chiếu sớm".
     /// KHÔNG tự động chuyển "Now Showing" -> "Stopped" dù phim hết suất chiếu đang hoạt động —
-    /// việc dừng chiếu là quyết định nghiệp vụ của Manager (Edit/ToggleStatus), không suy ra
+    /// việc dừng chiếu là quyết định nghiệp vụ của Manager (ToggleStatus), không suy ra
     /// tự động từ dữ liệu suất chiếu để tránh dừng nhầm phim đang tạm hết suất chờ xếp lịch tiếp.
     /// </summary>
-    private async Task UpdateMovieStatusesAsync(IUnitOfWork unitOfWork, DateTime now)
+    private async Task UpdateMovieStatusesAsync(IUnitOfWork unitOfWork, IMovieStatusService movieStatusService)
     {
-        var today = DateOnly.FromDateTime(now);
+        var pendingMovies = await unitOfWork.Movies.GetAllAsync(
+            m => m.Status == MovieStatus.ComingSoon || m.Status == MovieStatus.Special);
 
-        var moviesToLaunch = await unitOfWork.Movies.GetAllAsync(
-            m => m.Status == MovieStatus.ComingSoon && m.ReleaseDate != null && m.ReleaseDate <= today);
-
-        var launchList = moviesToLaunch.ToList();
-        if (launchList.Count == 0)
+        var pendingList = pendingMovies.ToList();
+        if (pendingList.Count == 0)
             return;
 
-        foreach (var movie in launchList)
+        var changed = false;
+        foreach (var movie in pendingList)
         {
-            movie.Status = MovieStatus.NowShowing;
-            movie.UpdatedAt = now;
-            unitOfWork.Movies.Update(movie);
-            _logger.LogInformation("Updated Movie {MovieId} status from Coming Soon to Now Showing (release date reached)", movie.Id);
+            var oldStatus = movie.Status;
+            if (!await movieStatusService.SyncAsync(movie))
+                continue;
+
+            changed = true;
+            _logger.LogInformation("Updated Movie {MovieId} status from {OldStatus} to {NewStatus}", movie.Id, oldStatus, movie.Status);
         }
 
-        await unitOfWork.SaveChangesAsync();
+        if (changed)
+            await unitOfWork.SaveChangesAsync();
     }
 }

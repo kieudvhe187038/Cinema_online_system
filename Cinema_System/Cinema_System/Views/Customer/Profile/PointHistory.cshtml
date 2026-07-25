@@ -22,16 +22,37 @@
                 <p class="text-[11px] uppercase tracking-wide text-white/70">Tổng giao dịch</p>
                 <p class="font-bold">@Model.TotalItems</p>
             </div>
+            @if (Model.PointValueVnd > 0)
+            {
+                <div class="rounded-lg bg-white/15 px-4 py-2">
+                    <p class="text-[11px] uppercase tracking-wide text-white/70">Quy đổi được</p>
+                    <p class="font-bold">@Model.CurrentPointsValueVnd.ToString("#,##0")đ</p>
+                </div>
+            }
         </div>
     </div>
 
-    <!-- Đổi quà -->
-    <div class="flex flex-col items-center justify-center rounded-2xl bg-white p-6 text-center shadow-md">
+    <!-- Chính sách điểm đang áp dụng (Manager cấu hình, dùng chung cho online & tại quầy) -->
+    <div class="flex flex-col justify-center rounded-2xl bg-white p-6 shadow-md">
         <div class="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
             <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 109.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1114.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
         </div>
-        <h3 class="mt-3 font-bold font-heading text-tertiary">Đổi quà ngay</h3>
-        <p class="mt-1 text-sm text-gray-500">Sử dụng điểm để đổi bắp nước và vé xem phim miễn phí.</p>
+        <h3 class="mt-3 font-bold font-heading text-tertiary">Cách dùng điểm</h3>
+        <ul class="mt-2 space-y-1.5 text-sm text-gray-600">
+            @if (Model.VndPerPoint > 0)
+            {
+                <li>• Tích điểm: mỗi <strong>@Model.VndPerPoint.ToString("#,##0")đ</strong> chi tiêu được <strong>1 điểm</strong>.</li>
+            }
+            else
+            {
+                <li>• Hiện chưa áp dụng tích điểm.</li>
+            }
+            @if (Model.PointValueVnd > 0)
+            {
+                <li>• Dùng điểm: <strong>1 điểm = @Model.PointValueVnd.ToString("#,##0")đ</strong> khi thanh toán.</li>
+            }
+            <li>• Áp dụng cho cả đặt vé online và mua vé tại quầy.</li>
+        </ul>
     </div>
 </div>
 

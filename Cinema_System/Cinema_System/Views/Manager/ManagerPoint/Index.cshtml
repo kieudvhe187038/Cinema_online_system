@@ -1,6 +1,6 @@
 @model PointRateViewModel
 @{
-    ViewData["Title"] = "Quản Lý Tỉ Lệ Tích Điểm";
+    ViewData["Title"] = "Quản Lý Điểm Thưởng";
     Layout = "_ManagerLayout";
 }
 
@@ -30,14 +30,19 @@
         .pm-preview h3 { color: var(--white); }
         .pm-preview .pm-row { display: flex; justify-content: space-between; align-items: center; padding: .6rem 0; border-bottom: 1px solid rgba(255,255,255,.15); }
         .pm-preview .pm-row:last-child { border-bottom: none; }
-        .pm-preview .pm-big { font-size: 1.4rem; font-weight: 800; color: var(--primary); }
-        .pm-preview input { padding: .5rem .7rem; border: none; border-radius: var(--radius); width: 180px; text-align: right; font-family: var(--font-body); }
+        /* Nền thẻ là xanh đậm cố định ở cả 2 theme. Cam #f37021 đặt trên nền này chỉ đạt ~3:1 nên
+           số liệu bị chìm ở chế độ sáng — dùng cam sáng hơn (~5:1) cho dễ đọc mà vẫn đúng tông brand. */
+        .pm-preview .pm-big { font-size: 1.4rem; font-weight: 800; color: #ffb26b; }
+        /* Ô nhập nằm trong thẻ nền tối: ép nền trắng + chữ đậm để không bị ăn theo màu chữ của thẻ. */
+        .pm-preview input { padding: .5rem .7rem; border: none; border-radius: var(--radius); width: 180px; text-align: right; font-family: var(--font-body); background: var(--white); color: var(--on-surface); }
     </style>
 }
 
 <div class="pm-wrap">
-    <h1 class="pm-title">Quản Lý Tỉ Lệ Tích Điểm</h1>
-    <p class="pm-sub">Cấu hình số điểm khách hàng nhận được trên mỗi đồng chi tiêu khi mua vé.</p>
+    <h1 class="pm-title">Quản Lý Điểm Thưởng</h1>
+    <p class="pm-sub">
+        Cấu hình dùng chung cho <strong>toàn hệ thống</strong>: đặt vé online, bán vé tại quầy và hoàn điểm khi có sự cố suất chiếu.
+    </p>
 
     @if (TempData["Success"] != null)
     {
@@ -45,8 +50,10 @@
     }
 
     <div class="pm-card">
-        <h3>Tỉ lệ hiện tại</h3>
-        <form method="post" action="@Url.Action("Index", "ManagerPoint")">
+        <h3>Cấu hình hiện tại</h3>
+        <form method="post" action="@Url.Action("Index", "ManagerPoint")"
+              data-confirm="Áp dụng cấu hình điểm mới cho toàn hệ thống?" data-confirm-title="Cập nhật điểm thưởng"
+              data-confirm-type="warning" data-confirm-ok="Áp dụng">
             @Html.AntiForgeryToken()
 
             <div asp-validation-summary="ModelOnly" class="pm-summary"></div>
@@ -56,7 +63,16 @@
                 <input asp-for="Rate" id="rateInput" type="number" step="any" min="0" max="1" />
                 <span asp-validation-for="Rate" class="pm-error"></span>
                 <p class="pm-hint">
-                    Số điểm cộng cho mỗi 1đ. Ví dụ <strong>0.0001</strong> nghĩa là cứ <strong>10.000đ</strong> được <strong>1 điểm</strong>.
+                    <strong>Khách TÍCH điểm:</strong> số điểm cộng cho mỗi 1đ. Ví dụ <strong>0.0001</strong> nghĩa là cứ <strong>10.000đ</strong> được <strong>1 điểm</strong>.
+                </p>
+            </div>
+
+            <div class="pm-field">
+                <label asp-for="PointValueVnd"></label>
+                <input asp-for="PointValueVnd" id="pointValueInput" type="number" step="1" min="1" />
+                <span asp-validation-for="PointValueVnd" class="pm-error"></span>
+                <p class="pm-hint">
+                    <strong>Khách DÙNG điểm:</strong> 1 điểm trừ được bao nhiêu đồng khi thanh toán. Ví dụ <strong>100</strong> nghĩa là <strong>100 điểm = 10.000đ</strong>.
                 </p>
             </div>
 
@@ -85,6 +101,14 @@
             <span>Quy đổi tương đương</span>
             <span id="inverseResult">—</span>
         </div>
+        <div class="pm-row">
+            <span>Số điểm khách dùng</span>
+            <input type="number" id="usePointsInput" value="100" min="0" step="10" />
+        </div>
+        <div class="pm-row">
+            <span>Giảm được</span>
+            <span class="pm-big" id="discountResult">—</span>
+        </div>
     </div>
 </div>
 
@@ -93,29 +117,37 @@
     <script>
         (function () {
             var rateInput = document.getElementById('rateInput');
+            var pointValueInput = document.getElementById('pointValueInput');
             var amountInput = document.getElementById('amountInput');
+            var usePointsInput = document.getElementById('usePointsInput');
             var pointsResult = document.getElementById('pointsResult');
             var inverseResult = document.getElementById('inverseResult');
+            var discountResult = document.getElementById('discountResult');
 
             function fmt(n) { return n.toLocaleString('vi-VN'); }
 
             function update() {
                 var rate = parseFloat(rateInput.value) || 0;
+                var pointValue = parseFloat(pointValueInput.value) || 0;
                 var amount = parseFloat(amountInput.value) || 0;
+                var usePoints = parseFloat(usePointsInput.value) || 0;
 
-                var points = Math.floor(amount * rate);
-                pointsResult.textContent = fmt(points) + ' điểm';
+                // Tích điểm: giống PointPolicy.PointsEarnedFor ở server (làm tròn xuống).
+                pointsResult.textContent = fmt(Math.floor(amount * rate)) + ' điểm';
 
                 if (rate > 0) {
-                    var perPoint = Math.round(1 / rate);
-                    inverseResult.textContent = 'Cứ ' + fmt(perPoint) + 'đ = 1 điểm';
+                    inverseResult.textContent = 'Cứ ' + fmt(Math.round(1 / rate)) + 'đ = 1 điểm';
                 } else {
                     inverseResult.textContent = 'Không tích điểm';
                 }
+
+                // Tiêu điểm: giống PointPolicy.DiscountFor.
+                discountResult.textContent = fmt(Math.round(usePoints * pointValue)) + 'đ';
             }
 
-            rateInput.addEventListener('input', update);
-            amountInput.addEventListener('input', update);
+            [rateInput, pointValueInput, amountInput, usePointsInput].forEach(function (el) {
+                el.addEventListener('input', update);
+            });
             update();
         })();
     </script>

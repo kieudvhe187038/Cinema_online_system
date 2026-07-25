@@ -75,10 +75,11 @@
                                 }
                                 else
                                 {
-                                    <form method="post" action="@Url.Action("Delete", "ManagerSeatType", new { id = item.Id })" style="display:inline">
+                                    <form method="post" action="@Url.Action("Delete", "ManagerSeatType", new { id = item.Id })" style="display:inline"
+                                          data-confirm="Xóa loại ghế &quot;@item.Name&quot;?" data-confirm-title="Xóa loại ghế"
+                                          data-confirm-type="danger" data-confirm-ok="Xóa">
                                         @Html.AntiForgeryToken()
-                                        <button type="submit" class="st-danger"
-                                                onclick="return confirm('Xóa loại ghế @item.Name?');">Xóa</button>
+                                        <button type="submit" class="st-danger">Xóa</button>
                                     </form>
                                 }
                             </div>

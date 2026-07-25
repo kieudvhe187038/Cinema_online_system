@@ -12,6 +12,9 @@ public interface IShowtimeService
     // Lấy ngày + suất chiếu (14 ngày tới, từ hiện tại) của MỘT phim cho popup "đặt vé nhanh". Null nếu không có phim.
     Task<MovieShowtimesViewModel?> GetMovieShowtimesAsync(Guid movieId);
 
+    // Kiểm tra suất chiếu còn nhận đặt vé không: Failure nếu đã qua giờ chiếu, đang chiếu hoặc đã hủy.
+    Task<Result> CheckSaleOpenAsync(Guid showtimeId);
+
     // Kiểm tra khách có đủ tuổi đặt vé cho suất chiếu này không (theo phân loại độ tuổi của phim).
     // Success nếu đủ tuổi / phim không giới hạn / không xác định được; Failure kèm thông báo nếu chưa đủ tuổi.
     Task<Result> CheckAgeRestrictionAsync(Guid showtimeId, Guid userId);

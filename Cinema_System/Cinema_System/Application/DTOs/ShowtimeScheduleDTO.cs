@@ -25,4 +25,10 @@ public class ShowtimeScheduleDTO
 
     /// <summary>Có vé/đặt chỗ cho suất chiếu này hay không</summary>
     public bool HasBookings { get; set; }
+
+    /// <summary>Số vé đã bán cho suất chiếu này</summary>
+    public int SeatsSold { get; set; }
+
+    /// <summary>Tổng số ghế của phòng chiếu (sức chứa)</summary>
+    public int Capacity { get; set; }
 }

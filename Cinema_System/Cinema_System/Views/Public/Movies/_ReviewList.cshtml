@@ -43,11 +43,13 @@
 
                 @if (User.Identity?.IsAuthenticated == true && User.IsInRole("MANAGER"))
                 {
-                    <form asp-controller="Reviews" asp-action="Delete" method="post" class="relative z-10 mt-4">
+                    <form asp-controller="Reviews" asp-action="Delete" method="post" class="relative z-10 mt-4"
+                          data-confirm="Xác nhận xóa bình luận này?" data-confirm-title="Xóa bình luận"
+                          data-confirm-type="danger" data-confirm-ok="Xóa">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="id" value="@r.Id" />
                         <input type="hidden" name="movieId" value="@r.MovieId" />
-                        <button type="submit" onclick="return confirm('Xác nhận xóa bình luận này?');" class="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100">
+                        <button type="submit" class="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100">
                             <span class="material-symbols-outlined text-base mr-2">delete</span>
                             Xóa bình luận
                         </button>

@@ -40,9 +40,9 @@ public class ManagerPointController : Controller
         }
 
         await _audit.LogAsync("UPDATE_POINT_RATE", "SystemConfig",
-            newValue: new { model.Rate });
+            newValue: new { model.Rate, model.PointValueVnd });
 
-        TempData["Success"] = "Cập nhật tỉ lệ tích điểm thành công.";
+        TempData["Success"] = "Cập nhật cấu hình điểm thưởng thành công. Thay đổi áp dụng ngay cho đặt vé online và bán vé tại quầy.";
         return RedirectToAction(nameof(Index));
     }
 }

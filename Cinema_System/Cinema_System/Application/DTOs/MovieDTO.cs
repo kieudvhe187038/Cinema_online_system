@@ -18,6 +18,11 @@ public class MovieDTO
     public DateOnly? ReleaseDate { get; set; }
     public string? AgeRating { get; set; }
     public string? Status { get; set; }
+
+    // Phim còn suất chiếu sắp tới (chưa hủy) -> cho phép đặt vé, kể cả phim sắp chiếu/chiếu sớm.
+    // Chỉ đúng khi truy vấn có Include "Showtimes".
+    public bool HasUpcomingShowtimes { get; set; }
+
     public List<string> GenreNames { get; set; } = new();
     public DateTime? CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }

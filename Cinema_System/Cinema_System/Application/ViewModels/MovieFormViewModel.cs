@@ -70,20 +70,33 @@ public class MovieFormViewModel : IValidatableObject
     [StringLength(50, ErrorMessage = "Giới hạn độ tuổi tối đa 50 ký tự")]
     public string? AgeRating { get; set; }
 
-    [Required(ErrorMessage = "Vui lòng chọn trạng thái")]
+    // Chỉ để HIỂN THỊ: trạng thái do hệ thống suy ra từ ngày khởi chiếu + lịch chiếu,
+    // Manager không chọn tay (form sửa gửi lại qua hidden field để giữ đúng trạng thái khóa lịch).
     [Display(Name = "Trạng thái")]
-    public string Status { get; set; } = "Coming Soon";
+    public string? Status { get; set; }
+
+    // Suất chiếu sớm nhất (chưa hủy) của phim — form Sửa dùng để xem trước trạng thái khi đổi ngày
+    // khởi chiếu (suất nằm trước ngày khởi chiếu => phim chiếu sớm). Chỉ hiển thị, không gửi lên server.
+    public DateTime? FirstShowtimeStart { get; set; }
 
     [Display(Name = "Thể loại")]
     public List<Guid> SelectedGenreIds { get; set; } = new();
 
     public List<GenreDTO> AvailableGenres { get; set; } = new();
 
-    // Kiểm tra hợp lệ thêm: ngày khởi chiếu không được ở quá khứ + giới hạn độ tuổi phải nằm trong danh sách cho phép
-    // (chặn request giả mạo gửi giá trị ngoài dropdown, tránh lỗi truncation ở cột age_rating VARCHAR(50)).
+    // Kiểm tra hợp lệ thêm: ngày khởi chiếu (nguồn suy ra trạng thái phim) + giới hạn độ tuổi phải nằm
+    // trong danh sách cho phép (chặn request giả mạo gửi giá trị ngoài dropdown, tránh lỗi truncation
+    // ở cột age_rating VARCHAR(50)).
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        if (ReleaseDate.HasValue && ReleaseDate.Value < DateOnly.FromDateTime(DateTime.Today))
+        if (!ReleaseDate.HasValue)
+        {
+            yield return new ValidationResult(
+                "Vui lòng chọn ngày khởi chiếu (trạng thái phim được xác định theo ngày này).",
+                new[] { nameof(ReleaseDate) });
+        }
+        // Chỉ chặn ngày quá khứ khi THÊM phim mới; khi sửa vẫn cho giữ/chỉnh ngày đã qua.
+        else if (Id == Guid.Empty && ReleaseDate.Value < DateOnly.FromDateTime(DateTime.Today))
         {
             yield return new ValidationResult(
                 "Ngày khởi chiếu phải là hôm nay hoặc trong tương lai.",

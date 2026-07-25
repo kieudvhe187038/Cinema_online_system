@@ -22,8 +22,6 @@ public partial class CinemaWebDbContext : DbContext
 
     public virtual DbSet<BookingFood> BookingFoods { get; set; }
 
-    public virtual DbSet<ChatbotLog> ChatbotLogs { get; set; }
-
     public virtual DbSet<Cinema> Cinemas { get; set; }
 
     public virtual DbSet<EmailLog> EmailLogs { get; set; }
@@ -202,33 +200,6 @@ public partial class CinemaWebDbContext : DbContext
                 .HasForeignKey(d => d.FbId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_BookingFoods_FB");
-        });
-
-        modelBuilder.Entity<ChatbotLog>(entity =>
-        {
-            entity.ToTable("Chatbot_Logs");
-
-            entity.Property(e => e.Id)
-                .HasDefaultValueSql("(newid())")
-                .HasColumnName("id");
-            entity.Property(e => e.BotResponse).HasColumnName("bot_response");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime")
-                .HasColumnName("created_at");
-            entity.Property(e => e.IntentDetected)
-                .HasMaxLength(100)
-                .HasColumnName("intent_detected");
-            entity.Property(e => e.SessionId)
-                .HasMaxLength(255)
-                .IsUnicode(false)
-                .HasColumnName("session_id");
-            entity.Property(e => e.UserId).HasColumnName("user_id");
-            entity.Property(e => e.UserMessage).HasColumnName("user_message");
-
-            entity.HasOne(d => d.User).WithMany(p => p.ChatbotLogs)
-                .HasForeignKey(d => d.UserId)
-                .HasConstraintName("FK_ChatbotLogs_Users");
         });
 
         modelBuilder.Entity<Cinema>(entity =>

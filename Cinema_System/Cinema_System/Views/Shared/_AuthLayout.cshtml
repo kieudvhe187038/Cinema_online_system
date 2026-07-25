@@ -40,6 +40,13 @@
                     borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
                     spacing: { "sm": "12px", "md": "24px", "gutter": "24px", "xs": "4px", "xl": "80px", "lg": "48px", "base": "8px" },
                     fontFamily: {
+                        // Bộ phông dùng chung toàn hệ thống — giữ GIỐNG NHAU ở mọi layout
+                        // (partial dùng chung như _ConfirmModal gắn font-head cần token này).
+                        sans: ['"Be Vietnam Pro"', 'sans-serif'],
+                        body: ['"Be Vietnam Pro"', 'sans-serif'],
+                        head: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        heading: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        // Thang typography riêng của khu đăng nhập (dùng kèm text-*) — giữ nguyên.
                         "headline-md": ["Plus Jakarta Sans"],
                         "body-md": ["Be Vietnam Pro"],
                         "label-sm": ["Be Vietnam Pro"],
@@ -84,6 +91,9 @@
             input.addEventListener('blur', () => input.parentElement.classList.remove('scale-[1.01]'));
         });
     </script>
+    @* Modal xác nhận/thông báo dùng chung — thay cho confirm()/alert() của trình duyệt. *@
+    <partial name="_ConfirmModal" />
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

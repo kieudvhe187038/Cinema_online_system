@@ -30,6 +30,10 @@ public class ShowtimeFormViewModel : IValidatableObject
     // Cờ đánh dấu suất chiếu đã có khách đặt vé chưa (Dùng để kiểm soát UI Edit/Cancel)
     public bool HasBookings { get; set; }
 
+    // Số vé đã bán / tổng số ghế của phòng (hiển thị cho Manager biết mức độ lấp đầy)
+    public int SeatsSold { get; set; }
+    public int Capacity { get; set; }
+
     // Danh sách phim và phòng chiếu để populate dropdown trong form (không submit lên server)
     public IEnumerable<ItemOptionDTO> AvailableMovies { get; set; } = new List<ItemOptionDTO>();
     public IEnumerable<ItemOptionDTO> AvailableRooms { get; set; } = new List<ItemOptionDTO>();

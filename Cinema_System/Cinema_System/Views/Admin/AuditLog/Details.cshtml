@@ -21,6 +21,12 @@
         .ald-section-title { font-family: var(--font-head); font-weight: 700; margin-bottom: .75rem; color: var(--on-surface); }
         .ald-pre { background: var(--surface); border: 1px solid var(--outline-variant); border-radius: var(--radius); padding: 1rem; font-family: monospace; font-size: .82rem; white-space: pre-wrap; word-break: break-word; color: var(--on-surface); max-height: 340px; overflow: auto; }
         .ald-changes { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .ald-diff { width: 100%; border-collapse: collapse; font-size: .85rem; }
+        .ald-diff th { text-align: left; padding: .6rem .75rem; background: var(--surface-container); color: var(--on-surface-variant); font-weight: 700; }
+        .ald-diff td { padding: .6rem .75rem; border-top: 1px solid var(--outline-variant); vertical-align: top; word-break: break-word; }
+        .ald-diff-field { font-family: monospace; font-weight: 600; white-space: nowrap; }
+        .ald-diff-old { color: #b91c1c; text-decoration: line-through; text-decoration-color: rgba(185,28,28,.35); }
+        .ald-diff-new { color: #15803d; font-weight: 600; }
         @@media (max-width: 720px) { .ald-changes { grid-template-columns: 1fr; } .ald-grid { grid-template-columns: 120px 1fr; } }
     </style>
 }
@@ -45,6 +51,9 @@
             <span class="ald-label">Bảng</span>
             <span class="ald-value">@(string.IsNullOrEmpty(Model.TableName) ? "—" : Model.TableName)</span>
 
+            <span class="ald-label">Đối tượng</span>
+            <span class="ald-value">@(string.IsNullOrEmpty(Model.RecordLabel) ? "—" : Model.RecordLabel)</span>
+
             <span class="ald-label">Bản ghi (Id)</span>
             <span class="ald-value ald-mono">@(Model.RecordId?.ToString() ?? "—")</span>
 
@@ -55,15 +64,46 @@
 
     <div class="ald-card">
         <h3 class="ald-section-title">Thay đổi dữ liệu</h3>
-        <div class="ald-changes">
-            <div>
-                <div class="ald-label" style="margin-bottom:.4rem;">Giá trị cũ</div>
-                <div class="ald-pre">@(string.IsNullOrEmpty(Model.OldValue) ? "—" : Model.OldValue)</div>
+        @if (Model.Changes.Any())
+        {
+            @* Log tự động ghi JSON theo cột nên so sánh được từng trường. *@
+            <table class="ald-diff">
+                <thead>
+                    <tr>
+                        <th>Trường</th>
+                        <th>Giá trị cũ</th>
+                        <th>Giá trị mới</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var change in Model.Changes)
+                    {
+                        <tr>
+                            <td class="ald-diff-field">@change.Field</td>
+                            <td class="ald-diff-old">@(change.OldValue ?? "—")</td>
+                            <td class="ald-diff-new">@(change.NewValue ?? "—")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else if (!string.IsNullOrEmpty(Model.OldValue) || !string.IsNullOrEmpty(Model.NewValue))
+        {
+            @* Log cũ ghi tay: dữ liệu không phải JSON theo cột nên hiển thị nguyên văn. *@
+            <div class="ald-changes">
+                <div>
+                    <div class="ald-label" style="margin-bottom:.4rem;">Giá trị cũ</div>
+                    <div class="ald-pre">@(string.IsNullOrEmpty(Model.OldValue) ? "—" : Model.OldValue)</div>
+                </div>
+                <div>
+                    <div class="ald-label" style="margin-bottom:.4rem;">Giá trị mới</div>
+                    <div class="ald-pre">@(string.IsNullOrEmpty(Model.NewValue) ? "—" : Model.NewValue)</div>
+                </div>
             </div>
-            <div>
-                <div class="ald-label" style="margin-bottom:.4rem;">Giá trị mới</div>
-                <div class="ald-pre">@(string.IsNullOrEmpty(Model.NewValue) ? "—" : Model.NewValue)</div>
-            </div>
-        </div>
+        }
+        else
+        {
+            <p class="ald-label">Không có dữ liệu thay đổi được ghi lại.</p>
+        }
     </div>
 </div>

@@ -208,11 +208,41 @@
                     const t = start.toLocaleString('vi-VN', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
                     $('<button type="button" class="ct-show"></button>')
                         .attr('data-id', s.id)
+                        .attr('data-start', s.startTime)
                         .html('<div class="t">' + t + '</div><div class="m">' + s.roomName + ' · ' + (s.roomType||'') + ' · còn ' + s.availableSeats + ' ghế</div>')
                         .appendTo($list);
                 });
+                sweepStartedShowtimes();
             });
         });
+
+        // --- Tự ẩn suất chiếu khi đã tới giờ chiếu ---
+        // Server chỉ trả suất chưa bắt đầu (trạng thái Scheduled) tại thời điểm tải danh sách; nếu nhân viên
+        // để trang mở qua giờ chiếu thì suất đó phải biến mất khỏi danh sách chọn (đơn cũng sẽ bị server từ chối).
+        function sweepStartedShowtimes() {
+            const now = Date.now();
+            let selectedExpired = false;
+
+            $('#showtimeList .ct-show').each(function () {
+                const start = new Date($(this).attr('data-start')).getTime();
+                if (isNaN(start) || start > now) return;
+                if (String($(this).data('id')) === String(selectedShowtimeId)) selectedExpired = true;
+                $(this).remove();
+            });
+
+            if ($('#movieSelect').val() && $('#showtimeList .ct-show').length === 0) {
+                $('#showtimeList').html('<span class="ct-staff">Không có suất chiếu sắp tới.</span>');
+            }
+
+            if (selectedExpired) {
+                selectedShowtimeId = null;
+                resetSeats();
+                $('#seatCard,#foodCard').hide();
+                showError('Suất chiếu đang chọn đã tới giờ chiếu nên không còn bán vé. Vui lòng chọn suất khác.');
+            }
+        }
+
+        setInterval(sweepStartedShowtimes, 30000);
 
         // --- Bước 1b: chọn suất → tải sơ đồ ghế ---
         $('#showtimeList').on('click', '.ct-show', function () {
@@ -358,17 +388,21 @@
         // --- Submit (AJAX — không reload trang, để có thể xử lý lỗi tại chỗ) ---
         $('#submitBtn').on('click', function () {
             const seatIds = Object.keys(selectedSeats);
-            if (!selectedShowtimeId) { alert('Vui lòng chọn suất chiếu.'); return; }
-            if (seatIds.length === 0) { alert('Vui lòng chọn ít nhất một ghế.'); return; }
+            if (!selectedShowtimeId) { alertPopup({ title: 'Chưa chọn suất chiếu', message: 'Vui lòng chọn suất chiếu.', type: 'warning' }); return; }
+            if (seatIds.length === 0) { alertPopup({ title: 'Chưa chọn ghế', message: 'Vui lòng chọn ít nhất một ghế.', type: 'warning' }); return; }
 
             const method = $('input[name="payMethod"]:checked').val();
             const cash = parseFloat($('#cashReceived').val()) || 0;
             if (method === 'Cash' && cash < (window._grandTotal || 0)) {
-                alert('Tiền khách đưa không đủ.'); return;
+                alertPopup({ title: 'Thiếu tiền mặt', message: 'Tiền khách đưa không đủ.', type: 'warning' });
+                return;
             }
             if (method === 'Cash' && cash > MAX_CASH) {
-                alert('Số tiền khách đưa quá lớn (tối đa ' + fmt(MAX_CASH) + '). Vui lòng nhập lại.');
-                $('#cashReceived').focus();
+                alertPopup({
+                    title: 'Số tiền không hợp lệ',
+                    message: 'Số tiền khách đưa quá lớn (tối đa ' + fmt(MAX_CASH) + '). Vui lòng nhập lại.',
+                    type: 'warning'
+                }).then(() => $('#cashReceived').focus());
                 return;
             }
 

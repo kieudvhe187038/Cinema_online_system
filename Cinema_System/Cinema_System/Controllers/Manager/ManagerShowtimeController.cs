@@ -205,6 +205,14 @@ public class ManagerShowtimeController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Cancel(Guid id)
     {
+        // Suất đã có khách đặt vé -> chuyển sang Quản lý sự cố để hủy (hoàn điểm + báo khách qua email),
+        // không hủy trực tiếp ở đây.
+        if (await _showtimeService.HasPaidBookingsAsync(id))
+        {
+            TempData["Info"] = "Suất chiếu đã có khách đặt vé. Vui lòng thực hiện hủy tại đây để hoàn điểm và thông báo cho khách hàng.";
+            return RedirectToAction("Declare", "ManagerIncident", new { showtimeId = id });
+        }
+
         var result = await _showtimeService.CancelAsync(id);
         if (result.Succeeded)
             await _audit.LogAsync("CANCEL_SHOWTIME", "Showtimes", id);
