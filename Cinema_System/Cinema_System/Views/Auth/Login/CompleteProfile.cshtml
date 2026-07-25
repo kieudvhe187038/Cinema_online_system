@@ -1,0 +1,67 @@
+@model Cinema_System.Application.ViewModels.CompleteGoogleProfileViewModel
+@{
+    ViewData["Title"] = "Hoàn thiện hồ sơ";
+    Layout = "_AuthLayout";
+    var summaryErrors = ViewData.ModelState[string.Empty]?.Errors;
+    var today = DateTime.Today.ToString("yyyy-MM-dd");
+}
+
+<div class="text-center mb-7">
+    <div class="font-display-lg text-[36px] leading-none font-extrabold tracking-tight text-primary-container mb-2">CineStar</div>
+    <h1 class="font-headline-md text-[22px] font-bold text-on-surface mb-1">Hoàn Thiện Hồ Sơ</h1>
+    <p class="font-body-md text-[15px] text-on-surface-variant">
+        Bổ sung thông tin còn thiếu cho tài khoản<br />
+        <span class="font-bold text-on-surface">@Model.Email</span>
+    </p>
+</div>
+
+<form asp-action="CompleteProfile" method="post" class="space-y-4">
+    @if (summaryErrors != null && summaryErrors.Count > 0)
+    {
+        <div class="bg-error-container text-on-error-container rounded-lg px-md py-sm flex items-center gap-xs text-label-md">
+            <span class="material-symbols-outlined text-[20px]">error</span>
+            <span>@summaryErrors[0].ErrorMessage</span>
+        </div>
+    }
+
+    <!-- Họ tên -->
+    <div class="space-y-2">
+        <label asp-for="FullName" class="font-label-md text-label-md text-on-surface-variant block"></label>
+        <div class="relative">
+            <span class="material-symbols-outlined text-[20px] absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">badge</span>
+            <input asp-for="FullName" autocomplete="name" placeholder="Nguyễn Văn A"
+                   class="w-full pl-11 pr-4 py-3 bg-surface-container rounded-lg border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none" />
+        </div>
+        <span asp-validation-for="FullName" class="text-error text-label-sm block"></span>
+    </div>
+
+    <!-- Số điện thoại -->
+    <div class="space-y-2">
+        <label asp-for="Phone" class="font-label-md text-label-md text-on-surface-variant block"></label>
+        <div class="relative">
+            <span class="material-symbols-outlined text-[20px] absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">call</span>
+            <input asp-for="Phone" type="tel" autocomplete="tel" placeholder="0901234567"
+                   class="w-full pl-11 pr-4 py-3 bg-surface-container rounded-lg border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none" />
+        </div>
+        <span asp-validation-for="Phone" class="text-error text-label-sm block"></span>
+    </div>
+
+    <!-- Ngày sinh -->
+    <div class="space-y-2">
+        <label asp-for="DateOfBirth" class="font-label-md text-label-md text-on-surface-variant block"></label>
+        <div class="relative">
+            <span class="material-symbols-outlined text-[20px] absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">cake</span>
+            <input asp-for="DateOfBirth" type="date" max="@today"
+                   class="w-full pl-11 pr-3 py-3 bg-surface-container rounded-lg border border-outline-variant/30 focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none" />
+        </div>
+        <span asp-validation-for="DateOfBirth" class="text-error text-label-sm block"></span>
+    </div>
+
+    <button class="w-full bg-primary-container text-on-primary py-3 rounded-lg font-headline-md text-[16px] font-bold hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 shadow-lg shadow-primary-container/30 mt-1" type="submit">
+        Hoàn Tất Đăng Ký
+    </button>
+</form>
+
+<div class="mt-6 text-center">
+    <a class="font-label-sm text-label-sm text-on-surface-variant hover:underline inline-block" asp-controller="Login" asp-action="Login">← Quay lại đăng nhập</a>
+</div>

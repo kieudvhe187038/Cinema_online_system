@@ -3,6 +3,10 @@ bin/
 obj/
 out/
 
+# User-uploaded media (poster/banner/trailer)
+wwwroot/uploads/
+**/wwwroot/uploads/
+
 # Visual Studio
 .vs/
 *.user
@@ -37,6 +41,9 @@ appsettings.Local.json
 **/secrets.json
 .env
 .env.*
+# Cho phép commit file mẫu (không chứa bí mật thật).
+!.env.example
+!**/.env.example
 
 # Logs
 *.log
@@ -56,3 +63,9 @@ coverage/
 # Publish output
 publish/
 **/Properties/PublishProfiles/
+
+.claude/
+
+# Individual agent entry-point (cá nhân, không commit)
+HD.md
+taido/

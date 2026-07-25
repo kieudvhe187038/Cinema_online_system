@@ -1,0 +1,87 @@
+@model Cinema_System.Application.ViewModels.BookingDetailViewModel
+@{
+    ViewData["Title"] = "Vé điện tử";
+    ViewData["Heading"] = "Vé điện tử";
+    ViewData["UserName"] = User.Identity?.Name;
+    Layout = "_CineStarLayout";
+
+    var qrContent = string.IsNullOrEmpty(Model.QrCode) ? Model.Id.ToString() : Model.QrCode;
+    var seats = string.Join(", ", Model.Seats.Select(s => s.SeatLabel));
+}
+
+<div class="mb-4">
+    <a asp-action="Detail" asp-route-id="@Model.Id" class="inline-flex items-center gap-1 text-sm font-semibold text-secondary hover:underline">← Về chi tiết đặt vé</a>
+</div>
+
+@if (!Model.IsPaid)
+{
+    <div class="mx-auto max-w-md rounded-2xl bg-white p-8 text-center shadow-md">
+        <svg class="mx-auto h-14 w-14 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+        <h2 class="mt-3 text-xl font-bold font-heading text-tertiary">Vé điện tử không khả dụng</h2>
+        <p class="mt-1 text-sm text-gray-500">Đơn này @Model.PaymentStatusLabel.ToLower() — chưa có vé điện tử hợp lệ.</p>
+        <a asp-action="Detail" asp-route-id="@Model.Id" class="mt-5 inline-block rounded-xl border-2 border-secondary px-5 py-2.5 font-semibold text-secondary hover:bg-secondary hover:text-white transition">Về chi tiết đặt vé</a>
+    </div>
+    return;
+}
+
+<!-- ===== Thẻ vé ===== -->
+<div id="ticket" class="mx-auto max-w-md overflow-hidden rounded-2xl bg-white shadow-lg">
+
+    <!-- Banner phim (ưu tiên ảnh banner rộng, fallback poster) -->
+    <div class="relative h-32">
+        <img src="@(MediaUrl.Banner(Model.BannerUrl) ?? MediaUrl.Poster(Model.PosterUrl) ?? "https://placehold.co/400x160?text=Phim")"
+             onerror="this.src='https://placehold.co/400x160?text=Phim'"
+             class="h-full w-full object-cover" alt="banner" />
+        <span class="absolute left-3 top-3 rounded-full bg-primary px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white">@Model.PaymentStatusLabel</span>
+    </div>
+
+    <!-- Tên phim + rạp -->
+    <div class="px-6 pt-5">
+        <h2 class="text-xl font-bold font-heading text-tertiary">@Model.MovieTitle</h2>
+        <p class="mt-1 flex items-center gap-1 text-sm text-gray-500">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>
+            @Model.RoomName
+        </p>
+    </div>
+
+    <!-- Lưới ngày/giờ/phòng/ghế -->
+    <dl class="grid grid-cols-2 gap-x-6 gap-y-4 px-6 py-5 text-sm">
+        <div><dt class="text-xs uppercase tracking-wide text-gray-400">Ngày chiếu</dt><dd class="font-semibold text-tertiary">@Model.StartTime.ToString("dd/MM/yyyy")</dd></div>
+        <div><dt class="text-xs uppercase tracking-wide text-gray-400">Giờ chiếu</dt><dd class="font-semibold text-tertiary">@Model.StartTime.ToString("HH:mm")</dd></div>
+        <div><dt class="text-xs uppercase tracking-wide text-gray-400">Phòng chiếu</dt><dd class="font-semibold text-tertiary">@Model.RoomName</dd></div>
+        <div><dt class="text-xs uppercase tracking-wide text-gray-400">Ghế ngồi</dt><dd class="font-semibold text-primary">@seats</dd></div>
+    </dl>
+
+    <!-- Đường răng cưa -->
+    <div class="border-t-2 border-dashed border-gray-200"></div>
+
+    <!-- QR + mã đặt vé -->
+    <div class="flex flex-col items-center gap-2 px-6 py-6">
+        <div id="qrcode" class="rounded-xl border border-gray-100 p-3"></div>
+        <p class="mt-2 break-all text-center font-mono text-lg font-bold tracking-wider text-tertiary">@qrContent</p>
+        <p class="text-[11px] uppercase tracking-wide text-gray-400">Mã đặt vé (Booking Code)</p>
+    </div>
+
+    <!-- Hướng dẫn -->
+    <div class="mx-6 mb-6 flex items-start gap-2 rounded-xl bg-light px-4 py-3 text-xs text-gray-500">
+        <svg class="mt-0.5 h-4 w-4 shrink-0 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
+        <span><span class="font-semibold text-tertiary">Hướng dẫn sử dụng:</span> Vui lòng xuất trình mã QR này tại quầy vé hoặc máy soát vé tự động để vào phòng chiếu. Có mặt trước giờ chiếu 15 phút.</span>
+    </div>
+</div>
+
+<!-- Nút -->
+<div class="mx-auto mt-5 max-w-md">
+    <button type="button" onclick="window.print()"
+            class="flex w-full items-center justify-center gap-2 rounded-xl bg-secondary px-4 py-3 font-semibold text-white hover:bg-tertiary transition">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
+        Tải xuống vé
+    </button>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        var qrEl = document.getElementById("qrcode");
+        if (qrEl) new QRCode(qrEl, { text: "@qrContent", width: 180, height: 180, colorDark: "#002F59", colorLight: "#ffffff" });
+    </script>
+}

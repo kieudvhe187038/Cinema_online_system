@@ -1,49 +1,250 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="vi" class="light">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Cinema_System</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/Cinema_System.styles.css" asp-append-version="true" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /> 
+    <title>@ViewData["Title"] - CineStar</title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            important: true,
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#f37021',
+                        'primary-dark': '#c95a10',
+                        secondary: '#004b8d',
+                        tertiary: '#001c3a',
+                        light: '#f8f9fa',
+                    },
+                    fontFamily: { 
+                        heading: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        body: ['"Be Vietnam Pro"', 'sans-serif'],
+                    } 
+                }
+            }
+        }
+    </script>
+
+    <partial name="_DarkMode" />
+    @await RenderSectionAsync("Styles", required: false)
 </head>
-<body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">Cinema_System</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
+<body class="bg-slate-50 text-slate-900 font-body antialiased">
+
+    <!-- TopNavBar -->
+    <header id="main-header" class="fixed top-0 w-full z-50 border-b border-slate-200 bg-white/95 backdrop-blur-xl shadow-sm">
+        <div class="px-4 py-4 lg:px-8">
+            <div class="mx-auto flex max-w-7xl items-center justify-between gap-4">
+                <div class="flex items-center gap-5">
+                    <a class="font-heading text-2xl font-black uppercase tracking-tight text-primary shrink-0" asp-area="" asp-controller="Home" asp-action="Index">CineStar</a>
+                    <nav class="hidden items-center gap-5 lg:flex lg:flex-nowrap whitespace-nowrap">
+                        <a class="text-sm font-semibold transition hover:text-primary @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" && ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "text-primary border-b-2 border-primary pb-1" : "text-slate-700")" asp-area="" asp-controller="Home" asp-action="Index">Trang Chủ</a>
+                        <a class="text-sm font-semibold transition hover:text-primary @(ViewContext.RouteData.Values["controller"]?.ToString() == "Movies" ? "text-primary border-b-2 border-primary pb-1" : "text-slate-700")" asp-area="" asp-controller="Movies" asp-action="Index">Phim</a>
+                        <a class="text-sm font-semibold transition hover:text-primary @(ViewContext.RouteData.Values["controller"]?.ToString() == "Showtime" ? "text-primary border-b-2 border-primary pb-1" : "text-slate-700")" asp-area="" asp-controller="Showtime" asp-action="Index">Lịch Chiếu</a>
+                        <a class="text-sm font-semibold transition hover:text-primary @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" && ViewContext.RouteData.Values["action"]?.ToString() == "Info" ? "text-primary border-b-2 border-primary pb-1" : "text-slate-700")" asp-area="" asp-controller="Home" asp-action="Info">Thông tin rạp</a>
+                    </nav>
+                </div>
+                <div class="flex shrink-0 items-center gap-3 whitespace-nowrap">
+                    <form asp-controller="Movies" asp-action="Search" method="get" class="hidden relative xl:block">
+                        <input type="hidden" name="tab" value="@(ViewContext.RouteData.Values["controller"]?.ToString() == "Movies" ? (Context.Request.Query["tab"].ToString() ?? "now") : "now")" />
+                        <input id="movie-search-input" type="text" name="find" maxlength="100" pattern="^[\p{L}\p{N}\s]+$" title="Từ khóa tìm kiếm tối đa 100 ký tự, không chứa ký tự đặc biệt." value="@(ViewData["SearchKeyword"] ?? string.Empty)" placeholder="Tìm kiếm phim" class="w-72 rounded-full border border-slate-200 bg-slate-100 py-2 pl-4 pr-11 text-sm text-slate-800 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20" />
+                        <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500" aria-label="Tìm kiếm">
+                            <span class="material-symbols-outlined">search</span>
+                        </button>
+                    </form>
+                    <partial name="_DarkModeToggle" />
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        // Tên + email + avatar đọc từ Claims (đặt khi đăng nhập) -> không truy vấn DB ở header.
+                        var avatarUrl = User.FindFirst(Cinema_System.Controllers.Auth.AuthControllerBase.AvatarUrlClaimType)?.Value;
+                        var displayName = User.Identity!.Name ?? "Tài khoản";
+                        var userEmail = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+                        // 2 chữ cái đầu của tên làm avatar dự phòng khi chưa có ảnh (vd "Nguyễn Anh Linh" -> "AL")
+                        var nameParts = displayName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        var initials = nameParts.Length >= 2
+                            ? (nameParts[^2].Substring(0, 1) + nameParts[^1].Substring(0, 1)).ToUpper()
+                            : nameParts.Length == 1 ? nameParts[0].Substring(0, 1).ToUpper() : "U";
+
+                        <div class="relative" data-user-menu>
+                            <button type="button" data-user-menu-toggle aria-haspopup="true" aria-expanded="false"
+                                    class="flex items-center gap-2 rounded-full border border-slate-200 bg-white py-1 pl-1 pr-2 shadow-sm transition hover:border-primary/40 hover:shadow">
+                                @if (!string.IsNullOrEmpty(avatarUrl))
+                                {
+                                    <img src="@avatarUrl" alt="Ảnh đại diện" class="h-9 w-9 rounded-full object-cover" />
+                                }
+                                else
+                                {
+                                    <span class="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">@initials</span>
+                                }
+                                <span class="hidden max-w-[8rem] truncate text-sm font-semibold text-slate-700 sm:block">@displayName</span>
+                                <span class="material-symbols-outlined text-[20px] text-slate-400">expand_more</span>
+                            </button>
+
+                            <!-- Dropdown: ẩn mặc định (class hidden), JS bật/tắt khi bấm avatar -->
+                            <div data-user-menu-panel
+                                 class="absolute right-0 mt-2 hidden w-60 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-xl ring-1 ring-black/5">
+                                <div class="flex items-center gap-3 border-b border-slate-100 px-4 py-3">
+                                    @if (!string.IsNullOrEmpty(avatarUrl))
+                                    {
+                                        <img src="@avatarUrl" alt="Ảnh đại diện" class="h-10 w-10 rounded-full object-cover" />
+                                    }
+                                    else
+                                    {
+                                        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">@initials</span>
+                                    }
+                                    <div class="min-w-0">
+                                        <p class="truncate text-sm font-semibold text-slate-800">@displayName</p>
+                                        @if (!string.IsNullOrEmpty(userEmail))
+                                        {
+                                            <p class="truncate text-xs text-slate-400">@userEmail</p>
+                                        }
+                                    </div>
+                                </div>
+                                <nav class="py-1 text-sm">
+                                    @if (User.IsInRole("MANAGER"))
+                                    {
+                                        <a asp-controller="Dashboard" asp-action="Index" class="flex items-center gap-3 border-b border-slate-100 px-4 py-2.5 font-semibold text-primary transition hover:bg-primary/5">
+                                            <span class="material-symbols-outlined text-[20px]">dashboard</span> Khu quản lý
+                                        </a>
+                                    }
+                                    @if (User.IsInRole("ADMIN"))
+                                    {
+                                        <a asp-controller="AdminDashboard" asp-action="Index" class="flex items-center gap-3 border-b border-slate-100 px-4 py-2.5 font-semibold text-primary transition hover:bg-primary/5">
+                                            <span class="material-symbols-outlined text-[20px]">dashboard</span> Khu quản trị
+                                        </a>
+                                    }
+                                    @if (User.IsInRole("STAFF"))
+                                    {
+                                        <a asp-controller="RoomManagement" asp-action="Index" class="flex items-center gap-3 border-b border-slate-100 px-4 py-2.5 font-semibold text-primary transition hover:bg-primary/5">
+                                            <span class="material-symbols-outlined text-[20px]">dashboard</span> Khu quản lý
+                                        </a>
+                                    }
+                                    <a asp-controller="Profile" asp-action="Index" class="flex items-center gap-3 px-4 py-2.5 text-slate-700 transition hover:bg-slate-50 hover:text-primary">
+                                        <span class="material-symbols-outlined text-[20px]">person</span> Hồ sơ cá nhân
+                                    </a>
+                                    <a asp-controller="Profile" asp-action="PointHistory" class="flex items-center gap-3 px-4 py-2.5 text-slate-700 transition hover:bg-slate-50 hover:text-primary">
+                                        <span class="material-symbols-outlined text-[20px]">stars</span> Lịch sử điểm
+                                    </a>
+                                    <a asp-controller="Profile" asp-action="ChangePassword" class="flex items-center gap-3 px-4 py-2.5 text-slate-700 transition hover:bg-slate-50 hover:text-primary">
+                                        <span class="material-symbols-outlined text-[20px]">lock</span> Đổi mật khẩu
+                                    </a>
+                                </nav>
+                                <form asp-controller="Login" asp-action="Logout" method="post" class="border-t border-slate-100">
+                                    <button type="submit" class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-semibold text-red-600 transition hover:bg-red-50">
+                                        <span class="material-symbols-outlined text-[20px]">logout</span> Đăng xuất
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="flex items-center gap-2">
+                            <a asp-controller="Login" asp-action="Login" class="text-sm font-semibold text-primary transition hover:text-primary-dark">Đăng Nhập</a>
+                            <a asp-controller="Register" asp-action="Register" class="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark">Đăng Ký</a>
+                        </div>
+                    }
                 </div>
             </div>
-        </nav>
+        </div>
     </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - Cinema_System - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <main class="pt-24">
+        @RenderBody()
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-200 bg-slate-100 text-slate-700">
+        <div class="mx-auto grid max-w-7xl gap-10 px-4 py-16 lg:grid-cols-[1.6fr_1fr_1fr] lg:px-8">
+            <div class="space-y-5">
+                <a class="inline-block font-heading text-2xl font-black uppercase tracking-tight text-primary" href="#">CineStar</a>
+                <p>Hệ thống rạp chiếu phim hiện đại với công nghệ âm thanh hình ảnh hàng đầu Việt Nam.</p>
+                <div class="flex items-center gap-2">
+                    <a href="#" class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm transition hover:bg-primary hover:text-white"><span class="material-symbols-outlined">face_nod</span></a>
+                    <a href="#" class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm transition hover:bg-primary hover:text-white"><span class="material-symbols-outlined">play_circle</span></a>
+                    <a href="#" class="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm transition hover:bg-primary hover:text-white"><span class="material-symbols-outlined">camera</span></a>
+                </div>
+            </div>
+            <div>
+                <h4 class="mb-4 text-sm font-semibold uppercase tracking-[0.16em] text-slate-900">Về Chúng Tôi</h4>
+                <ul class="space-y-3 text-sm text-slate-600">
+                    <li><a class="transition hover:text-primary" asp-area="" asp-controller="Home" asp-action="Info">Giới thiệu CineStar</a></li>
+                    <li><a class="transition hover:text-primary" href="#">Tuyển dụng</a></li>
+                    <li><a class="transition hover:text-primary" href="#">Chính sách bảo mật</a></li>
+                    <li><a class="transition hover:text-primary" href="#">Điều khoản sử dụng</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="mb-4 text-sm font-semibold uppercase tracking-[0.16em] text-slate-900">Hỗ Trợ Khách Hàng</h4>
+                <ul class="space-y-3 text-sm text-slate-600">
+                    <li><a class="transition hover:text-primary">AI Chatbot hỗ trợ</a></li>
+                    <li><a class="transition hover:text-primary" href="#">Quy định xem phim</a></li>
+                    <li><a class="transition hover:text-primary" href="#">Liên hệ quảng cáo</a></li>
+                    <li><a class="transition hover:text-primary" href="#">Giải quyết khiếu nại</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="border-t border-slate-200 bg-slate-100/80 px-4 py-5 text-sm text-slate-500 lg:px-8">
+            <div class="mx-auto flex max-w-7xl flex-col gap-3 text-center lg:flex-row lg:items-center lg:justify-between">
+                <p>© 2024 CineStar. Toàn bộ bản quyền được bảo lưu.</p>
+                <div class="flex flex-wrap items-center justify-center gap-3 text-xs text-slate-500 lg:justify-end">
+                    <span>Công ty Cổ phần Giải trí CineStar</span>
+                    <span class="text-slate-300">|</span>
+                    <span>MST: 0123456789</span>
+                </div>
+            </div>
         </div>
     </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <script>
+        // Dropdown tài khoản: mở/đóng khi bấm avatar, đóng khi bấm ra ngoài hoặc nhấn Esc.
+        (function () {
+            const menu = document.querySelector('[data-user-menu]');
+            if (!menu) return;
+            const toggle = menu.querySelector('[data-user-menu-toggle]');
+            const panel = menu.querySelector('[data-user-menu-panel]');
+
+            function closeMenu() {
+                panel.classList.add('hidden');
+                toggle.setAttribute('aria-expanded', 'false');
+            }
+            toggle.addEventListener('click', function (e) {
+                e.stopPropagation();
+                const isHidden = panel.classList.toggle('hidden');
+                toggle.setAttribute('aria-expanded', String(!isHidden));
+            });
+            document.addEventListener('click', function (e) {
+                if (!menu.contains(e.target)) closeMenu();
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') closeMenu();
+            });
+        })();
+
+        (function () {
+            const searchInput = document.getElementById('movie-search-input');
+            if (!searchInput) return;
+
+            searchInput.addEventListener('input', function () {
+                let value = this.value;
+                if (value.length > 30) {
+                    value = value.slice(0, 30);
+                }
+                const cleaned = value.replace(/[^\p{L}\p{N}\s]+/gu, '');
+                if (cleaned !== value) {
+                    value = cleaned;
+                }
+                this.value = value;
+            });
+        })();
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

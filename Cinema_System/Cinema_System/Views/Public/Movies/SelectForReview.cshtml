@@ -1,0 +1,101 @@
+@model MoviesPageViewModel
+
+@{
+    ViewData["Title"] = "Chọn phim để đánh giá";
+}
+
+<div class="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 lg:px-8 mt-20">
+    <div class="mx-auto max-w-6xl">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="mb-2 text-4xl font-bold text-slate-900">Chọn phim để đánh giá</h1>
+            <p class="text-slate-600">Những phim bạn đã xem</p>
+        </div>
+
+        <!-- Movies Grid -->
+        @if (Model.Movies.Any())
+        {
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+                @foreach (var movie in Model.Movies)
+                {
+                    <a href="@Url.Action("Create", "Reviews", new { movieId = movie.Id })"
+                       class="group relative flex flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm transition hover:shadow-lg hover:border-primary">
+                        @if (!string.IsNullOrEmpty(movie.PosterUrl))
+                        {
+                            <div class="relative h-64 overflow-hidden bg-slate-200">
+                                <img src="@MediaUrl.Poster(movie.PosterUrl)" alt="@movie.Title"
+                                     class="h-full w-full object-cover transition group-hover:scale-110" />
+                                <div class="absolute inset-0 bg-black/40 opacity-0 transition group-hover:opacity-100 flex items-center justify-center">
+                                    <span class="text-white font-semibold">Đánh giá phim</span>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="h-64 bg-slate-300 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-slate-500">image_not_supported</span>
+                            </div>
+                        }
+                        <div class="flex flex-1 flex-col p-4">
+                            <h3 class="font-semibold text-slate-900 line-clamp-2">@movie.Title</h3>
+                            <p class="text-sm text-slate-500 mt-2">@movie.AgeRating</p>
+                        </div>
+                    </a>
+                }
+            </div>
+
+            <!-- Pagination -->
+            @if (Model.TotalPages > 1)
+            {
+                <div class="mt-12 flex items-center justify-center space-x-2">
+                    @if (Model.CurrentPage > 1)
+                    {
+                        <a href="@Url.Action("SelectForReview", "Movies", new { page = Model.CurrentPage - 1 })"
+                           class="inline-flex items-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
+                            Trang trước
+                        </a>
+                    }
+
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        @if (i == Model.CurrentPage)
+                        {
+                            <span class="inline-flex items-center rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white">
+                                @i
+                            </span>
+                        }
+                        else if (i <= Model.CurrentPage + 2 && i >= Model.CurrentPage - 2)
+                        {
+                            <a href="@Url.Action("SelectForReview", "Movies", new { page = i })"
+                               class="inline-flex items-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
+                                @i
+                            </a>
+                        }
+                    }
+
+                    @if (Model.CurrentPage < Model.TotalPages)
+                    {
+                        <a href="@Url.Action("SelectForReview", "Movies", new { page = Model.CurrentPage + 1 })"
+                           class="inline-flex items-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
+                            Trang sau
+                        </a>
+                    }
+                </div>
+            }
+        }
+        else
+        {
+            <div class="rounded-lg border border-slate-200 bg-white p-12 text-center">
+                <svg class="mx-auto h-16 w-16 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16m10-16v16M4 8h16M4 16h16"></path>
+                </svg>
+                <h3 class="mt-4 text-lg font-semibold text-slate-900">Chưa có phim để đánh giá</h3>
+                <p class="mt-2 text-slate-600">Bạn cần phải có đặt vé và xem phim để có thể đánh giá.</p>
+                <a href="@Url.Action("Index", "Movies")"
+                   class="mt-6 inline-flex items-center rounded-lg bg-orange-500 px-6 py-3 font-semibold text-white hover:bg-orange-600">
+                    Xem danh sách phim
+                </a>
+            </div>
+        }
+    </div>
+</div>

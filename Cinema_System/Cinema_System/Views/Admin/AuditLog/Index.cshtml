@@ -1,0 +1,102 @@
+@model AuditLogListViewModel
+@{
+    ViewData["Title"] = "Nhật Ký Chỉnh Sửa";
+    Layout = "_AdminLayout";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/site.css" />
+    <style>
+        .al-wrap { max-width: 1280px; margin: 0 auto 3rem; padding: 0; }
+        .al-title { font-family: var(--font-head); font-size: 1.75rem; font-weight: 800; color: var(--on-surface); margin-bottom: 1.5rem; }
+        .al-filters { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: 1.25rem; align-items: center; }
+        .al-filters input { padding: .55rem .75rem; border: 1px solid var(--outline-variant); border-radius: var(--radius); background: var(--white); font-family: var(--font-body); min-width: 280px; }
+        .al-btn { padding: .55rem 1.1rem; border: none; border-radius: var(--radius); font-weight: 600; cursor: pointer; font-family: var(--font-body); text-decoration: none; display: inline-flex; align-items: center; gap: .35rem; }
+        .al-btn-primary { background: var(--primary); color: var(--white); }
+        .al-btn-primary:hover { background: var(--primary-dark); }
+        .al-btn-ghost { background: var(--surface-container); color: var(--on-surface); }
+        .al-table { width: 100%; border-collapse: collapse; background: var(--white); border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-sm); }
+        .al-table th, .al-table td { padding: .8rem 1rem; text-align: left; border-bottom: 1px solid var(--surface-container); font-size: .88rem; }
+        .al-table th { background: var(--secondary-dark); color: var(--white); font-weight: 600; }
+        .al-table tr:hover td { background: var(--surface); }
+        .al-chip { display: inline-block; padding: .2rem .6rem; border-radius: 999px; font-size: .72rem; font-weight: 700; }
+        .al-chip.create { background: #e7f5ec; color: #166534; }
+        .al-chip.update { background: #e0edff; color: #1d4ed8; }
+        .al-chip.delete { background: #fde8e8; color: #b91c1c; }
+        .al-chip.other { background: var(--surface-container); color: var(--on-surface-variant); }
+        .al-mono { font-family: monospace; font-size: .82rem; color: var(--on-surface-variant); }
+        .al-link { color: var(--secondary); text-decoration: none; font-weight: 600; font-size: .85rem; }
+        .al-link:hover { color: var(--primary); }
+        .al-empty { text-align: center; padding: 3rem; color: var(--on-surface-variant); }
+        .al-meta { color: var(--on-surface-variant); font-size: .85rem; margin-bottom: .75rem; }
+    </style>
+}
+
+<div class="al-wrap">
+    <h1 class="al-title">Nhật Ký Chỉnh Sửa</h1>
+
+    <form method="get" class="al-filters">
+        <input type="text" name="search" value="@Model.Search" placeholder="Tìm theo hành động, bảng, hoặc người thực hiện..." />
+        <button type="submit" class="al-btn al-btn-primary">Lọc</button>
+        <a href="@Url.Action("Index", "AuditLog")" class="al-btn al-btn-ghost">Xóa lọc</a>
+    </form>
+
+    <p class="al-meta">Tổng cộng @Model.TotalCount bản ghi</p>
+
+    @if (Model.Logs.Any())
+    {
+        <table class="al-table">
+            <thead>
+                <tr>
+                    <th>Thời gian</th>
+                    <th>Người thực hiện</th>
+                    <th>Hành động</th>
+                    <th>Bảng</th>
+                    <th>Bản ghi</th>
+                    <th>IP</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var log in Model.Logs)
+                {
+                    var actionClass = (log.Action ?? "").ToLower() switch
+                    {
+                        var a when a.Contains("create") || a.Contains("insert") || a.Contains("add") => "create",
+                        var a when a.Contains("update") || a.Contains("edit") => "update",
+                        var a when a.Contains("delete") || a.Contains("remove") => "delete",
+                        _ => "other"
+                    };
+                    <tr>
+                        <td>@(log.CreatedAt?.ToString("dd/MM/yyyy HH:mm:ss") ?? "—")</td>
+                        <td>@log.UserName</td>
+                        <td><span class="al-chip @actionClass">@log.Action</span></td>
+                        <td>@(string.IsNullOrEmpty(log.TableName) ? "—" : log.TableName)</td>
+                        <td><span class="al-mono">@(log.RecordId?.ToString() ?? "—")</span></td>
+                        <td><span class="al-mono">@(string.IsNullOrEmpty(log.IpAddress) ? "—" : log.IpAddress)</span></td>
+                        <td><a class="al-link" href="@Url.Action("Details", "AuditLog", new { id = log.Id })">Chi tiết</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (Model.TotalPages > 1)
+        {
+            @await Html.PartialAsync("_Pager", new PagerModel
+            {
+                CurrentPage = Model.CurrentPage,
+                TotalPages = Model.TotalPages,
+                Action = "Index",
+                Controller = "AuditLog",
+                RouteValues = new Dictionary<string, string?>
+                {
+                    ["search"] = Model.Search
+                }
+            })
+        }
+    }
+    else
+    {
+        <div class="al-empty">Không tìm thấy bản ghi nhật ký nào phù hợp.</div>
+    }
+</div>

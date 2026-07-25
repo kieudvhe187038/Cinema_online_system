@@ -1,0 +1,160 @@
+@{
+    ViewData["Title"] = "Check-in Vé";
+    Layout = "_StaffLayout";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/site.css" />
+    <style>
+        .ck-wrap { max-width: 620px; margin: 0 auto 3rem; padding: 0; }
+        .ck-title { font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: var(--on-surface); margin-bottom: .35rem; }
+        .ck-sub { color: var(--on-surface-variant); font-size: .9rem; margin-bottom: 1.5rem; }
+        .ck-card { background: var(--white); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); padding: 1.75rem; }
+        .ck-row { display: flex; gap: .5rem; }
+        .ck-input { flex: 1; padding: .65rem .85rem; border: 1px solid var(--outline-variant); border-radius: var(--radius); font-family: var(--font-body); font-size: 1rem; }
+        .ck-btn { padding: .65rem 1.3rem; border: none; border-radius: var(--radius); font-weight: 600; cursor: pointer; font-family: var(--font-body); }
+        .ck-btn-secondary { background: var(--surface-container); color: var(--on-surface); }
+        .ck-btn-primary { background: var(--primary); color: #fff; }
+        .ck-btn[disabled] { opacity: .5; cursor: not-allowed; }
+        .ck-result { margin-top: 1.5rem; }
+        .ck-line { display: flex; justify-content: space-between; padding: .5rem 0; border-bottom: 1px dashed var(--surface-container); font-size: .92rem; }
+        .ck-line span:first-child { color: var(--on-surface-variant); }
+        .ck-line span:last-child { font-weight: 600; text-align: right; }
+        .ck-banner { margin-top: 1.25rem; padding: .8rem 1rem; border-radius: var(--radius); font-weight: 600; font-size: .95rem; }
+        .ck-ok { background: #dcfce7; color: #166534; }
+        .ck-warn { background: #fef3c7; color: #b45309; }
+        .ck-err { background: #fee2e2; color: #b91c1c; }
+        .ck-actions { margin-top: 1.25rem; display: flex; gap: .5rem; justify-content: flex-end; }
+        .ck-sec { margin-top: 1.25rem; font-weight: 700; color: var(--on-surface); font-size: .95rem; }
+        .ck-seat { display: flex; justify-content: space-between; align-items: center; padding: .55rem .75rem; margin-top: .4rem; border: 1px solid var(--outline-variant); border-radius: var(--radius); font-size: .9rem; }
+        .ck-seat-label { font-weight: 700; }
+        .ck-tag { padding: .12rem .55rem; border-radius: 999px; font-size: .78rem; font-weight: 700; }
+        .ck-tag-ok { background: #dcfce7; color: #166534; }
+        .ck-tag-wait { background: #fef3c7; color: #b45309; }
+        .ck-tag-cancel { background: #fee2e2; color: #b91c1c; }
+    </style>
+}
+
+<div class="ck-wrap">
+    <h1 class="ck-title">Check-in Vé</h1>
+    <p class="ck-sub">Quét hoặc nhập mã QR <strong>vé</strong> (1 vé) hoặc mã <strong>đơn</strong> (check-in tất cả vé) để xác thực và check-in cho khách.</p>
+
+    @Html.AntiForgeryToken()
+
+    <div class="ck-card">
+        <div class="ck-row">
+            <input type="text" id="qr" class="ck-input" placeholder="Quét / nhập mã vé hoặc mã đơn..." autofocus />
+            <button type="button" id="btnLookup" class="ck-btn ck-btn-secondary">Tra cứu</button>
+        </div>
+        <div id="result"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const token = $('input[name="__RequestVerificationToken"]').val();
+        const fmt = function (v) { return v ? new Date(v).toLocaleString('vi-VN') : '—'; };
+        const esc = function (s) { return $('<div>').text(s == null ? '' : s).html(); };
+
+        // ---------- Vé đơn lẻ ----------
+        function bannerClass(t) {
+            if (t.checkedIn) return 'ck-ok';
+            return (t.status || '').toLowerCase() === 'cancelled' ? 'ck-err' : 'ck-warn';
+        }
+        function canCheckin(t) {
+            const s = (t.status || '').toLowerCase();
+            return !t.checkedIn && (s === 'booked' || s === 'printed');
+        }
+        function renderTicket(t, justCheckedIn) {
+            const banner = justCheckedIn ? 'ck-ok' : bannerClass(t);
+            let html = '<div class="ck-result">' +
+                '<div class="ck-line"><span>Mã vé</span><span>' + esc(t.ticketCode || '—') + '</span></div>' +
+                '<div class="ck-line"><span>Mã đơn</span><span>' + esc(t.bookingCode || '—') + '</span></div>' +
+                '<div class="ck-line"><span>Phim</span><span>' + esc(t.movieTitle || '—') + '</span></div>' +
+                '<div class="ck-line"><span>Rạp / Phòng</span><span>' + esc(t.cinemaName || '—') + ' · ' + esc(t.roomName || '—') + '</span></div>' +
+                '<div class="ck-line"><span>Suất chiếu</span><span>' + fmt(t.showStartTime) + '</span></div>' +
+                '<div class="ck-line"><span>Ghế</span><span>' + esc(t.seatLabel || '—') + ' (' + esc(t.seatType || '—') + ')</span></div>' +
+                '<div class="ck-line"><span>Khách hàng</span><span>' + esc(t.customerName || '—') + '</span></div>' +
+                '<div class="ck-line"><span>Trạng thái</span><span>' + esc(t.status || '—') + '</span></div>' +
+                '<div class="ck-banner ' + banner + '">' + esc(t.message || '') + '</div>';
+            if (!justCheckedIn && canCheckin(t)) {
+                html += '<div class="ck-actions"><button type="button" id="btnConfirm" class="ck-btn ck-btn-primary">Xác nhận check-in</button></div>';
+            }
+            html += '</div>';
+            $('#result').html(html);
+            $('#btnConfirm').on('click', function () { doConfirm($('#qr').val().trim()); });
+        }
+
+        // ---------- Đơn nhiều vé ----------
+        function seatTag(t) {
+            if (t.checkedIn) return '<span class="ck-tag ck-tag-ok">Đã check-in</span>';
+            return '<span class="ck-tag ck-tag-wait">' + esc(t.status || '—') + '</span>';
+        }
+        function canCheckinBooking(b) {
+            const paid = (b.paymentStatus || '').toLowerCase() === 'paid';
+            const ended = b.showEndTime && new Date(b.showEndTime) < new Date();
+            return paid && !ended && b.checkedInCount < b.totalTickets;
+        }
+        function renderBooking(b, justCheckedIn) {
+            const allDone = b.checkedInCount >= b.totalTickets;
+            const banner = (justCheckedIn || allDone) ? 'ck-ok' : ((b.paymentStatus || '').toLowerCase() === 'paid' ? 'ck-warn' : 'ck-err');
+            let html = '<div class="ck-result">' +
+                '<div class="ck-line"><span>Mã đơn</span><span>' + esc(b.bookingCode || '—') + '</span></div>' +
+                '<div class="ck-line"><span>Phim</span><span>' + esc(b.movieTitle || '—') + '</span></div>' +
+                '<div class="ck-line"><span>Rạp / Phòng</span><span>' + esc(b.cinemaName || '—') + ' · ' + esc(b.roomName || '—') + '</span></div>' +
+                '<div class="ck-line"><span>Suất chiếu</span><span>' + fmt(b.showStartTime) + '</span></div>' +
+                '<div class="ck-line"><span>Khách hàng</span><span>' + esc(b.customerName || '—') + '</span></div>' +
+                '<div class="ck-line"><span>Đã check-in</span><span>' + b.checkedInCount + '/' + b.totalTickets + ' vé</span></div>' +
+                '<div class="ck-sec">Danh sách vé (' + b.totalTickets + ')</div>';
+            (b.tickets || []).forEach(function (t) {
+                html += '<div class="ck-seat"><span class="ck-seat-label">' + esc(t.seatLabel || '—') + ' · ' + esc(t.seatType || '') + '</span>' + seatTag(t) + '</div>';
+            });
+            html += '<div class="ck-banner ' + banner + '">' + esc(b.message || '') + '</div>';
+            if (!justCheckedIn && canCheckinBooking(b)) {
+                html += '<div class="ck-actions"><button type="button" id="btnConfirm" class="ck-btn ck-btn-primary">Check-in tất cả vé chưa dùng</button></div>';
+            }
+            html += '</div>';
+            $('#result').html(html);
+            $('#btnConfirm').on('click', function () { doConfirm($('#qr').val().trim()); });
+        }
+
+        function renderResult(res, justCheckedIn) {
+            if (res.mode === 'booking') renderBooking(res.booking, justCheckedIn);
+            else renderTicket(res.ticket, justCheckedIn);
+        }
+
+        function lookup() {
+            const qr = $('#qr').val().trim();
+            if (!qr) { $('#result').html(''); return; }
+            $.getJSON('/Staff/Checkin/Lookup', { qr: qr }, function (res) {
+                if (res.found) renderResult(res, false);
+                else $('#result').html('<div class="ck-banner ck-err">Không tìm thấy vé hoặc đơn với mã này.</div>');
+            });
+        }
+
+        function doConfirm(qr) {
+            if (!qr) return;
+            $('#btnConfirm').prop('disabled', true);
+            $.ajax({
+                url: '/Staff/Checkin/Confirm',
+                type: 'POST',
+                data: { qr: qr, __RequestVerificationToken: token },
+                success: function (res) {
+                    if (res.success) {
+                        renderResult(res, true);
+                    } else {
+                        $('#result').append('<div class="ck-banner ck-err">' + esc(res.error || 'Không thể check-in.') + '</div>');
+                        $('#btnConfirm').prop('disabled', false);
+                    }
+                },
+                error: function () {
+                    $('#result').append('<div class="ck-banner ck-err">Có lỗi xảy ra, vui lòng thử lại.</div>');
+                    $('#btnConfirm').prop('disabled', false);
+                }
+            });
+        }
+
+        $('#btnLookup').on('click', lookup);
+        $('#qr').on('keypress', function (e) { if (e.which === 13) { e.preventDefault(); lookup(); } });
+    </script>
+}

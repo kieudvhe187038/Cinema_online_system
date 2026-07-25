@@ -1,0 +1,103 @@
+@using Cinema_System.Application.Common
+@* Model: PagedResult chứa danh sách ReviewDTO và thông tin phân trang (CurrentPage, TotalPages) *@
+@model PagedResult<Cinema_System.Application.DTOs.ReviewDTO>
+
+<div class="mt-8 space-y-4">
+    @if (Model.Items.Any())
+    {
+        @foreach (var r in Model.Items)
+        {
+            <div class="group relative overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:border-primary/30">
+                <div class="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-primary/0 opacity-0 group-hover:opacity-100 transition"></div>
+                <div class="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-lg font-bold text-slate-900">@r.UserName</p>
+                        @{
+                            var createdAt = r.CreatedAt;
+                            // Nếu không có phần giờ (TimeOfDay == Zero) thì chỉ hiện ngày, ngược lại hiện cả ngày và giờ
+                            var createdAtText = createdAt.HasValue
+                                ? (createdAt.Value.TimeOfDay == TimeSpan.Zero
+                                    ? createdAt.Value.ToString("dd/MM/yyyy")
+                                    : createdAt.Value.ToString("dd/MM/yyyy HH:mm"))
+                                : "—";
+                        }
+                        <p class="text-sm text-slate-500">@createdAtText</p>
+                    </div>
+                    @* Render 5 ngôi sao: tô vàng những sao <= điểm đánh giá *@
+                    @* Render 5 ngôi sao: tô vàng những sao có index <= điểm đánh giá, còn lại để xám *@
+                    <div class="flex items-center gap-0.5 text-yellow-400">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            <span class="text-xl @(i <= r.Rating ? "text-yellow-400 drop-shadow-md" : "text-slate-300")">★</span>
+                        }
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(r.Comment))
+                {
+                    <p class="relative z-10 mt-4 text-slate-700 leading-relaxed">@r.Comment</p>
+                }
+                else
+                {
+                    <p class="relative z-10 mt-4 text-slate-500 italic">Người dùng chưa để lại nhận xét.</p>
+                }
+
+                @if (User.Identity?.IsAuthenticated == true && User.IsInRole("MANAGER"))
+                {
+                    <form asp-controller="Reviews" asp-action="Delete" method="post" class="relative z-10 mt-4">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@r.Id" />
+                        <input type="hidden" name="movieId" value="@r.MovieId" />
+                        <button type="submit" onclick="return confirm('Xác nhận xóa bình luận này?');" class="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-100">
+                            <span class="material-symbols-outlined text-base mr-2">delete</span>
+                            Xóa bình luận
+                        </button>
+                    </form>
+                }
+            </div>
+        }
+    }
+    else
+    {
+        @* Trạng thái rỗng: hiển thị khi chưa có đánh giá nào *@
+        <div class="rounded-2xl border-2 border-dashed border-slate-300 bg-gradient-to-br from-slate-50 to-blue-50 p-10 text-center">
+            <p class="text-xl font-bold text-slate-900">Chưa có đánh giá nào</p>
+            <p class="mt-2 text-slate-600">Hãy là người đầu tiên chia sẻ cảm nhận.</p>
+        </div>
+    }
+</div>
+
+@* Chỉ hiển thị thanh phân trang khi có nhiều hơn 1 trang *@
+@if (Model.TotalPages > 1)
+{
+    <div class="mt-8 flex flex-wrap items-center justify-center gap-2">
+        @if (Model.CurrentPage > 1)
+        {
+            <button type="button" onclick="loadReviews(@(Model.CurrentPage - 1))" class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-primary/5 hover:text-primary hover:border-primary/30 shadow-sm cursor-pointer">
+                <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+                Trước
+            </button>
+        }
+        
+        @* Hiển thị số trang dạng sliding window (±2 trang so với trang hiện tại) *@
+        @* Sliding window: chỉ hiển thị trang hiện tại ±2 để tránh tràn giao diện khi có nhiều trang *@
+        @for (int i = 1; i <= Model.TotalPages; i++)
+        {
+            if (i == Model.CurrentPage)
+            {
+                <span class="inline-flex h-9 min-w-[36px] items-center justify-center rounded-full bg-primary text-sm font-bold text-white shadow-md">@i</span>
+            }
+            else if (i <= Model.CurrentPage + 2 && i >= Model.CurrentPage - 2)
+            {
+                <button type="button" onclick="loadReviews(@i)" class="inline-flex h-9 min-w-[36px] items-center justify-center rounded-full border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-primary/5 hover:text-primary hover:border-primary/30 shadow-sm cursor-pointer">@i</button>
+            }
+        }
+        
+        @if (Model.CurrentPage < Model.TotalPages)
+        {
+            <button type="button" onclick="loadReviews(@(Model.CurrentPage + 1))" class="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-primary/5 hover:text-primary hover:border-primary/30 shadow-sm cursor-pointer">
+                Sau
+                <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+            </button>
+        }
+    </div>
+}

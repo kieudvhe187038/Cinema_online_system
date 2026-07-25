@@ -1,0 +1,170 @@
+﻿@model Cinema_System.Application.ViewModels.IncidentListViewModel
+@{
+    ViewData["Title"] = "Quản Lý Sự Cố";
+    Layout = "_ManagerLayout";
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="mb-5 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">@TempData["Success"]</div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">@TempData["Error"]</div>
+}
+
+<div class="mb-5 flex items-center justify-between">
+    <div>
+        <h1 class="font-head text-2xl font-bold text-secondary-dark">Quản Lý Sự Cố Suất Chiếu</h1>
+        <p class="text-sm text-gray-500">Khai báo sự cố, hoàn điểm và gán voucher bồi thường cho khách.</p>
+    </div>
+    <div class="flex gap-2">
+        <a asp-action="Maintain" class="inline-flex items-center gap-2 rounded-xl border border-secondary px-4 py-2.5 font-semibold text-secondary hover:bg-secondary hover:text-white transition">
+            <span class="material-symbols-outlined">build</span> Bảo trì phòng theo lịch
+        </a>
+        <a asp-action="Declare" class="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 font-semibold text-white hover:bg-primary-dark transition">
+            <span class="material-symbols-outlined">add_alert</span> Khai báo sự cố
+        </a>
+    </div>
+</div>
+
+<!-- 3 ô thống kê (số liệu thật) -->
+<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <div class="rounded-2xl border-l-4 border-primary bg-white p-5 shadow-sm">
+        <p class="text-xs uppercase tracking-wide text-gray-400">Suất chiếu hôm nay</p>
+        <p class="mt-1 font-head text-3xl font-bold text-secondary-dark">@Model.Stats.ShowtimesToday</p>
+    </div>
+    <div class="rounded-2xl border-l-4 border-amber-400 bg-white p-5 shadow-sm">
+        <p class="text-xs uppercase tracking-wide text-gray-400">Sự cố trong tháng</p>
+        <p class="mt-1 font-head text-3xl font-bold text-secondary-dark">@Model.Stats.IncidentsThisMonth</p>
+    </div>
+    <div class="rounded-2xl border-l-4 border-secondary bg-white p-5 shadow-sm">
+        <p class="text-xs uppercase tracking-wide text-gray-400">Tổng sự cố đã ghi nhận</p>
+        <p class="mt-1 font-head text-3xl font-bold text-secondary-dark">@Model.Stats.TotalIncidents</p>
+    </div>
+</div>
+
+<!-- Bộ lọc + danh sách suất chiếu -->
+<div class="rounded-2xl bg-white p-6 shadow-sm">
+    <div class="mb-4 flex items-center justify-between">
+        <h2 class="font-head font-bold text-secondary-dark">Suất chiếu gần đây</h2>
+        <div class="flex gap-1 rounded-lg bg-gray-100 p-1 text-sm">
+            @foreach (var opt in new[] { ("all", "Tất cả"), ("live", "Đang chiếu"), ("today", "Hôm nay") })
+            {
+                <a asp-action="Index" asp-route-scope="@opt.Item1"
+                   class="rounded-md px-3 py-1.5 font-medium transition @(Model.Scope == opt.Item1 ? "bg-white text-primary shadow-sm" : "text-gray-500 hover:text-gray-700")">@opt.Item2</a>
+            }
+        </div>
+    </div>
+
+    @if (!Model.Items.Any())
+    {
+        <p class="py-8 text-center text-gray-500">Không có suất chiếu nào.</p>
+    }
+    else
+    {
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b text-left text-xs uppercase tracking-wide text-gray-400">
+                        <th class="py-3 font-semibold">Phim / Phòng</th>
+                        <th class="py-3 font-semibold">Thời gian</th>
+                        <th class="py-3 text-center font-semibold">Trạng thái</th>
+                        <th class="py-3 text-center font-semibold">Ghế đã bán</th>
+                        <th class="py-3 text-right font-semibold">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model.Items)
+                    {
+                        <tr class="border-b border-gray-50">
+                            <td class="py-3">
+                                <div class="flex items-center gap-3">
+                                    <img src="@(MediaUrl.Poster(s.PosterUrl) ?? "https://placehold.co/40x56?text=Phim")"
+                                         onerror="this.src='https://placehold.co/40x56?text=Phim'"
+                                         class="h-14 w-10 rounded object-cover bg-gray-100" alt="poster" />
+                                    <div>
+                                        <p class="font-semibold text-secondary-dark">@s.MovieTitle</p>
+                                        <p class="text-xs text-gray-400">
+                                            @s.RoomName · @s.RoomTypeName
+                                            @if (s.IsRoomUnderMaintenance)
+                                            {
+                                                <span class="ml-1 inline-block rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold text-orange-600">Phòng bảo trì</span>
+                                            }
+                                        </p>
+
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-3 text-gray-600">@s.StartTime.ToString("HH:mm dd/MM/yyyy")</td>
+                            <td class="py-3 text-center">
+                                <span class="rounded-full px-3 py-1 text-xs font-semibold @s.StatusClass">@s.StatusLabel</span>
+                                @if (s.HasIncident)
+                                {
+                                    <span class="ml-1 inline-block rounded-full bg-red-100 px-2 py-1 text-[10px] font-semibold text-red-600">Đã có sự cố</span>
+                                }
+                            </td>
+                            <td class="py-3 text-center text-gray-600">@s.SeatsSold/@s.Capacity</td>
+                            <td class="py-3 text-right">
+                                @if (s.Status == "Cancelled")
+                                {
+                                    <form asp-action="Restore" method="post" class="inline"
+                                          onsubmit="return confirm('Khôi phục suất chiếu này về trạng thái Đã lên lịch?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="showtimeId" value="@s.ShowtimeId" />
+                                        <input type="hidden" name="scope" value="@Model.Scope" />
+                                        <button type="submit"
+                                                class="inline-flex items-center gap-1 rounded-lg border border-green-600 px-3 py-1.5 text-xs font-semibold text-green-700 hover:bg-green-600 hover:text-white transition">
+                                            <span class="material-symbols-outlined text-sm">restart_alt</span> Khôi phục suất
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <a asp-action="Declare" asp-route-showtimeId="@s.ShowtimeId"
+                                       class="inline-flex items-center gap-1 rounded-lg border border-primary px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary hover:text-white transition">
+                                        <span class="material-symbols-outlined text-sm">report</span> Khai báo sự cố
+                                    </a>
+                                }
+                            </td>
+
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @* Phân trang gọn dạng "…" *@
+        @if (Model.TotalPages > 1)
+        {
+            var total = Model.TotalPages;
+            var cur = Model.CurrentPage;
+            var show = new SortedSet<int> { 1, total };
+            for (int p = cur - 1; p <= cur + 1; p++) { if (p >= 1 && p <= total) show.Add(p); }
+
+            <div class="mt-6 flex items-center justify-center gap-1.5">
+                @{
+                    int prev = 0;
+                }
+                @foreach (var p in show)
+                {
+                    if (prev != 0 && p - prev > 1)
+                    {
+                        <span class="px-1 text-gray-400">…</span>
+                    }
+                    if (p == cur)
+                    {
+                        <span class="rounded-lg bg-primary px-3 py-1 text-sm font-semibold text-white">@p</span>
+                    }
+                    else
+                    {
+                        <a asp-action="Index" asp-route-scope="@Model.Scope" asp-route-page="@p"
+                           class="rounded-lg border border-gray-300 px-3 py-1 text-sm text-gray-600 hover:bg-primary hover:text-white hover:border-primary">@p</a>
+                    }
+                    prev = p;
+                }
+            </div>
+        }
+    }
+</div>
