@@ -48,4 +48,23 @@ public abstract class AuthControllerBase : Controller
             new ClaimsPrincipal(identity),
             properties);
     }
+
+    /// <summary>
+    /// Trang đích sau khi đăng nhập: ưu tiên returnUrl hợp lệ (vd bị chặn truy cập rồi mới đăng nhập);
+    /// nếu không có thì điều hướng theo role — STAFF/MANAGER/ADMIN về đúng màn quản lý của họ,
+    /// CUSTOMER (và role khác) về trang chủ.
+    /// </summary>
+    protected IActionResult RedirectAfterLogin(string roleName, string? returnUrl)
+    {
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            return Redirect(returnUrl);
+
+        return roleName switch
+        {
+            "ADMIN" => RedirectToAction("Index", "AdminDashboard"),
+            "MANAGER" => RedirectToAction("Index", "Dashboard"),
+            "STAFF" => RedirectToAction("Index", "StaffCounter"),
+            _ => RedirectToAction("Index", "Home")
+        };
+    }
 }
