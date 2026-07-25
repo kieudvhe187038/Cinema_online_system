@@ -108,7 +108,7 @@ namespace Cinema_System.Controllers.Public
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Confirm(Guid id, string method, List<Guid> fbId, List<int> qty, int pointsUsed = 0, string? promoCode = null)
         {
-            var allowed = new[] { "VNPay", "MoMo", "VietQR" };
+            var allowed = new[] { "VNPay", "VietQR" };
             if (string.IsNullOrEmpty(method) || !allowed.Contains(method)) method = "VietQR";
             fbId ??= new();
             qty ??= new();
@@ -191,7 +191,7 @@ namespace Cinema_System.Controllers.Public
                 return Redirect(payUrl);
             }
 
-            // Thanh toán giả (MoMo hoặc VNPay chưa cấu hình): tạo booking ngay.
+            // Thanh toán giả (cổng thanh toán chưa cấu hình): tạo booking ngay.
             var result = await _showtimeService.ConfirmBookingAsync(id, CurrentUserId, method, fbId, qty, pointsUsed, promoCode);
             if (!result.Succeeded)
             {
