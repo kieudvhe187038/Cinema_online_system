@@ -31,7 +31,13 @@ packages/
 .vscode/
 
 # ASP.NET Core
-wwwroot/lib/
+# wwwroot/lib chứa thư viện JS TỰ HOST (tailwind, jquery, chart.js, qrcodejs) — PHẢI commit,
+# dự án không dùng LibMan/npm nên không có gì khôi phục lại chúng. Chỉ bỏ qua thứ khác.
+wwwroot/lib/*
+!wwwroot/lib/tailwind/
+!wwwroot/lib/jquery/
+!wwwroot/lib/chartjs/
+!wwwroot/lib/qrcodejs/
 wwwroot/dist/
 *.pfx
 

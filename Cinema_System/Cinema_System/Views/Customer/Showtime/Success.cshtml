@@ -1,4 +1,4 @@
-@* Trang đặt vé thành công: tóm tắt vé + điểm thưởng đã cộng. *@
+﻿@* Trang đặt vé thành công: tóm tắt vé + điểm thưởng đã cộng. *@
 @model Cinema_System.Application.ViewModels.PaymentSuccessViewModel
 @{
     ViewData["Title"] = "Đặt vé thành công";
@@ -93,7 +93,7 @@
 </div>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+    <script src="~/lib/qrcodejs/qrcode.min.js"></script>
     <script>
         // Sinh mã QR từ mã đơn để nhân viên quét soát vé.
         new QRCode(document.getElementById("qrcode"), {

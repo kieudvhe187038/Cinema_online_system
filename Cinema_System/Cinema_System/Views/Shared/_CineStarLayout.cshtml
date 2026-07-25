@@ -31,10 +31,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"]</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@@400;500;600;700;800&family=Be+Vietnam+Pro:wght@@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="~/lib/tailwind/tailwind.min.js" asp-append-version="true"></script>
+    <link href="~/fonts/text.css" rel="stylesheet" asp-append-version="true" />
     <!-- Material Symbols (icon cho nút đổi giao diện + các icon khác) -->
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@@100..700,0..1&display=swap" rel="stylesheet">
+    <link href="~/fonts/icons.css" rel="stylesheet" asp-append-version="true" />
     <!-- Khai báo màu brand + font. KHÔNG cần important:true vì layout này không nạp Bootstrap. -->
     <script>
         tailwind.config = {

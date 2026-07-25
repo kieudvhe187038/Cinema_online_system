@@ -1,4 +1,4 @@
-@model Cinema_System.Application.ViewModels.BookingDetailViewModel
+﻿@model Cinema_System.Application.ViewModels.BookingDetailViewModel
 @{
     ViewData["Title"] = "Chi tiết đặt vé";
     ViewData["Heading"] = "Chi tiết đặt vé";
@@ -160,7 +160,7 @@ else
 </div>
 
 @section Scripts {
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="~/lib/qrcodejs/qrcode.min.js"></script>
     <script>
         var qrEl = document.getElementById("qrcode");
         if (qrEl) new QRCode(qrEl, { text: "@qrContent", width: 120, height: 120, colorDark: "#002F59", colorLight: "#ffffff" });

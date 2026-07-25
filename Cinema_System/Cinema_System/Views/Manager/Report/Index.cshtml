@@ -1,4 +1,4 @@
-@model Cinema_System.Application.ViewModels.ReportViewModel
+﻿@model Cinema_System.Application.ViewModels.ReportViewModel
 @{
     ViewData["Title"] = "Báo cáo & Thống kê";
     Layout = "~/Views/Shared/_ManagerLayout.cshtml";
@@ -148,8 +148,8 @@
 </div>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <script src="~/lib/chartjs/chart.umd.min.js"></script>
+    <script src="~/lib/chartjs/chartjs-plugin-datalabels.min.js"></script>
     <script>
         const dayLabels = @Json.Serialize(dayLabels);
         const dayData = @Json.Serialize(dayData);
