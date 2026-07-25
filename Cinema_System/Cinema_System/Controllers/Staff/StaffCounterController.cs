@@ -87,6 +87,15 @@ public class StaffCounterController : Controller
         return Json(new { ok = true });
     }
 
+    // --- AJAX: xem trước áp mã giảm giá (tính trên ghế đang giữ + đồ ăn đã chọn) ---
+    [HttpPost("ApplyPromo")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ApplyPromo(Guid showtimeId, List<FoodOrderItemRequest> foods, Guid? customerId, string code)
+    {
+        var res = await _counterBookingService.PreviewPromoAsync(showtimeId, GetCurrentStaffId(), foods ?? new(), customerId, code ?? string.Empty);
+        return Json(new { ok = res.Ok, message = res.Message, discount = res.PromoDiscount, maxPoints = res.MaxUsablePoints, code = res.Code, target = res.Target });
+    }
+
     // --- Trang tra cứu thành viên (#41) ---
     [HttpGet("Member")]
     public IActionResult Member()

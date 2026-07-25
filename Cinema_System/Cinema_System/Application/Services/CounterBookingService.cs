@@ -67,13 +67,16 @@ public class CounterBookingService : ICounterBookingService
             .OrderByDescending(v => v.CreatedAt)
             .FirstOrDefault();
 
+        var pointPolicy = await _pointConfig.GetPolicyAsync();
+
         return new CounterBookingViewModel
         {
             Movies = movies,
             Foods = foods,
             ActingStaffName = staff?.FullName ?? "(chưa có nhân viên)",
             HasStaff = staff is not null,
-            VatRate = vat?.VatRate ?? 0m
+            VatRate = vat?.VatRate ?? 0m,
+            PointValueVnd = pointPolicy.PointValueVnd
         };
     }
 
@@ -171,7 +174,11 @@ public class CounterBookingService : ICounterBookingService
         if (seats.Any(s => !string.Equals(s.Status, SeatAvailable, StringComparison.OrdinalIgnoreCase)))
             return Result<Guid>.Failure("Một số ghế đang bảo trì/không sử dụng.");
 
-        var occupied = await GetOccupiedSeatIdsAsync(showtime.Id);
+        // Loại trừ hold của chính staff đang thao tác — đây LÀ các ghế staff vừa giữ để đặt đơn này
+        // (HoldSeatAsync ở bước chọn ghế), không phải bị người khác chiếm. Thiếu excludeHoldUserId ở đây
+        // khiến MỌI đơn tại quầy bị từ chối ngay khi vừa thêm seat-hold thật (staff luôn giữ ghế của
+        // chính mình trước khi Confirm) — phát hiện khi smoke-test luồng dùng điểm/mã giảm giá.
+        var occupied = await GetOccupiedSeatIdsAsync(showtime.Id, excludeHoldUserId: staffId);
         if (seats.Any(s => occupied.Contains(s.Id)))
             return Result<Guid>.Failure("Một số ghế đã được đặt hoặc đang được giữ. Vui lòng chọn lại.");
 
@@ -231,18 +238,8 @@ public class CounterBookingService : ICounterBookingService
             }
         }
 
-        // --- VAT & tổng tiền ---
-        var vatEntity = (await _unitOfWork.Vats.GetAllAsync(v => v.Status == StatusActive))
-            .OrderByDescending(v => v.CreatedAt)
-            .FirstOrDefault();
-        var totalAmount = ticketsTotal + foodsTotal;
-        var discountAmount = 0m;
-        var vatAmount = vatEntity is null
-            ? 0m
-            : Math.Round(totalAmount * vatEntity.VatRate / 100m, 2);
-        var finalAmount = totalAmount - discountAmount + vatAmount;
-
-        // --- Khách hàng (thành viên hoặc khách lẻ) ---
+        // --- Khách hàng (thành viên hoặc khách lẻ) — resolve TRƯỚC promo/điểm vì cả hai đều cần biết
+        // có phải thành viên hay không (khách lẻ không dùng được mã 1-lần/khách và không có điểm). ---
         User? customer = null;
         if (request.CustomerId is Guid customerId)
             customer = await _unitOfWork.Users.GetByIdAsync(customerId);
@@ -256,6 +253,34 @@ public class CounterBookingService : ICounterBookingService
             if (normalizedPhone.Length > 0)
                 customer = await _unitOfWork.Users.GetByPhoneAsync(normalizedPhone);
         }
+
+        // --- VAT & khuyến mãi & điểm thưởng ---
+        var vatEntity = (await _unitOfWork.Vats.GetAllAsync(v => v.Status == StatusActive))
+            .OrderByDescending(v => v.CreatedAt)
+            .FirstOrDefault();
+        var totalAmount = ticketsTotal + foodsTotal;
+        var vatAmount = vatEntity is null
+            ? 0m
+            : Math.Round(totalAmount * vatEntity.VatRate / 100m, 2);
+        var grossTotal = totalAmount + vatAmount;
+
+        // Áp mã giảm giá (validate lại server-side, giống luồng đặt vé online); mã không hợp lệ -> báo lỗi, không đặt.
+        var (promo, promoDiscount, promoError) = await ResolvePromoAsync(
+            request.PromoCode, customer?.Id, ticketsTotal, foodsTotal, grossTotal);
+        if (promoError != null)
+            return Result<Guid>.Failure(promoError);
+        var afterPromo = grossTotal - promoDiscount;
+
+        // Dùng điểm để giảm tiếp trên phần còn lại — chỉ thành viên (có customer) mới dùng được điểm;
+        // kẹp trong [0, số điểm đang có] và không làm tổng âm.
+        var pointPolicy = await _pointConfig.GetPolicyAsync();
+        var availablePoints = customer?.RewardPoints ?? 0;
+        var usePoints = customer is null
+            ? 0
+            : Math.Min(Math.Max(0, request.PointsUsed), pointPolicy.MaxUsablePoints(availablePoints, afterPromo));
+        var pointsDiscount = pointPolicy.DiscountFor(usePoints);
+        var discountAmount = promoDiscount + pointsDiscount;
+        var finalAmount = afterPromo - pointsDiscount;
 
         // --- Thanh toán tại quầy ---
         var method = string.IsNullOrWhiteSpace(request.PaymentMethod) ? "Cash" : request.PaymentMethod.Trim();
@@ -278,6 +303,7 @@ public class CounterBookingService : ICounterBookingService
             UserId = customer?.Id,
             StaffId = staff.Id,
             VatId = vatEntity?.Id,
+            PromotionId = promo?.Id,
             TotalAmount = totalAmount,
             DiscountAmount = discountAmount,
             VatAmount = vatAmount,
@@ -301,23 +327,45 @@ public class CounterBookingService : ICounterBookingService
             PaidAt = DateTime.Now
         };
 
-        // --- Tích điểm cho thành viên ---
-        if (customer is not null && finalAmount > 0)
+        // --- Dùng điểm (nếu có) + tích điểm mới cho thành viên (1 lần cập nhật số dư) ---
+        if (customer is not null)
         {
-            var points = (await _pointConfig.GetPolicyAsync()).PointsEarnedFor(finalAmount);
-            if (points > 0)
+            var earnedPoints = finalAmount > 0 ? pointPolicy.PointsEarnedFor(finalAmount) : 0;
+
+            if (usePoints > 0 || earnedPoints > 0)
             {
-                customer.RewardPoints = (customer.RewardPoints ?? 0) + points;
+                customer.RewardPoints = (customer.RewardPoints ?? 0) - usePoints + earnedPoints;
                 customer.UpdatedAt = DateTime.Now;
                 _unitOfWork.Users.Update(customer);
+            }
 
+            if (usePoints > 0)
+            {
                 await _unitOfWork.RewardPointHistories.AddAsync(new RewardPointHistory
                 {
                     Id = Guid.NewGuid(),
                     UserId = customer.Id,
                     BookingId = bookingId,
-                    PointsChanged = points,
-                    ActionType = "Earn",
+                    PointsChanged = -usePoints,
+                    ActionType = "Redeemed",
+                    Description = "Dùng điểm giảm giá khi đặt vé tại quầy",
+                    CreatedAt = DateTime.Now
+                });
+            }
+
+            if (earnedPoints > 0)
+            {
+                await _unitOfWork.RewardPointHistories.AddAsync(new RewardPointHistory
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = customer.Id,
+                    BookingId = bookingId,
+                    PointsChanged = earnedPoints,
+                    // "Earned", KHÔNG PHẢI "Earn" — CK_RPH_action chỉ cho phép Earned/Redeemed/Refund_Rollback.
+                    // Bug có sẵn từ trước (đã dùng "Earn" từ đầu, trước cả session này): mọi đơn tại quầy
+                    // gắn thành viên đều bị TrySaveChangesAsync nuốt lỗi CHECK constraint và báo nhầm
+                    // "ghế đã được đặt" — phát hiện khi smoke-test luồng dùng điểm/mã giảm giá.
+                    ActionType = "Earned",
                     Description = $"Tích điểm từ đơn {booking.QrCode}",
                     CreatedAt = DateTime.Now
                 });
@@ -437,6 +485,152 @@ public class CounterBookingService : ICounterBookingService
             _unitOfWork.SeatHolds.Update(h);
         }
         await _unitOfWork.SaveChangesAsync();
+    }
+
+    // Xem trước áp mã giảm giá cho đơn tại quầy (AJAX) — tính trên các ghế nhân viên đang giữ
+    // (Seat_Holds, cùng nguồn dữ liệu Confirm sẽ dùng) + đồ ăn đã chọn. Không sửa dữ liệu.
+    public async Task<PromoPreviewResult> PreviewPromoAsync(
+        Guid showtimeId, Guid staffId, List<FoodOrderItemRequest> foods, Guid? customerId, string code)
+    {
+        var showtime = await _unitOfWork.Showtimes.GetWithRoomAndMovieAsync(showtimeId);
+        if (showtime is null)
+            return new PromoPreviewResult { Ok = false, Message = "Không tìm thấy suất chiếu." };
+
+        var (heldSeats, seatTotal) = await GetHeldSeatsWithTotalAsync(showtime, staffId);
+        if (heldSeats.Count == 0)
+            return new PromoPreviewResult { Ok = false, Message = "Vui lòng chọn ghế trước khi áp mã." };
+
+        var foodTotal = await ComputeFoodTotalAsync(foods);
+
+        var vatEntity = (await _unitOfWork.Vats.GetAllAsync(v => v.Status == StatusActive))
+            .OrderByDescending(v => v.CreatedAt)
+            .FirstOrDefault();
+        var subtotal = seatTotal + foodTotal;
+        var vatAmount = vatEntity is null ? 0m : Math.Round(subtotal * vatEntity.VatRate / 100m, 0, MidpointRounding.AwayFromZero);
+        var grossTotal = subtotal + vatAmount;
+
+        var (promo, discount, error) = await ResolvePromoAsync(code, customerId, seatTotal, foodTotal, grossTotal);
+        if (error != null || promo is null)
+            return new PromoPreviewResult { Ok = false, Message = error ?? "Mã giảm giá không hợp lệ." };
+
+        var afterPromo = grossTotal - discount;
+        var availablePoints = 0;
+        if (customerId is Guid cid)
+        {
+            var customer = await _unitOfWork.Users.GetByIdAsync(cid);
+            availablePoints = customer?.RewardPoints ?? 0;
+        }
+        var pointPolicy = await _pointConfig.GetPolicyAsync();
+        var maxUsablePoints = pointPolicy.MaxUsablePoints(availablePoints, afterPromo);
+
+        return new PromoPreviewResult
+        {
+            Ok = true,
+            Code = promo.Code,
+            PromoDiscount = discount,
+            FinalAmount = afterPromo,
+            MaxUsablePoints = maxUsablePoints,
+            Target = promo.ApplicableTarget,
+            Message = $"Áp dụng mã {promo.Code}: giảm {discount:N0}₫ ({PromoTargetLabel(promo.ApplicableTarget)})."
+        };
+    }
+
+    private static string PromoTargetLabel(string? target) => target switch
+    {
+        "Ticket_Only" => "vé",
+        "Food_Only" => "đồ ăn",
+        _ => "cả đơn"
+    };
+
+    /// <summary>Ghế nhân viên đang tự giữ (còn hiệu lực) cho suất này + tổng tiền vé tương ứng.</summary>
+    private async Task<(IReadOnlyList<Seat> Seats, decimal SeatTotal)> GetHeldSeatsWithTotalAsync(Showtime showtime, Guid staffId)
+    {
+        var now = DateTime.Now;
+        var heldSeatIds = (await _unitOfWork.SeatHolds.GetAllAsync(
+            h => h.ShowtimeId == showtime.Id && h.UserId == staffId && h.Status == HoldHolding && h.ExpiresAt > now))
+            .Select(h => h.SeatId)
+            .ToList();
+        if (heldSeatIds.Count == 0) return (Array.Empty<Seat>(), 0m);
+
+        var seats = await _unitOfWork.Seats.GetByIdsWithTypeAsync(heldSeatIds);
+        var pricing = await _pricing.GetPricingAsync(showtime);
+        var total = seats.Sum(s => pricing.PriceForSeatType(s.SeatTypeId));
+        return (seats, total);
+    }
+
+    /// <summary>Tổng tiền đồ ăn từ danh sách món/số lượng đã chọn (bỏ qua item không hợp lệ — chỉ dùng cho xem trước).</summary>
+    private async Task<decimal> ComputeFoodTotalAsync(List<FoodOrderItemRequest>? foods)
+    {
+        var merged = (foods ?? new())
+            .Where(f => f.Quantity > 0)
+            .GroupBy(f => f.FbId)
+            .Select(g => new { FbId = g.Key, Quantity = g.Sum(x => x.Quantity) })
+            .ToList();
+        if (merged.Count == 0) return 0m;
+
+        var fbIds = merged.Select(f => f.FbId).ToList();
+        var fbs = (await _unitOfWork.FoodBeverages.GetAllAsync(f => fbIds.Contains(f.Id))).ToDictionary(f => f.Id);
+
+        decimal total = 0m;
+        foreach (var item in merged)
+            if (fbs.TryGetValue(item.FbId, out var fb)) total += fb.Price * item.Quantity;
+        return total;
+    }
+
+    // Kiểm tra mã khuyến mãi và tính số tiền giảm — port từ ShowtimeService.ResolvePromoAsync (luồng đặt
+    // vé online) để đồng nhất quy tắc mã giảm giá giữa 2 kênh bán vé. Khác biệt duy nhất: kiểm tra "đã
+    // dùng mã 1 lần" chỉ áp dụng khi đơn gắn với một thành viên (customerId) — khách lẻ (customerId=null)
+    // không có lịch sử để đối chiếu nên được bỏ qua bước này (tự do dùng mã, vẫn kẹp bởi UsageLimit chung).
+    private async Task<(Promotion? Promo, decimal Discount, string? Error)> ResolvePromoAsync(
+        string? code, Guid? customerId, decimal seatTotal, decimal foodTotal, decimal grandTotal)
+    {
+        if (string.IsNullOrWhiteSpace(code)) return (null, 0m, null);
+        code = code.Trim();
+
+        var promo = (await _unitOfWork.Promotions.GetAllAsync(predicate: p => p.Code == code)).FirstOrDefault();
+        if (promo is null) return (null, 0m, "Mã giảm giá không tồn tại.");
+        if (promo.Status != "Active") return (null, 0m, "Mã giảm giá không còn hiệu lực.");
+
+        var now = DateTime.Now;
+        if (now < promo.ValidFrom || now > promo.ValidTo)
+            return (null, 0m, "Mã giảm giá đã hết hạn hoặc chưa tới ngày áp dụng.");
+
+        var subtotal = seatTotal + foodTotal;
+        if (promo.MinOrderValue.HasValue && subtotal < promo.MinOrderValue.Value)
+            return (null, 0m, $"Cần đơn tối thiểu {promo.MinOrderValue.Value:N0}₫ để dùng mã này.");
+
+        if (customerId is Guid cid)
+        {
+            var usedByCustomer = await _unitOfWork.Bookings.CountAsync(b => b.PromotionId == promo.Id && b.UserId == cid);
+            if (usedByCustomer >= 1) return (null, 0m, "Khách hàng này đã sử dụng mã giảm giá này rồi.");
+        }
+
+        if (promo.UsageLimit.HasValue)
+        {
+            var used = await _unitOfWork.Bookings.CountAsync(b => b.PromotionId == promo.Id);
+            if (used >= promo.UsageLimit.Value) return (null, 0m, "Mã giảm giá đã hết lượt sử dụng.");
+        }
+
+        decimal target = promo.ApplicableTarget switch
+        {
+            "Ticket_Only" => seatTotal,
+            "Food_Only" => foodTotal,
+            _ => grandTotal
+        };
+        if (target <= 0) return (null, 0m, "Mã không áp dụng cho các mặt hàng trong đơn.");
+
+        var discount = promo.DiscountType == "Percent"
+            ? target * (promo.DiscountAmount / 100m)
+            : promo.DiscountAmount;
+
+        if (promo.MaxDiscountAmount.HasValue)
+            discount = Math.Min(discount, promo.MaxDiscountAmount.Value);
+
+        discount = Math.Min(discount, target);
+        discount = Math.Round(discount, 0, MidpointRounding.AwayFromZero);
+        if (discount <= 0) return (null, 0m, "Mã không tạo ra khoản giảm cho đơn này.");
+
+        return (promo, discount, null);
     }
 
     private static string NewCode(string prefix)

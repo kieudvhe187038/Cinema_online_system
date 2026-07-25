@@ -15,12 +15,16 @@ public class CounterBookingRequest
     public List<FoodOrderItemRequest> Foods { get; set; } = new();
 
     // --- Khách hàng (offline có thể là khách lẻ hoặc thành viên) ---
-    /// <summary>Id thành viên nếu đã tra cứu gắn vào đơn (để tích điểm).</summary>
+    /// <summary>Id thành viên nếu đã tra cứu gắn vào đơn (để tích/dùng điểm).</summary>
     public Guid? CustomerId { get; set; }
 
-    public string? CustomerName { get; set; }
-
     public string? CustomerPhone { get; set; }
+
+    // --- Khuyến mãi & điểm thưởng (chỉ áp dụng được khi đã gắn CustomerId) ---
+    public string? PromoCode { get; set; }
+
+    /// <summary>Số điểm thành viên muốn dùng để giảm giá (0 nếu không dùng hoặc là khách lẻ).</summary>
+    public int PointsUsed { get; set; }
 
     // --- Thanh toán tại quầy ---
     [Required(ErrorMessage = "Chưa chọn phương thức thanh toán.")]

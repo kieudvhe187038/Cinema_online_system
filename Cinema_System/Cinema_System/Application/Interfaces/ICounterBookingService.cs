@@ -27,4 +27,11 @@ public interface ICounterBookingService
 
     /// <summary>Bỏ giữ toàn bộ ghế nhân viên đang giữ của 1 suất (đổi suất/rời trang).</summary>
     Task ReleaseAllAsync(Guid showtimeId, Guid staffId);
+
+    /// <summary>
+    /// Xem trước kết quả áp mã giảm giá cho đơn tại quầy (AJAX): tính trên các ghế nhân viên đang giữ
+    /// + đồ ăn đã chọn, kèm số điểm tối đa còn dùng được sau khi trừ mã (nếu có gắn thành viên).
+    /// </summary>
+    Task<PromoPreviewResult> PreviewPromoAsync(
+        Guid showtimeId, Guid staffId, List<FoodOrderItemRequest> foods, Guid? customerId, string code);
 }

@@ -146,8 +146,19 @@
             </div>
             <div id="memberInfo" class="ct-member"></div>
 
-            <label class="ct-lbl" style="margin-top:.7rem;">Tên khách (nếu khách lẻ)</label>
-            <input type="text" id="customerName" class="ct-input" placeholder="Khách lẻ" />
+            <div id="pointsBox" style="display:none; margin-top:.6rem;">
+                <label class="ct-lbl">Dùng điểm thưởng (khách có <span id="availablePointsLbl">0</span> điểm)</label>
+                <input type="number" id="pointsInput" class="ct-input" min="0" step="1" value="0" inputmode="numeric" />
+            </div>
+
+            <hr style="border:none; border-top:1px solid var(--surface-container); margin:1rem 0;" />
+
+            <label class="ct-lbl">Mã giảm giá</label>
+            <div style="display:flex; gap:.4rem;">
+                <input type="text" id="promoInput" class="ct-input" placeholder="Nhập mã (nếu có)..." />
+                <button type="button" id="applyPromoBtn" class="ct-btn" style="width:auto; padding:.55rem .9rem;">Áp mã</button>
+            </div>
+            <div id="promoInfo" class="ct-member"></div>
 
             <hr style="border:none; border-top:1px solid var(--surface-container); margin:1rem 0;" />
 
@@ -157,6 +168,8 @@
             <div class="ct-sumrow"><span>Tiền vé</span><span id="seatTotal">0 đ</span></div>
             <div class="ct-sumrow"><span>Đồ ăn</span><span id="foodTotal">0 đ</span></div>
             <div class="ct-sumrow"><span>VAT (@Model.VatRate.ToString("0.##")%)</span><span id="vatTotal">0 đ</span></div>
+            <div class="ct-sumrow" id="promoRow" style="display:none;"><span>Giảm giá (mã)</span><span id="promoDiscountAmt">-0 đ</span></div>
+            <div class="ct-sumrow" id="pointsRow" style="display:none;"><span>Giảm giá (điểm)</span><span id="pointsDiscountAmt">-0 đ</span></div>
             <div class="ct-sumrow total"><span>Tổng cộng</span><span id="grandTotal">0 đ</span></div>
 
             <label class="ct-lbl" style="margin-top:.8rem;">Phương thức thanh toán</label>
@@ -185,9 +198,12 @@
 @section Scripts {
     <script>
         const VAT_RATE = @Model.VatRate.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        const POINT_VALUE_VND = @Model.PointValueVnd;
         let selectedShowtimeId = null;
         let selectedSeats = {}; // id -> { label, price }
         let memberId = null;
+        let availablePoints = 0;
+        let appliedPromo = null; // { code, discount, target }
 
         const fmt = n => (Math.round(n)).toLocaleString('vi-VN') + ' đ';
 
@@ -312,6 +328,15 @@
             });
         }
 
+        // Mã giảm giá đã áp gắn với tổng tiền hiện tại — mọi thay đổi ghế/đồ ăn/khách đều làm mã hết hiệu
+        // lực, buộc nhân viên áp lại để tránh hiển thị sai số tiền giảm.
+        function clearPromo() {
+            if (!appliedPromo) return;
+            appliedPromo = null;
+            $('#promoInfo').removeClass('ok no').text('');
+            recalc();
+        }
+
         function showError(msg) {
             $('#ctErrorAlert').text(msg).show();
         }
@@ -330,6 +355,7 @@
                 // Bỏ chọn -> bỏ giữ ghế ngay (không chặn UI chờ phản hồi).
                 delete selectedSeats[id];
                 $seat.removeClass('selected');
+                clearPromo();
                 recalc();
                 postSeatAction('ReleaseSeat', selectedShowtimeId, id).catch(function () {});
                 return;
@@ -341,6 +367,7 @@
                 if (res.ok) {
                     selectedSeats[id] = { label: $seat.data('label'), price: parseFloat($seat.data('price')) };
                     $seat.addClass('selected');
+                    clearPromo();
                     recalc();
                 } else {
                     // Ghế vừa bị người khác giữ/đặt trong lúc thao tác -> khóa lại, không cho chọn nữa.
@@ -354,7 +381,7 @@
         });
 
         // --- Đồ ăn ---
-        $('.food-qty').on('input', recalc);
+        $('.food-qty').on('input', function () { clearPromo(); recalc(); });
 
         // --- Thanh toán ---
         $('input[name="payMethod"]').on('change', function () {
@@ -364,23 +391,70 @@
         $('#cashReceived').on('input', recalc);
 
         // --- Tra cứu thành viên ---
+        function setMember(id, points) {
+            memberId = id;
+            availablePoints = points || 0;
+            $('#availablePointsLbl').text(availablePoints.toLocaleString('vi-VN'));
+            $('#pointsBox').toggle(!!memberId && availablePoints > 0 && POINT_VALUE_VND > 0);
+            if (!memberId) $('#pointsInput').val(0);
+            clearPromo();
+            recalc();
+        }
+
         $('#lookupBtn').on('click', function () {
             const phone = $('#phoneInput').val().trim();
             const $info = $('#memberInfo');
-            if (!phone) { $info.removeClass('ok no').text(''); return; }
+            if (!phone) { $info.removeClass('ok no').text(''); setMember(null, 0); return; }
             $.getJSON('/Staff/Counter/LookupMember', { phone: phone }, function (res) {
                 if (res.found) {
-                    memberId = res.member.id;
-                    $('#customerName').val(res.member.fullName);
                     $info.removeClass('no').addClass('ok')
                         .text('✓ ' + res.member.fullName + ' · ' + (res.member.rewardPoints || 0) + ' điểm');
+                    setMember(res.member.id, res.member.rewardPoints || 0);
                 } else {
-                    memberId = null;
                     $info.removeClass('ok').addClass('no').text('Không tìm thấy thành viên — sẽ tính là khách lẻ.');
+                    setMember(null, 0);
                 }
             });
         });
-        $('#phoneInput').on('input', function () { memberId = null; $('#memberInfo').removeClass('ok no').text(''); });
+        $('#phoneInput').on('input', function () { $('#memberInfo').removeClass('ok no').text(''); setMember(null, 0); });
+        $('#pointsInput').on('input', recalc);
+
+        // --- Áp mã giảm giá ---
+        $('#applyPromoBtn').on('click', function () {
+            const code = $('#promoInput').val().trim();
+            const $info = $('#promoInfo');
+            if (!code) { $info.removeClass('ok no').text(''); appliedPromo = null; recalc(); return; }
+            if (!selectedShowtimeId || Object.keys(selectedSeats).length === 0) {
+                $info.removeClass('ok').addClass('no').text('Vui lòng chọn ghế trước khi áp mã.');
+                return;
+            }
+            const fd = new FormData();
+            fd.append('__RequestVerificationToken', afToken());
+            fd.append('showtimeId', selectedShowtimeId);
+            fd.append('code', code);
+            if (memberId) fd.append('customerId', memberId);
+            let fi = 0;
+            $('.food-qty').each(function () {
+                const q = parseInt(this.value) || 0;
+                if (q > 0) { fd.append('foods[' + fi + '].FbId', $(this).data('id')); fd.append('foods[' + fi + '].Quantity', q); fi++; }
+            });
+            $.ajax({ url: '/Staff/Counter/ApplyPromo', method: 'POST', data: fd, processData: false, contentType: false })
+                .done(function (res) {
+                    if (res.ok) {
+                        appliedPromo = { code: res.code, discount: res.discount, target: res.target };
+                        $info.removeClass('no').addClass('ok').text(res.message);
+                    } else {
+                        appliedPromo = null;
+                        $info.removeClass('ok').addClass('no').text(res.message || 'Mã giảm giá không hợp lệ.');
+                    }
+                    recalc();
+                })
+                .fail(function () {
+                    appliedPromo = null;
+                    $info.removeClass('ok').addClass('no').text('Không thể kết nối máy chủ, vui lòng thử lại.');
+                    recalc();
+                });
+        });
 
         function recalc() {
             let seatTotal = 0;
@@ -396,18 +470,42 @@
             });
             const sub = seatTotal + foodTotal;
             const vat = Math.round(sub * VAT_RATE / 100);
-            const grand = sub + vat;
+            const gross = sub + vat;
+
+            // Giảm giá theo mã (đã xác nhận với server qua nút "Áp mã") rồi mới tới điểm thưởng —
+            // đúng thứ tự tính của server (ResolvePromoAsync trước, điểm trừ trên phần còn lại sau).
+            const promoDiscount = appliedPromo ? appliedPromo.discount : 0;
+            const afterPromo = Math.max(0, gross - promoDiscount);
+
+            const maxPoints = (memberId && availablePoints > 0 && POINT_VALUE_VND > 0)
+                ? Math.max(0, Math.min(availablePoints, Math.floor(afterPromo / POINT_VALUE_VND)))
+                : 0;
+            $('#pointsInput').attr('max', maxPoints);
+            let pointsToUse = 0;
+            if (memberId && maxPoints > 0) {
+                pointsToUse = Math.max(0, Math.min(parseInt($('#pointsInput').val()) || 0, maxPoints));
+                if (pointsToUse !== (parseInt($('#pointsInput').val()) || 0)) $('#pointsInput').val(pointsToUse);
+            } else {
+                $('#pointsInput').val(0);
+            }
+            const pointsDiscount = pointsToUse * POINT_VALUE_VND;
+            const grand = Math.max(0, afterPromo - pointsDiscount);
 
             $('#seatChips').html(chips.length ? chips.join('') : '<span class="ct-staff">Chưa chọn ghế.</span>');
             $('#seatTotal').text(fmt(seatTotal));
             $('#foodTotal').text(fmt(foodTotal));
             $('#vatTotal').text(fmt(vat));
+            $('#promoRow').toggle(promoDiscount > 0);
+            $('#promoDiscountAmt').text('-' + fmt(promoDiscount));
+            $('#pointsRow').toggle(pointsDiscount > 0);
+            $('#pointsDiscountAmt').text('-' + fmt(pointsDiscount));
             $('#grandTotal').text(fmt(grand));
 
             const cash = parseFloat($('#cashReceived').val()) || 0;
             $('#changeAmount').text(fmt(Math.max(0, cash - grand)));
 
             window._grandTotal = grand;
+            window._pointsToUse = pointsToUse;
             checkCash();
         }
 
@@ -464,8 +562,9 @@
                 if (q > 0) { fd.append('Foods[' + fi + '].FbId', $(this).data('id')); fd.append('Foods[' + fi + '].Quantity', q); fi++; }
             });
             if (memberId) fd.append('CustomerId', memberId);
-            fd.append('CustomerName', $('#customerName').val().trim());
             fd.append('CustomerPhone', $('#phoneInput').val().trim());
+            if (appliedPromo) fd.append('PromoCode', appliedPromo.code);
+            fd.append('PointsUsed', window._pointsToUse || 0);
             fd.append('PaymentMethod', method);
             if (method === 'Cash') fd.append('CashReceived', cash);
 
@@ -493,7 +592,7 @@
             });
         });
 
-        function resetSeats() { selectedSeats = {}; recalc(); }
+        function resetSeats() { selectedSeats = {}; appliedPromo = null; $('#promoInfo').removeClass('ok no').text(''); recalc(); }
         recalc();
 
         // Rời trang (đóng tab/chuyển trang khác) -> bỏ giữ toàn bộ ghế đang giữ.
