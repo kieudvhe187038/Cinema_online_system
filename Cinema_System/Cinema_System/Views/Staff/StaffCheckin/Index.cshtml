@@ -244,6 +244,7 @@
                 ckQr.stop().then(function () { ckQr.clear(); }).catch(function () { });
             }
             $('#ck-qr-reader').hide();
+            $('#qr').trigger('focus'); // cho gõ tay/máy quét phần cứng tiếp tục ngay, không cần bấm lại vào ô
         }
 
         $('#btnCamera').on('click', function () {
