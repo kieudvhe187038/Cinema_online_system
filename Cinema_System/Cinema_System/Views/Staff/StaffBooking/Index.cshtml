@@ -164,7 +164,9 @@
             }
             bkHandled = false;
             bkShowMsg('', '');
-            $('#bk-qr-reader').show();
+            $('#bk-qr-reader').show().html(
+                '<div style="padding:2rem; text-align:center; color:var(--on-surface-variant); font-size:.85rem;">Đang khởi động camera...</div>'
+            );
             $('#bk-btnCamera').text('Đang mở camera...').prop('disabled', true);
 
             bkQr = new Html5Qrcode('bk-qr-reader');
