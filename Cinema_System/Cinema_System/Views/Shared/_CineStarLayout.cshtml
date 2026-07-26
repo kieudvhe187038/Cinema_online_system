@@ -1,4 +1,4 @@
-@{
+﻿@{
     // Layout riêng cho khu vực tài khoản (CineStar). Trang nào muốn dùng thì đặt: Layout = "_CineStarLayout".
     // Thông tin người dùng cho sidebar/topbar được trang con truyền vào qua ViewData.
     var userName = ViewData["UserName"] as string ?? "";
@@ -31,10 +31,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"]</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@@400;500;600;700;800&family=Be+Vietnam+Pro:wght@@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="~/lib/tailwind/tailwind.min.js" asp-append-version="true"></script>
+    <link href="~/fonts/text.css" rel="stylesheet" asp-append-version="true" />
     <!-- Material Symbols (icon cho nút đổi giao diện + các icon khác) -->
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@@100..700,0..1&display=swap" rel="stylesheet">
+    <link href="~/fonts/icons.css" rel="stylesheet" asp-append-version="true" />
     <!-- Khai báo màu brand + font. KHÔNG cần important:true vì layout này không nạp Bootstrap. -->
     <script>
         tailwind.config = {
@@ -59,6 +59,8 @@
         }
     </script>
     <partial name="_DarkMode" />
+    @* Bỏ dấu tiếng Việt phía client — nạp ở head vì nhiều view đặt script trong body. *@
+    <script src="~/js/vietnamese-text.js" asp-append-version="true"></script>
 </head>
 <body class="bg-light font-body text-tertiary">
 <!-- Bố cục = 2 phần đặt cạnh nhau (flex): SIDEBAR trái + KHU NỘI DUNG phải -->
@@ -139,6 +141,9 @@
 </div>
 @* Modal xác nhận/thông báo dùng chung — thay cho confirm()/alert() của trình duyệt. *@
 <partial name="_ConfirmModal" />
+@* Chặn nhập chữ vào các ô chỉ nhận số (xem wwwroot/js/numeric-input.js). *@
+<script src="~/js/numeric-input.js" asp-append-version="true"></script>
+
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

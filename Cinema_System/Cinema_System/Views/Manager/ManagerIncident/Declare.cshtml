@@ -91,10 +91,11 @@
         var list = box.querySelector('[data-combobox-list]');
         var options = Array.prototype.slice.call(box.querySelectorAll('[data-combobox-option]'));
 
+        // Khớp KHÔNG DẤU: gõ "bi" vẫn thấy "Bí Mật Phố Cổ" (xem wwwroot/js/vietnamese-text.js).
         function filter() {
-            var keyword = input.value.trim().toLowerCase();
+            var keyword = VietnameseText.searchKey(input.value);
             options.forEach(function (opt) {
-                opt.classList.toggle('hidden', keyword !== '' && opt.dataset.name.toLowerCase().indexOf(keyword) === -1);
+                opt.classList.toggle('hidden', !VietnameseText.contains(opt.dataset.name, keyword));
             });
         }
         function open() { filter(); list.classList.remove('hidden'); }

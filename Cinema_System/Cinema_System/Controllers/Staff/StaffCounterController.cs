@@ -95,9 +95,9 @@ public class StaffCounterController : Controller
 
     // --- AJAX: xem trước áp mã khuyến mãi trước khi chốt đơn ---
     [HttpGet("PreviewPromo")]
-    public async Task<IActionResult> PreviewPromo(string code, Guid? customerId, decimal seatTotal, decimal foodTotal)
+    public async Task<IActionResult> PreviewPromo(string code, Guid? customerId, string? customerPhone, decimal seatTotal, decimal foodTotal)
     {
-        var result = await _counterBookingService.PreviewPromoAsync(code, customerId, seatTotal, foodTotal);
+        var result = await _counterBookingService.PreviewPromoAsync(code, customerId, customerPhone, seatTotal, foodTotal);
         return Json(result);
     }
 

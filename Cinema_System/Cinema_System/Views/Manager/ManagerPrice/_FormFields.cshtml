@@ -24,7 +24,7 @@
         <div class="mb-4">
             <label asp-for="BasePrice" class="@fieldLabel">Giá cơ bản (₫)</label>
             <input type="text" inputmode="numeric" autocomplete="off" placeholder="VD: 75.000"
-                   data-money data-money-for="BasePrice" class="@fieldInput" />
+                   data-money data-numeric-allow="." data-money-for="BasePrice" class="@fieldInput" />
             <input type="hidden" asp-for="BasePrice" asp-format="{0:0}" />
             <span asp-validation-for="BasePrice" class="@fieldError"></span>
         </div>
@@ -41,7 +41,7 @@
         <div class="mb-4">
             <label asp-for="TypeSurcharge" class="@fieldLabel">Mức phụ thu (₫)</label>
             <input type="text" inputmode="numeric" autocomplete="off" placeholder="VD: 20.000"
-                   data-money data-money-for="TypeSurcharge" class="@fieldInput" />
+                   data-money data-numeric-allow="." data-money-for="TypeSurcharge" class="@fieldInput" />
             <input type="hidden" asp-for="TypeSurcharge" asp-format="{0:0}" />
             <span asp-validation-for="TypeSurcharge" class="@fieldError"></span>
         </div>
@@ -58,7 +58,7 @@
         <div class="mb-4">
             <label asp-for="SeatSurcharge" class="@fieldLabel">Mức phụ thu (₫)</label>
             <input type="text" inputmode="numeric" autocomplete="off" placeholder="VD: 30.000"
-                   data-money data-money-for="SeatSurcharge" class="@fieldInput" />
+                   data-money data-numeric-allow="." data-money-for="SeatSurcharge" class="@fieldInput" />
             <input type="hidden" asp-for="SeatSurcharge" asp-format="{0:0}" />
             <span asp-validation-for="SeatSurcharge" class="@fieldError"></span>
         </div>
@@ -110,7 +110,7 @@
                 <div>
                     <label asp-for="StartTime" class="@fieldLabel">Từ giờ (24h — HH:mm)</label>
                     <input asp-for="StartTime" type="text" asp-format="{0:HH:mm}" inputmode="numeric"
-                           maxlength="5" placeholder="VD: 08:00" data-time24
+                           maxlength="5" placeholder="VD: 08:00" data-time24 data-numeric-allow=":"
                            pattern="([01][0-9]|2[0-3]):[0-5][0-9]" title="Nhập theo 24 giờ, ví dụ 18:30"
                            class="@fieldInput" />
                     <span asp-validation-for="StartTime" class="@fieldError"></span>
@@ -118,7 +118,7 @@
                 <div>
                     <label asp-for="EndTime" class="@fieldLabel">Đến giờ (24h — HH:mm)</label>
                     <input asp-for="EndTime" type="text" asp-format="{0:HH:mm}" inputmode="numeric"
-                           maxlength="5" placeholder="VD: 22:00" data-time24
+                           maxlength="5" placeholder="VD: 22:00" data-time24 data-numeric-allow=":"
                            pattern="([01][0-9]|2[0-3]):[0-5][0-9]" title="Nhập theo 24 giờ, ví dụ 22:00"
                            class="@fieldInput" />
                     <span asp-validation-for="EndTime" class="@fieldError"></span>
@@ -133,7 +133,7 @@
             <div>
                 <label asp-for="TimeSurcharge" class="@fieldLabel">Mức phụ thu (₫)</label>
                 <input type="text" inputmode="numeric" autocomplete="off" placeholder="VD: 15.000"
-                       data-money data-money-for="TimeSurcharge" class="@fieldInput" />
+                       data-money data-numeric-allow="." data-money-for="TimeSurcharge" class="@fieldInput" />
                 <input type="hidden" asp-for="TimeSurcharge" asp-format="{0:0}" />
                 <span asp-validation-for="TimeSurcharge" class="@fieldError"></span>
             </div>
@@ -154,7 +154,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         <input type="date" id="effFromDate" required min="@minDate" class="@fieldInput" />
         <input type="text" id="effFromTime" inputmode="numeric" maxlength="5" required
-               placeholder="Giờ 24h — HH:mm" data-time24
+               placeholder="Giờ 24h — HH:mm" data-time24 data-numeric-allow=":"
                pattern="([01][0-9]|2[0-3]):[0-5][0-9]" title="Nhập giờ theo 24 giờ, ví dụ 14:30"
                class="@fieldInput" />
     </div>

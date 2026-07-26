@@ -21,7 +21,9 @@ public interface ICounterBookingService
     Task<Result<Guid>> CreateAsync(CounterBookingRequest request, Guid staffId);
 
     /// <summary>Xem trước mã khuyến mãi (AJAX): kiểm tra hợp lệ + tính số tiền giảm trên tạm tính hiện tại.</summary>
-    Task<CounterPromoPreviewDTO> PreviewPromoAsync(string code, Guid? customerId, decimal seatTotal, decimal foodTotal);
+    /// <param name="customerPhone">SĐT nhân viên đang gõ — truyền kèm để xem trước tra ra khách hàng
+    /// GIỐNG lúc chốt đơn (mã giảm giá bắt buộc phải có tài khoản khách hàng mới dùng được).</param>
+    Task<CounterPromoPreviewDTO> PreviewPromoAsync(string code, Guid? customerId, string? customerPhone, decimal seatTotal, decimal foodTotal);
 
     /// <summary>Giữ 1 ghế cho nhân viên trong holdMinutes phút (tạo mới hoặc gia hạn nếu đã giữ).</summary>
     /// <param name="holdToken">Phiên giữ ghế của tab/máy quầy đang thao tác. Nhiều máy quầy thường dùng

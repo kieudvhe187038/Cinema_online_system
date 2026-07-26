@@ -346,7 +346,10 @@ CREATE TABLE [Payments] (
   CONSTRAINT [CK_Payments_amount] CHECK ([amount] >= 0),
   CONSTRAINT [CK_Payments_cash] CHECK ([cash_received] IS NULL OR [cash_received] >= 0),
   CONSTRAINT [CK_Payments_change] CHECK ([change_amount] IS NULL OR [change_amount] >= 0),
-  CONSTRAINT [CK_Payments_status] CHECK ([status] IN ('Success', 'Failed', 'Pending'))
+  CONSTRAINT [CK_Payments_status] CHECK ([status] IN ('Success', 'Failed', 'Pending')),
+  -- Chỉ các phương thức hệ thống thực sự sinh ra: Cash/Transfer (quầy), VNPay/VietQR (online),
+  -- Free (đơn 0đ do mã giảm giá/điểm phủ hết tiền). Khớp Application/Common/PaymentConstants.cs.
+  CONSTRAINT [CK_Payments_method] CHECK ([payment_method] IN ('Cash', 'Transfer', 'VNPay', 'VietQR', 'Free'))
 );
 
 CREATE TABLE [Email_Logs] (

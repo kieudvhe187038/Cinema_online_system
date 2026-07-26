@@ -21,11 +21,6 @@ public class CounterBookingService : ICounterBookingService
     // Số ghế tối đa cho 1 đơn tại quầy (khớp giới hạn MAX_SEATS phía luồng khách đặt online).
     private const int MaxSeatsPerBooking = 6;
 
-    // Phương thức thanh toán hợp lệ tại quầy (khớp với UI: Tiền mặt / Chuyển khoản).
-    // Chặn giá trị tùy ý / quá dài tràn vào cột Payments.payment_method NVARCHAR(100).
-    private static readonly HashSet<string> AllowedPaymentMethods =
-        new(StringComparer.OrdinalIgnoreCase) { "Cash", "Transfer" };
-
     private readonly IUnitOfWork _unitOfWork;
     private readonly IPricingService _pricing;
     private readonly IStaffContextService _staffContext;
@@ -250,19 +245,7 @@ public class CounterBookingService : ICounterBookingService
         }
 
         // --- Khách hàng (thành viên hoặc khách lẻ) — xác định TRƯỚC vì mã giảm/điểm thưởng phụ thuộc vào đây ---
-        User? customer = null;
-        if (request.CustomerId is Guid customerId)
-            customer = await _unitOfWork.Users.GetByIdAsync(customerId);
-        else if (!string.IsNullOrWhiteSpace(request.CustomerPhone))
-        {
-            // Bỏ mọi khoảng trắng như MemberService.LookupByPhoneAsync để khớp với
-            // SĐT lưu trong DB kể cả khi nhân viên gõ trực tiếp có khoảng trắng giữa
-            // (không qua bước tra cứu thành viên trước).
-            var normalizedPhone = new string(
-                request.CustomerPhone.Where(c => !char.IsWhiteSpace(c)).ToArray());
-            if (normalizedPhone.Length > 0)
-                customer = await _unitOfWork.Users.GetByPhoneAsync(normalizedPhone);
-        }
+        var customer = await ResolveCustomerAsync(request.CustomerId, request.CustomerPhone);
 
         // --- VAT & tổng tiền trước giảm giá ---
         var vatEntity = (await _unitOfWork.Vats.GetAllAsync(v => v.Status == StatusActive))
@@ -292,12 +275,13 @@ public class CounterBookingService : ICounterBookingService
         var finalAmount = afterPromo - pointsDiscount;
 
         // --- Thanh toán tại quầy ---
-        var method = string.IsNullOrWhiteSpace(request.PaymentMethod) ? "Cash" : request.PaymentMethod.Trim();
-        if (!AllowedPaymentMethods.Contains(method))
+        // Chặn giá trị tùy ý / quá dài tràn vào cột Payments.payment_method NVARCHAR(100).
+        var method = string.IsNullOrWhiteSpace(request.PaymentMethod) ? PaymentMethod.Cash : request.PaymentMethod.Trim();
+        if (!PaymentMethod.CounterMethods.Contains(method))
             return Result<Guid>.Failure("Phương thức thanh toán không hợp lệ.");
         decimal? cashReceived = null;
         decimal? changeAmount = null;
-        if (method.Equals("Cash", StringComparison.OrdinalIgnoreCase))
+        if (method.Equals(PaymentMethod.Cash, StringComparison.OrdinalIgnoreCase))
         {
             if (request.CashReceived is null || request.CashReceived < finalAmount)
                 return Result<Guid>.Failure("Số tiền khách đưa không đủ để thanh toán.");
@@ -602,14 +586,36 @@ public class CounterBookingService : ICounterBookingService
         await _unitOfWork.SaveChangesAsync();
     }
 
+    // Tra khách hàng của đơn quầy: ưu tiên Id đã tra cứu, không có thì tìm theo SĐT nhân viên gõ.
+    // Bỏ mọi khoảng trắng như MemberService.LookupByPhoneAsync để khớp với SĐT lưu trong DB kể cả
+    // khi nhân viên gõ trực tiếp có khoảng trắng giữa (không qua bước tra cứu thành viên trước).
+    // Dùng chung cho CẢ xem trước mã lẫn lúc chốt đơn để hai bước không lệch kết quả.
+    private async Task<User?> ResolveCustomerAsync(Guid? customerId, string? customerPhone)
+    {
+        if (customerId is Guid id)
+            return await _unitOfWork.Users.GetByIdAsync(id);
+
+        if (string.IsNullOrWhiteSpace(customerPhone))
+            return null;
+
+        var normalizedPhone = new string(customerPhone.Where(c => !char.IsWhiteSpace(c)).ToArray());
+        return normalizedPhone.Length == 0
+            ? null
+            : await _unitOfWork.Users.GetByPhoneAsync(normalizedPhone);
+    }
+
     // Kiểm tra mã khuyến mãi và tính số tiền giảm (áp SAU VAT, trên tổng đã gồm thuế) — cùng quy tắc với
-    // luồng khách đặt online (ShowtimeService.ResolvePromoAsync). Khách lẻ (customerId = null) không có
-    // định danh để chống dùng-mã-nhiều-lần nên bỏ qua check "đã dùng" — đánh đổi chấp nhận được cho quầy.
+    // luồng khách đặt online (ShowtimeService.ResolvePromoAsync).
     private async Task<(Promotion? Promo, decimal Discount, string? Error)> ResolvePromoAsync(
         string? code, Guid? customerId, decimal seatTotal, decimal foodTotal, decimal grandTotal)
     {
         if (string.IsNullOrWhiteSpace(code)) return (null, 0m, null);
         code = code.Trim();
+
+        // Bắt buộc có tài khoản khách hàng mới được dùng mã. Khách lẻ không có định danh nên
+        // không chống được việc dùng lại mã nhiều lần — chặn ngay từ đầu thay vì bỏ qua check.
+        if (customerId is null)
+            return (null, 0m, "Cần xác minh tài khoản khách hàng (tra cứu theo số điện thoại) mới dùng được mã giảm giá.");
 
         var promo = (await _unitOfWork.Promotions.GetAllAsync(predicate: p => p.Code == code)).FirstOrDefault();
         if (promo is null) return (null, 0m, "Mã giảm giá không tồn tại.");
@@ -623,12 +629,9 @@ public class CounterBookingService : ICounterBookingService
         if (promo.MinOrderValue.HasValue && subtotal < promo.MinOrderValue.Value)
             return (null, 0m, $"Cần đơn tối thiểu {promo.MinOrderValue.Value:N0}₫ để dùng mã này.");
 
-        if (customerId.HasValue)
-        {
-            var usedByCustomer = await _unitOfWork.Bookings.CountAsync(
-                b => b.PromotionId == promo.Id && b.UserId == customerId.Value);
-            if (usedByCustomer >= 1) return (null, 0m, "Khách hàng đã sử dụng mã giảm giá này rồi.");
-        }
+        var usedByCustomer = await _unitOfWork.Bookings.CountAsync(
+            b => b.PromotionId == promo.Id && b.UserId == customerId.Value);
+        if (usedByCustomer >= 1) return (null, 0m, "Khách hàng đã sử dụng mã giảm giá này rồi.");
 
         if (promo.UsageLimit.HasValue)
         {
@@ -660,8 +663,13 @@ public class CounterBookingService : ICounterBookingService
 
     // Xem trước áp mã khuyến mãi (AJAX) trước khi chốt đơn — dùng tạm tính vé/đồ ăn client đã tính sẵn
     // (giống cách preview không cần "giữ ghế" phía online vì quầy không có bước riêng theo phiên).
-    public async Task<CounterPromoPreviewDTO> PreviewPromoAsync(string code, Guid? customerId, decimal seatTotal, decimal foodTotal)
+    public async Task<CounterPromoPreviewDTO> PreviewPromoAsync(
+        string code, Guid? customerId, string? customerPhone, decimal seatTotal, decimal foodTotal)
     {
+        // Tra khách hàng ĐÚNG như lúc chốt đơn: nhân viên có thể mới gõ SĐT mà chưa bấm "Tra",
+        // nếu xem trước bỏ qua SĐT thì sẽ báo hợp lệ rồi lúc thanh toán mới báo lỗi.
+        var customer = await ResolveCustomerAsync(customerId, customerPhone);
+
         var subtotal = seatTotal + foodTotal;
         var vatEntity = (await _unitOfWork.Vats.GetAllAsync(v => v.Status == StatusActive))
             .OrderByDescending(v => v.CreatedAt)
@@ -669,7 +677,7 @@ public class CounterBookingService : ICounterBookingService
         var vatAmount = vatEntity is null ? 0m : Math.Round(subtotal * vatEntity.VatRate / 100m, 2);
         var grandTotal = subtotal + vatAmount;
 
-        var (promo, discount, error) = await ResolvePromoAsync(code, customerId, seatTotal, foodTotal, grandTotal);
+        var (promo, discount, error) = await ResolvePromoAsync(code, customer?.Id, seatTotal, foodTotal, grandTotal);
         if (error != null || promo is null)
             return new CounterPromoPreviewDTO { Ok = false, Message = error ?? "Mã giảm giá không hợp lệ." };
 
