@@ -719,3 +719,15 @@ Nhật ký thay đổi mã nguồn / CSDL / quyết định kỹ thuật của d
   - Repo nặng thêm **2,5 MB** (đánh đổi có chủ ý để bỏ phụ thuộc mạng ngoài).
   - **Việc này KHÔNG xoá phần biên dịch Tailwind lúc chạy** — bản CDN vẫn là trình biên dịch quét DOM sinh CSS ở mỗi lần tải trang, chỉ là giờ lấy file từ localhost. Muốn hết hẳn phải build sẵn CSS (cần npm) — team đã chọn tạm chưa đổi build.
   - Đã kiểm: 0 tham chiếu CDN còn lại, các trang trả 200, build 0/0. Log SQL mức `Information` (1099 dòng/phiên) **không** ảnh hưởng thời gian phản hồi — đã thử hạ xuống `Warning`, không nhanh hơn.
+
+### [2026-07-26] Trang in vé tại quầy dùng sai layout — chuyển sang `_StaffLayout` (By: vkieu)
+- **What changed:** `Views/Staff/StaffCounter/Ticket.cshtml` set `Layout = "_StaffLayout"` (trước đây **cố ý bỏ trống** nên rơi về `_Layout` công khai qua `Views/_ViewStart.cshtml`). Kéo theo:
+  1. **CSS in ấn viết lại:** trước ẩn `#main-header, footer` (khung trang khách) → giờ ẩn `body > aside, body > header` (sidebar 60 + topbar của khu Staff) và gỡ `margin-left`/`padding-top`/`padding` mà layout chừa cho chúng (`body > div`, `body > div > main`). Giữ nguyên khối ép đen/trắng cho chế độ tối.
+  2. **Đồng bộ token màu với 2 view cùng thư mục** (`Index`/`Member`): `border-slate-200` → `border-[#e8eaed]`, `text-slate-900` → `text-[#191c1d]`, `text-slate-*` → `text-gray-*`; 2 nút phụ đổi từ `bg-slate-100` sang nút viền trắng `hover:bg-[#fff7f0]`. Thêm tiêu đề trang + mô tả theo đúng mẫu `Member.cshtml`.
+  3. Hiện thêm 2 dữ liệu **đã có sẵn trong `TicketPrintViewModel` nhưng chưa dùng**: `ShowEndTime` (ghép thành "dd/MM/yyyy HH:mm – HH:mm") và `CustomerPhone` (rỗng thì "—").
+- **Why:** Nhân viên bấm in vé xong bị văng ra giao diện khách hàng (header Trang chủ/Phim/Lịch chiếu + ô tìm phim + footer công ty), mất sidebar quầy — sai ngữ cảnh và không quay lại luồng bán vé được.
+- **Impact/Notes for Team:**
+  - **Mọi view trong `Views/Staff/`, `Views/Manager/`, `Views/Admin/` PHẢI tự set `Layout`** — `Views/_ViewStart.cshtml` mặc định là `_Layout` công khai, quên set là ra giao diện khách hàng chứ không lỗi build.
+  - `_StaffLayout` **không bật `important: true`** trong `tailwind.config` (khác `_Layout`). Các rule `@media print` ở đây vẫn để `!important` — cần thiết để đè utility, và vẫn đúng nếu sau này layout bật lại cờ đó.
+  - Selector in ấn bám theo **cấu trúc DOM của `_StaffLayout`** (`aside` + `header` + `div.ml-60 > main` là con trực tiếp của `body`). Đổi cấu trúc layout đó thì phải sửa lại khối print này, nếu không bản in sẽ thừa lề trái 240px.
+  - Build pass 0/0. Chưa xem mắt bản in thật — nên bấm thử Ctrl+P ở cả chế độ sáng lẫn tối.
