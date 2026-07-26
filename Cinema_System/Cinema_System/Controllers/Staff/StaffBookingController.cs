@@ -34,4 +34,18 @@ public class StaffBookingController : Controller
 
         return View(detail);
     }
+
+    // --- Quét QR (camera) trên trang danh sách đơn: tìm đơn theo mã rồi chuyển tới Chi tiết ---
+    [HttpGet("LookupByQr")]
+    public async Task<IActionResult> LookupByQr(string? qr)
+    {
+        var bookingId = await _bookingService.FindBookingIdByQrAsync(qr);
+        if (bookingId is null)
+        {
+            TempData["Error"] = "Không tìm thấy đơn đặt vé với mã này.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        return RedirectToAction(nameof(Details), new { id = bookingId });
+    }
 }

@@ -31,4 +31,11 @@ public interface ITicketCheckinService
     /// suất chiếu đã kết thúc.
     /// </summary>
     Task<Result<BookingCheckinDTO>> CheckinBookingAsync(string? qrCode, Guid staffId);
+
+    /// <summary>
+    /// Xác thực và đánh dấu đã in vé theo mã QR (mã vé hoặc mã đơn — tự nhận diện như
+    /// Lookup/Confirm). Không chặn theo trạng thái check-in: chỉ chặn vé đã hủy hoặc đơn
+    /// chưa thanh toán. Trả về BookingId để mở màn hình in vé (dùng chung với Counter Sales).
+    /// </summary>
+    Task<Result<Guid>> MarkPrintedAsync(string? qrCode, Guid staffId);
 }

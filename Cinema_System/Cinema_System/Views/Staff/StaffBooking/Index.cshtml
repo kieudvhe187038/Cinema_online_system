@@ -25,10 +25,16 @@
             <h1 class="mb-0.5 font-head text-2xl font-extrabold text-[#191c1d]">Quản Lý Đơn Hàng</h1>
             <p class="text-sm text-gray-500">Tra cứu đơn đặt vé online và tại quầy, xem chi tiết và in lại vé</p>
         </div>
-        <a href="@Url.Action("Index", "StaffCounter")"
-           class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-primary px-5 py-2.5 text-xs font-bold tracking-wide text-white transition-colors hover:bg-primary-dark">
-            <span class="material-symbols-outlined" style="font-size:18px">point_of_sale</span> ĐẶT VÉ TẠI QUẦY
-        </a>
+        <div class="flex flex-wrap items-center gap-2">
+            <button type="button" id="bk-btnCamera"
+                    class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-xs font-bold tracking-wide text-[#191c1d] transition-colors hover:bg-gray-50">
+                <span class="material-symbols-outlined" style="font-size:18px">qr_code_scanner</span> QUÉT MÃ QR
+            </button>
+            <a href="@Url.Action("Index", "StaffCounter")"
+               class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-primary px-5 py-2.5 text-xs font-bold tracking-wide text-white transition-colors hover:bg-primary-dark">
+                <span class="material-symbols-outlined" style="font-size:18px">point_of_sale</span> ĐẶT VÉ TẠI QUẦY
+            </a>
+        </div>
     </div>
 
     @if (TempData["Success"] != null)
@@ -39,6 +45,8 @@
     {
         <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">@TempData["Error"]</div>
     }
+    <div id="bk-qr-msg"></div>
+    <div id="bk-qr-reader" class="mb-5 overflow-hidden rounded-xl border border-[#e8eaed] bg-white" style="display:none; max-width:320px;"></div>
 
     <form method="get" class="mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-[#e8eaed] bg-white p-4">
         <input type="text" name="search" value="@Model.Search" class="@filterCls min-w-[260px] flex-1"
@@ -138,3 +146,62 @@
         </div>
     }
 </div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+    <script>
+        var bkQr = null;      // instance Html5Qrcode
+        var bkScanning = false;
+        var bkHandled = false; // chặn callback bắn nhiều lần cho cùng 1 lần quét
+
+        function bkShowMsg(html) {
+            $('#bk-qr-msg').html(html
+                ? '<div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">' + html + '</div>'
+                : '');
+        }
+
+        function bkStartCamera() {
+            if (typeof Html5Qrcode === 'undefined') {
+                bkShowMsg('Không tải được thư viện quét mã (kiểm tra kết nối mạng).');
+                return;
+            }
+            bkHandled = false;
+            bkShowMsg('');
+            $('#bk-qr-reader').show();
+            $('#bk-btnCamera').text('Đóng camera').prop('disabled', true);
+
+            bkQr = new Html5Qrcode('bk-qr-reader');
+            bkQr.start(
+                { facingMode: 'environment' },
+                { fps: 10, qrbox: 250 },
+                function (decodedText) {
+                    if (bkHandled) return;
+                    bkHandled = true;
+                    bkStopCamera();
+                    window.location.href = '/Staff/Booking/LookupByQr?qr=' + encodeURIComponent(decodedText);
+                },
+                function () { /* không tìm thấy QR ở frame hiện tại — bỏ qua, không phải lỗi */ }
+            ).then(function () {
+                bkScanning = true;
+                $('#bk-btnCamera').prop('disabled', false);
+            }).catch(function (err) {
+                $('#bk-qr-reader').hide();
+                $('#bk-btnCamera').text('Quét mã QR').prop('disabled', false);
+                bkShowMsg('Không thể mở camera (chưa cấp quyền hoặc thiết bị không có camera).');
+            });
+        }
+
+        function bkStopCamera() {
+            $('#bk-btnCamera').text('Quét mã QR');
+            if (bkQr && bkScanning) {
+                bkScanning = false;
+                bkQr.stop().then(function () { bkQr.clear(); }).catch(function () { });
+            }
+            $('#bk-qr-reader').hide();
+        }
+
+        $('#bk-btnCamera').on('click', function () {
+            if (bkScanning) bkStopCamera(); else bkStartCamera();
+        });
+    </script>
+}
