@@ -32,6 +32,7 @@
         .ck-tag-ok { background: #dcfce7; color: #166534; }
         .ck-tag-wait { background: #fef3c7; color: #b45309; }
         .ck-tag-cancel { background: #fee2e2; color: #b91c1c; }
+        #ck-qr-reader { display: none; max-width: 320px; margin: 1rem 0 0; border-radius: var(--radius); overflow: hidden; }
     </style>
 }
 
@@ -45,12 +46,16 @@
         <div class="ck-row">
             <input type="text" id="qr" class="ck-input" placeholder="Quét / nhập mã vé hoặc mã đơn..." autofocus />
             <button type="button" id="btnLookup" class="ck-btn ck-btn-secondary">Tra cứu</button>
+            <button type="button" id="btnCamera" class="ck-btn ck-btn-secondary">Mở camera</button>
         </div>
+        <div id="ck-qr-msg"></div>
+        <div id="ck-qr-reader"></div>
         <div id="result"></div>
     </div>
 </div>
 
 @section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
     <script>
         const token = $('input[name="__RequestVerificationToken"]').val();
         const fmt = function (v) { return v ? new Date(v).toLocaleString('vi-VN') : '—'; };
@@ -77,12 +82,18 @@
                 '<div class="ck-line"><span>Khách hàng</span><span>' + esc(t.customerName || '—') + '</span></div>' +
                 '<div class="ck-line"><span>Trạng thái</span><span>' + esc(t.status || '—') + '</span></div>' +
                 '<div class="ck-banner ' + banner + '">' + esc(t.message || '') + '</div>';
+            var canPrintTicket = (t.status || '').toLowerCase() !== 'cancelled';
+            html += '<div class="ck-actions">';
             if (!justCheckedIn && canCheckin(t)) {
-                html += '<div class="ck-actions"><button type="button" id="btnConfirm" class="ck-btn ck-btn-primary">Xác nhận check-in</button></div>';
+                html += '<button type="button" id="btnConfirm" class="ck-btn ck-btn-primary">Xác nhận check-in</button>';
             }
-            html += '</div>';
+            if (canPrintTicket) {
+                html += '<button type="button" id="btnPrint" class="ck-btn ck-btn-secondary">In vé</button>';
+            }
+            html += '</div></div>';
             $('#result').html(html);
             $('#btnConfirm').on('click', function () { doConfirm($('#qr').val().trim()); });
+            $('#btnPrint').on('click', function () { doPrint(t.ticketCode || $('#qr').val().trim()); });
         }
 
         // ---------- Đơn nhiều vé ----------
@@ -110,12 +121,18 @@
                 html += '<div class="ck-seat"><span class="ck-seat-label">' + esc(t.seatLabel || '—') + ' · ' + esc(t.seatType || '') + '</span>' + seatTag(t) + '</div>';
             });
             html += '<div class="ck-banner ' + banner + '">' + esc(b.message || '') + '</div>';
+            var canPrintBooking = (b.paymentStatus || '').toLowerCase() === 'paid';
+            html += '<div class="ck-actions">';
             if (!justCheckedIn && canCheckinBooking(b)) {
-                html += '<div class="ck-actions"><button type="button" id="btnConfirm" class="ck-btn ck-btn-primary">Check-in tất cả vé chưa dùng</button></div>';
+                html += '<button type="button" id="btnConfirm" class="ck-btn ck-btn-primary">Check-in tất cả vé chưa dùng</button>';
             }
-            html += '</div>';
+            if (canPrintBooking) {
+                html += '<button type="button" id="btnPrint" class="ck-btn ck-btn-secondary">In vé</button>';
+            }
+            html += '</div></div>';
             $('#result').html(html);
             $('#btnConfirm').on('click', function () { doConfirm($('#qr').val().trim()); });
+            $('#btnPrint').on('click', function () { doPrint(b.bookingCode || $('#qr').val().trim()); });
         }
 
         function renderResult(res, justCheckedIn) {
@@ -154,7 +171,83 @@
             });
         }
 
+        function doPrint(qr) {
+            if (!qr) return;
+            $('#btnPrint').prop('disabled', true);
+            $.ajax({
+                url: '/Staff/Checkin/Print',
+                type: 'POST',
+                data: { qr: qr, __RequestVerificationToken: token },
+                success: function (res) {
+                    $('#btnPrint').prop('disabled', false);
+                    if (res.success) {
+                        window.open(res.printUrl, '_blank');
+                    } else {
+                        $('#result').append('<div class="ck-banner ck-err">' + esc(res.error || 'Không thể in vé.') + '</div>');
+                    }
+                },
+                error: function () {
+                    $('#btnPrint').prop('disabled', false);
+                    $('#result').append('<div class="ck-banner ck-err">Có lỗi xảy ra, vui lòng thử lại.</div>');
+                }
+            });
+        }
+
         $('#btnLookup').on('click', lookup);
         $('#qr').on('keypress', function (e) { if (e.which === 13) { e.preventDefault(); lookup(); } });
+
+        // ---------- Quét QR bằng camera ----------
+        var ckQr = null;      // instance Html5Qrcode
+        var ckScanning = false;
+        var ckHandled = false; // chặn callback bắn nhiều lần cho cùng 1 lần quét
+
+        function ckShowMsg(html) {
+            $('#ck-qr-msg').html(html ? '<div class="ck-banner ck-err">' + html + '</div>' : '');
+        }
+
+        function ckStartCamera() {
+            if (typeof Html5Qrcode === 'undefined') {
+                ckShowMsg('Không tải được thư viện quét mã (kiểm tra kết nối mạng).');
+                return;
+            }
+            ckHandled = false;
+            ckShowMsg('');
+            $('#ck-qr-reader').show();
+            $('#btnCamera').text('Đóng camera').prop('disabled', true);
+
+            ckQr = new Html5Qrcode('ck-qr-reader');
+            ckQr.start(
+                { facingMode: 'environment' },
+                { fps: 10, qrbox: 250 },
+                function (decodedText) {
+                    if (ckHandled) return;
+                    ckHandled = true;
+                    ckStopCamera();
+                    $('#qr').val(decodedText);
+                    lookup();
+                },
+                function () { /* không tìm thấy QR ở frame hiện tại — bỏ qua, không phải lỗi */ }
+            ).then(function () {
+                ckScanning = true;
+                $('#btnCamera').prop('disabled', false);
+            }).catch(function (err) {
+                $('#ck-qr-reader').hide();
+                $('#btnCamera').text('Mở camera').prop('disabled', false);
+                ckShowMsg('Không thể mở camera (chưa cấp quyền hoặc thiết bị không có camera).');
+            });
+        }
+
+        function ckStopCamera() {
+            $('#btnCamera').text('Mở camera');
+            if (ckQr && ckScanning) {
+                ckScanning = false;
+                ckQr.stop().then(function () { ckQr.clear(); }).catch(function () { });
+            }
+            $('#ck-qr-reader').hide();
+        }
+
+        $('#btnCamera').on('click', function () {
+            if (ckScanning) ckStopCamera(); else ckStartCamera();
+        });
     </script>
 }

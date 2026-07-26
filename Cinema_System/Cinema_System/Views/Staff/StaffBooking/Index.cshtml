@@ -36,13 +36,17 @@
         .bk-empty { text-align: center; padding: 3rem; color: var(--on-surface-variant); }
         .bk-meta { color: var(--on-surface-variant); font-size: .85rem; margin-bottom: .75rem; }
         .bk-amount { font-weight: 700; }
+        #bk-qr-reader { display: none; max-width: 320px; margin: 0 0 1.25rem; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); }
     </style>
 }
 
 <div class="bk-wrap">
     <div class="bk-top">
         <h1 class="bk-title">Quản Lý Đơn Hàng</h1>
-        <a class="bk-btn bk-btn-primary" href="@Url.Action("Index", "StaffCounter")">+ Đặt vé tại quầy</a>
+        <div style="display:flex; gap:.5rem;">
+            <button type="button" id="bk-btnCamera" class="bk-btn bk-btn-ghost">Quét mã QR</button>
+            <a class="bk-btn bk-btn-primary" href="@Url.Action("Index", "StaffCounter")">+ Đặt vé tại quầy</a>
+        </div>
     </div>
 
     @if (TempData["Success"] != null)
@@ -53,6 +57,8 @@
     {
         <div class="bk-alert error">@TempData["Error"]</div>
     }
+    <div id="bk-qr-msg"></div>
+    <div id="bk-qr-reader"></div>
 
     <form method="get" class="bk-filters">
         <input type="text" name="search" value="@Model.Search" placeholder="Tìm theo mã đặt vé, tên hoặc SĐT khách..." />
@@ -139,3 +145,60 @@
         <div class="bk-empty">Không tìm thấy đơn hàng nào phù hợp.</div>
     }
 </div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+    <script>
+        var bkQr = null;      // instance Html5Qrcode
+        var bkScanning = false;
+        var bkHandled = false; // chặn callback bắn nhiều lần cho cùng 1 lần quét
+
+        function bkShowMsg(html, cls) {
+            $('#bk-qr-msg').html(html ? '<div class="bk-alert ' + cls + '">' + html + '</div>' : '');
+        }
+
+        function bkStartCamera() {
+            if (typeof Html5Qrcode === 'undefined') {
+                bkShowMsg('Không tải được thư viện quét mã (kiểm tra kết nối mạng).', 'error');
+                return;
+            }
+            bkHandled = false;
+            bkShowMsg('', '');
+            $('#bk-qr-reader').show();
+            $('#bk-btnCamera').text('Đóng camera').prop('disabled', true);
+
+            bkQr = new Html5Qrcode('bk-qr-reader');
+            bkQr.start(
+                { facingMode: 'environment' },
+                { fps: 10, qrbox: 250 },
+                function (decodedText) {
+                    if (bkHandled) return;
+                    bkHandled = true;
+                    bkStopCamera();
+                    window.location.href = '/Staff/Booking/LookupByQr?qr=' + encodeURIComponent(decodedText);
+                },
+                function () { /* không tìm thấy QR ở frame hiện tại — bỏ qua, không phải lỗi */ }
+            ).then(function () {
+                bkScanning = true;
+                $('#bk-btnCamera').prop('disabled', false);
+            }).catch(function (err) {
+                $('#bk-qr-reader').hide();
+                $('#bk-btnCamera').text('Quét mã QR').prop('disabled', false);
+                bkShowMsg('Không thể mở camera (chưa cấp quyền hoặc thiết bị không có camera).', 'error');
+            });
+        }
+
+        function bkStopCamera() {
+            $('#bk-btnCamera').text('Quét mã QR');
+            if (bkQr && bkScanning) {
+                bkScanning = false;
+                bkQr.stop().then(function () { bkQr.clear(); }).catch(function () { });
+            }
+            $('#bk-qr-reader').hide();
+        }
+
+        $('#bk-btnCamera').on('click', function () {
+            if (bkScanning) bkStopCamera(); else bkStartCamera();
+        });
+    </script>
+}
