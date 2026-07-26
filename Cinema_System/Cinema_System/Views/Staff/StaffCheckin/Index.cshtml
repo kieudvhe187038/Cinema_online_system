@@ -212,7 +212,9 @@
             }
             ckHandled = false;
             ckShowMsg('');
-            $('#ck-qr-reader').show();
+            $('#ck-qr-reader').show().html(
+                '<div style="padding:2rem; text-align:center; color:var(--on-surface-variant); font-size:.85rem;">Đang khởi động camera...</div>'
+            );
             $('#btnCamera').text('Đang mở camera...').prop('disabled', true);
 
             ckQr = new Html5Qrcode('ck-qr-reader');
