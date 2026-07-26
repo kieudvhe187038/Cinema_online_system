@@ -261,7 +261,7 @@
 
                     <div id="cashBox" class="mt-3">
                         <label class="@labelCls" for="cashReceived">Tiền khách đưa</label>
-                        <input type="number" id="cashReceived" class="@inputCls" min="0" max="100000000" step="1000" value="0" inputmode="numeric" />
+                        <input type="text" id="cashReceived" class="@inputCls" value="0" inputmode="numeric" autocomplete="off" />
                         <div id="cashWarn" class="mt-1.5 text-xs text-red-600 [overflow-wrap:anywhere]" style="display:none;"></div>
                         <div class="@sumRowCls mt-1"><span class="shrink-0 text-gray-500">Tiền thừa</span><span id="changeAmount" class="@sumValCls">0 đ</span></div>
                     </div>
@@ -569,7 +569,13 @@
             $('#transferBox').toggle(this.value === 'Transfer');
             recalc();
         });
-        $('#cashReceived').on('input', recalc);
+        // Tiền khách đưa: hiển thị dấu phẩy phân cách nghìn cho dễ nhìn; giá trị dùng để tính là số thuần.
+        function cashNum() { return parseFloat(($('#cashReceived').val() || '').replace(/[^\d]/g, '')) || 0; }
+        $('#cashReceived').on('input', function () {
+            var digits = (this.value || '').replace(/[^\d]/g, '');
+            this.value = digits ? Number(digits).toLocaleString('en-US') : '';
+            recalc();
+        });
 
         // --- Tra cứu thành viên ---
         // Ẩn/hiện khối ưu đãi theo việc đã tra ra tài khoản khách hàng hay chưa.
@@ -731,7 +737,7 @@
             $('#pointsDiscountTotal').text('-' + fmt(pointsDiscount));
             $('#grandTotal').text(fmt(grand));
 
-            const cash = parseFloat($('#cashReceived').val()) || 0;
+            const cash = cashNum();
             $('#changeAmount').text(fmt(Math.max(0, cash - grand)));
 
             window._grandTotal = grand;
@@ -789,7 +795,7 @@
         const MAX_CASH = 100000000; // 100.000.000 đ cho 1 giao dịch tại quầy
 
         function checkCash() {
-            const cash = parseFloat($('#cashReceived').val()) || 0;
+            const cash = cashNum();
             const grand = window._grandTotal || 0;
             const $w = $('#cashWarn');
 
@@ -813,7 +819,7 @@
             if (seatIds.length === 0) { alertPopup({ title: 'Chưa chọn ghế', message: 'Vui lòng chọn ít nhất một ghế.', type: 'warning' }); return; }
 
             const method = $('input[name="payMethod"]:checked').val();
-            const cash = parseFloat($('#cashReceived').val()) || 0;
+            const cash = cashNum();
             const grand = window._grandTotal || 0;
             if (method === 'Cash' && cash < grand) {
                 alertPopup({ title: 'Thiếu tiền mặt', message: 'Tiền khách đưa không đủ.', type: 'warning' });
