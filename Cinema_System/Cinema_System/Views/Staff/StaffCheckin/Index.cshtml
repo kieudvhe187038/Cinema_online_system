@@ -212,8 +212,10 @@
             }
             ckHandled = false;
             ckShowMsg('');
-            $('#ck-qr-reader').show();
-            $('#btnCamera').text('Đóng camera').prop('disabled', true);
+            $('#ck-qr-reader').show().html(
+                '<div style="padding:2rem; text-align:center; color:var(--on-surface-variant); font-size:.85rem;">Đang khởi động camera...</div>'
+            );
+            $('#btnCamera').text('Đang mở camera...').prop('disabled', true);
 
             ckQr = new Html5Qrcode('ck-qr-reader');
             ckQr.start(
@@ -229,7 +231,7 @@
                 function () { /* không tìm thấy QR ở frame hiện tại — bỏ qua, không phải lỗi */ }
             ).then(function () {
                 ckScanning = true;
-                $('#btnCamera').prop('disabled', false);
+                $('#btnCamera').text('Đóng camera').prop('disabled', false);
             }).catch(function (err) {
                 $('#ck-qr-reader').hide();
                 $('#btnCamera').text('Mở camera').prop('disabled', false);
@@ -244,6 +246,7 @@
                 ckQr.stop().then(function () { ckQr.clear(); }).catch(function () { });
             }
             $('#ck-qr-reader').hide();
+            $('#qr').trigger('focus'); // cho gõ tay/máy quét phần cứng tiếp tục ngay, không cần bấm lại vào ô
         }
 
         $('#btnCamera').on('click', function () {

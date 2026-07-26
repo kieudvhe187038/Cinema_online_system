@@ -166,9 +166,11 @@
                 return;
             }
             bkHandled = false;
-            bkShowMsg('');
-            $('#bk-qr-reader').show();
-            $('#bk-btnCamera').text('Đóng camera').prop('disabled', true);
+            bkShowMsg('', '');
+            $('#bk-qr-reader').show().html(
+                '<div style="padding:2rem; text-align:center; color:var(--on-surface-variant); font-size:.85rem;">Đang khởi động camera...</div>'
+            );
+            $('#bk-btnCamera').text('Đang mở camera...').prop('disabled', true);
 
             bkQr = new Html5Qrcode('bk-qr-reader');
             bkQr.start(
@@ -183,7 +185,7 @@
                 function () { /* không tìm thấy QR ở frame hiện tại — bỏ qua, không phải lỗi */ }
             ).then(function () {
                 bkScanning = true;
-                $('#bk-btnCamera').prop('disabled', false);
+                $('#bk-btnCamera').text('Đóng camera').prop('disabled', false);
             }).catch(function (err) {
                 $('#bk-qr-reader').hide();
                 $('#bk-btnCamera').text('Quét mã QR').prop('disabled', false);
