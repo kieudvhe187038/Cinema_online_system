@@ -75,6 +75,7 @@ public class PromoPreviewResult
     public decimal PromoDiscount { get; set; }      // số tiền mã giảm
     public decimal FinalAmount { get; set; }        // tổng sau khi trừ mã (trước khi trừ điểm)
     public int MaxUsablePoints { get; set; }        // số điểm tối đa còn dùng được sau khi trừ mã
+    public string? Target { get; set; }             // đối tượng áp dụng: Ticket_Only / Food_Only / All
 }
 
 // Kết quả xử lý xác nhận đặt vé.

@@ -97,21 +97,24 @@
         <div class="ud-row">
             <a class="ud-btn ud-btn-primary" href="@Url.Action("Edit", "AdminUser", new { id = Model.Id })">Sửa thông tin</a>
 
-            <form method="post" action="@Url.Action("ResetPassword", "AdminUser")" style="display:inline">
+            <form method="post" action="@Url.Action("ResetPassword", "AdminUser")" style="display:inline"
+                  data-confirm="Đặt lại mật khẩu cho người dùng này?" data-confirm-title="Đặt lại mật khẩu"
+                  data-confirm-type="warning" data-confirm-ok="Đặt lại">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="id" value="@Model.Id" />
-                <button type="submit" class="ud-btn ud-btn-secondary"
-                        onclick="return confirm('Đặt lại mật khẩu cho người dùng này?');">Reset mật khẩu</button>
+                <button type="submit" class="ud-btn ud-btn-secondary">Reset mật khẩu</button>
             </form>
 
-            <form method="post" action="@Url.Action("ToggleStatus", "AdminUser")" style="display:inline">
+            @* Chỉ hỏi khi vô hiệu hóa (kích hoạt lại thì không cần) — value null thì Razor bỏ luôn attribute. *@
+            <form method="post" action="@Url.Action("ToggleStatus", "AdminUser")" style="display:inline"
+                  data-confirm="@(isActive ? "Vô hiệu hóa tài khoản này?" : null)"
+                  data-confirm-title="Vô hiệu hóa tài khoản" data-confirm-type="danger" data-confirm-ok="Vô hiệu hóa">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="id" value="@Model.Id" />
                 <input type="hidden" name="active" value="@(isActive ? "false" : "true")" />
                 @if (isActive)
                 {
-                    <button type="submit" class="ud-btn ud-btn-danger"
-                            onclick="return confirm('Vô hiệu hóa tài khoản này?');">Vô hiệu hóa</button>
+                    <button type="submit" class="ud-btn ud-btn-danger">Vô hiệu hóa</button>
                 }
                 else
                 {

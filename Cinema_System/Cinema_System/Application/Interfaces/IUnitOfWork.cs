@@ -51,8 +51,6 @@ public interface IUnitOfWork : IDisposable
 
     IGenericRepository<Review> Reviews { get; }
 
-    IGenericRepository<ChatbotLog> ChatbotLogs { get; }
-
     ITicketRepository Tickets { get; }
 
     IGenericRepository<SeatHold> SeatHolds { get; }

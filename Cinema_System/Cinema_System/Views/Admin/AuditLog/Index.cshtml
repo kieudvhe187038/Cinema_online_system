@@ -52,7 +52,7 @@
                     <th>Người thực hiện</th>
                     <th>Hành động</th>
                     <th>Bảng</th>
-                    <th>Bản ghi</th>
+                    <th>Đối tượng</th>
                     <th>IP</th>
                     <th>Thao tác</th>
                 </tr>
@@ -72,7 +72,21 @@
                         <td>@log.UserName</td>
                         <td><span class="al-chip @actionClass">@log.Action</span></td>
                         <td>@(string.IsNullOrEmpty(log.TableName) ? "—" : log.TableName)</td>
-                        <td><span class="al-mono">@(log.RecordId?.ToString() ?? "—")</span></td>
+                        @* Ưu tiên tên dễ đọc; không tra được thì hiện Id rút gọn (đầy đủ ở tooltip). *@
+                        <td>
+                            @if (!string.IsNullOrEmpty(log.RecordLabel))
+                            {
+                                <span title="@log.RecordId">@log.RecordLabel</span>
+                            }
+                            else if (log.RecordId.HasValue)
+                            {
+                                <span class="al-mono" title="@log.RecordId">@log.RecordId.Value.ToString()[..8]…</span>
+                            }
+                            else
+                            {
+                                <span>—</span>
+                            }
+                        </td>
                         <td><span class="al-mono">@(string.IsNullOrEmpty(log.IpAddress) ? "—" : log.IpAddress)</span></td>
                         <td><a class="al-link" href="@Url.Action("Details", "AuditLog", new { id = log.Id })">Chi tiết</a></td>
                     </tr>

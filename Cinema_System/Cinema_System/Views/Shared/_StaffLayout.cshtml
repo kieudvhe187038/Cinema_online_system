@@ -24,7 +24,13 @@
         tailwind.config = {
             theme: { extend: {
                 colors: { primary: '#f37021', 'primary-dark': '#c95a10', secondary: '#004b8d', 'secondary-dark': '#001c3a' },
-                fontFamily: { head: ['"Plus Jakarta Sans"', 'sans-serif'], body: ['"Be Vietnam Pro"', 'sans-serif'] },
+                // Bộ phông dùng chung toàn hệ thống — giữ GIỐNG NHAU ở mọi layout.
+                fontFamily: {
+                    sans: ['"Be Vietnam Pro"', 'sans-serif'],
+                    body: ['"Be Vietnam Pro"', 'sans-serif'],
+                    head: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    heading: ['"Plus Jakarta Sans"', 'sans-serif']
+                },
             } },
         };
     </script>
@@ -49,10 +55,6 @@
     </a>
 
     <nav class="flex-1 overflow-y-auto py-3">
-        <a class="@navBase @(ctrl == "RoomManagement" ? navActive : navIdle)" asp-controller="RoomManagement" asp-action="Index">
-            <span class="material-symbols-outlined">meeting_room</span>
-            <span>Quản lý phòng chiếu</span>
-        </a>
         <a class="@navBase @(ctrl == "StaffCounter" && action != "Member" ? navActive : navIdle)" asp-controller="StaffCounter" asp-action="Index">
             <span class="material-symbols-outlined">point_of_sale</span>
             <span>Đặt vé tại quầy</span>
@@ -105,6 +107,8 @@
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
+@* Modal xác nhận/thông báo dùng chung — thay cho confirm()/alert() của trình duyệt. *@
+<partial name="_ConfirmModal" />
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

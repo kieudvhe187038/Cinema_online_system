@@ -94,7 +94,7 @@
                 hasPing = false;
                 break;
             case "Special":
-                statusText = "Suất chiếu đặc biệt";
+                statusText = "Chiếu sớm";
                 statusColorClass = "text-purple-600";
                 dotColorClass = "bg-purple-500";
                 pingColorClass = "bg-purple-400";
@@ -223,10 +223,21 @@
                                 XEM TRAILER
                             </button>
                         }
-                        <a asp-controller="Showtime" asp-action="Index" asp-route-movieId="@Model.Movie.Id" data-book-movie="@Model.Movie.Id" class="action-button flex items-center gap-3">
-                            <span class="material-symbols-outlined text-base">local_movies</span>
-                            ĐẶT VÉ
-                        </a>
+                        @* Phim đã có suất chiếu sắp tới thì cho đặt vé, kể cả phim sắp chiếu / chiếu sớm. *@
+                        @if (Model.Movie.HasUpcomingShowtimes)
+                        {
+                            <a asp-controller="Showtime" asp-action="Index" asp-route-movieId="@Model.Movie.Id" data-book-movie="@Model.Movie.Id" class="action-button flex items-center gap-3">
+                                <span class="material-symbols-outlined text-base">local_movies</span>
+                                ĐẶT VÉ
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="action-button flex items-center gap-3 cursor-not-allowed opacity-60">
+                                <span class="material-symbols-outlined text-base">event_busy</span>
+                                CHƯA CÓ LỊCH CHIẾU
+                            </span>
+                        }
                         <a asp-controller="Movies" asp-action="Index" class="action-button flex items-center gap-3">
                             <span class="material-symbols-outlined text-base">arrow_back</span>
                             Quay lại danh sách

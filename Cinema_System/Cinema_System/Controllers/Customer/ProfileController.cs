@@ -21,12 +21,15 @@ public class ProfileController : Controller
     private readonly IProfileService _profileService;
     private readonly IWebHostEnvironment _env; // lấy đường dẫn wwwroot để lưu ảnh
     private readonly IMapper _mapper;
+    private readonly IPointConfigService _pointConfigService;
 
-    public ProfileController(IProfileService profileService, IWebHostEnvironment env, IMapper mapper)
+    public ProfileController(IProfileService profileService, IWebHostEnvironment env, IMapper mapper,
+        IPointConfigService pointConfigService)
     {
         _profileService = profileService;
         _env = env;
         _mapper = mapper;
+        _pointConfigService = pointConfigService;
     }
 
     // Lấy Id user đang đăng nhập từ Claims (LoginController set ClaimTypes.NameIdentifier khi đăng nhập).
@@ -183,13 +186,18 @@ public class ProfileController : Controller
 
         var paged = PagedResult<PointHistoryViewModel>.Create(allRecords, page, PointHistoryPageSize);
 
+        // Chính sách điểm đang áp dụng (Manager cấu hình) để hiển thị cách tích/dùng điểm.
+        var pointRate = await _pointConfigService.GetRateAsync();
+
         var pageModel = new PointHistoryPageViewModel
         {
             Items = paged.Items.ToList(),
             CurrentPage = paged.CurrentPage,
             TotalPages = paged.TotalPages,
             TotalItems = paged.TotalCount,
-            CurrentPoints = profile?.RewardPoints ?? 0
+            CurrentPoints = profile?.RewardPoints ?? 0,
+            VndPerPoint = pointRate.VndPerPoint,
+            PointValueVnd = pointRate.PointValueVnd
         };
         return View(pageModel);
     }

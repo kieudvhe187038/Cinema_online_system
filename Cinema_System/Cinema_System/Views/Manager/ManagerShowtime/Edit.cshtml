@@ -14,9 +14,13 @@
 
 @* Tiêu đề của trang Sửa suất chiếu *@
 <div class="max-w-[760px] mx-auto mb-8">
-    <h1 class="font-head text-2xl font-extrabold text-[#191c1d] mb-6">Chỉnh sửa suất chiếu</h1>
-
-
+    <div class="flex items-center justify-between gap-4 mb-6">
+        <h1 class="font-head text-2xl font-extrabold text-[#191c1d]">Chỉnh sửa suất chiếu</h1>
+        <span class="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full whitespace-nowrap">
+            <span class="material-symbols-outlined" style="font-size:16px">confirmation_number</span>
+            @Model.SeatsSold/@Model.Capacity vé đã bán
+        </span>
+    </div>
 
     @* Form chỉnh sửa thông tin suất chiếu *@
     <form id="editShowtimeForm" method="post" action="@Url.Action("Edit", "ManagerShowtime", new { id = Model.Id })">
@@ -161,14 +165,18 @@
 
         @if (Model.HasBookings)
         {
-            <form method="post" action="@Url.Action("Cancel", "ManagerShowtime", new { id = Model.Id })" onsubmit="return confirm('Bạn có chắc chắn muốn HỦY suất chiếu này không? Việc hủy suất chiếu sẽ hủy tất cả vé đã đặt.');">
+            <form method="post" action="@Url.Action("Cancel", "ManagerShowtime", new { id = Model.Id })"
+                  data-confirm="Bạn có chắc chắn muốn HỦY suất chiếu này không? Việc hủy suất chiếu sẽ hủy tất cả vé đã đặt."
+                  data-confirm-title="Hủy suất chiếu" data-confirm-type="danger" data-confirm-ok="Hủy suất chiếu">
                 @Html.AntiForgeryToken()
                 <button type="submit" class="px-5 py-2.5 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors">Hủy suất chiếu</button>
             </form>
         }
         else
         {
-            <form method="post" action="@Url.Action("Delete", "ManagerShowtime", new { id = Model.Id })" onsubmit="return confirm('Bạn có chắc chắn muốn xóa suất chiếu này không?');">
+            <form method="post" action="@Url.Action("Delete", "ManagerShowtime", new { id = Model.Id })"
+                  data-confirm="Bạn có chắc chắn muốn xóa suất chiếu này không?"
+                  data-confirm-title="Xóa suất chiếu" data-confirm-type="danger" data-confirm-ok="Xóa">
                 @Html.AntiForgeryToken()
                 <button type="submit" class="px-5 py-2.5 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors">Xóa suất chiếu</button>
             </form>

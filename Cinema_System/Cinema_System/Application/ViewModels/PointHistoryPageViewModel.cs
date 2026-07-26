@@ -10,4 +10,11 @@ public class PointHistoryPageViewModel
 
     // Tổng điểm hiện có (cho phần hero)
     public int CurrentPoints { get; set; }
+
+    // Chính sách điểm đang áp dụng (Manager cấu hình) — để khách biết cách tích và cách dùng điểm.
+    public decimal VndPerPoint { get; set; }
+    public int PointValueVnd { get; set; }
+
+    // Số tiền quy đổi được từ toàn bộ điểm đang có.
+    public decimal CurrentPointsValueVnd => (decimal)CurrentPoints * PointValueVnd;
 }

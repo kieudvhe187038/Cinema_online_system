@@ -148,7 +148,7 @@
             const rating = document.querySelector('input[name="Rating"]:checked');
             if (!rating) {
                 e.preventDefault();
-                alert('Vui lòng chọn số sao để đánh giá phim.');
+                alertPopup({ title: 'Thiếu số sao', message: 'Vui lòng chọn số sao để đánh giá phim.', type: 'warning' });
             }
         });
     }

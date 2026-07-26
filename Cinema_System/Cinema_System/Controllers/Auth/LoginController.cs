@@ -47,7 +47,7 @@ public class LoginController : AuthControllerBase
     {
         if (User.Identity?.IsAuthenticated == true)
         {
-            return RedirectToAction("Index", "Home");
+            return RedirectAfterLogin(User.FindFirstValue(ClaimTypes.Role) ?? string.Empty, returnUrl);
         }
 
         // Thông báo khi user huỷ đăng nhập Google (hoặc handshake thất bại).
@@ -89,12 +89,7 @@ public class LoginController : AuthControllerBase
         RememberLogin(model.Email, model.Password, model.RememberMe);
         await SignInUserAsync(result.Data!);
 
-        if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
-        {
-            return Redirect(model.ReturnUrl);
-        }
-
-        return RedirectToAction("Index", "Home");
+        return RedirectAfterLogin(result.Data!.RoleName, model.ReturnUrl);
     }
 
     [HttpPost("/logout")]
@@ -151,11 +146,7 @@ public class LoginController : AuthControllerBase
         if (loginResult.Data is not null)
         {
             await SignInUserAsync(loginResult.Data);
-            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
-            {
-                return Redirect(returnUrl);
-            }
-            return RedirectToAction("Index", "Home");
+            return RedirectAfterLogin(loginResult.Data.RoleName, returnUrl);
         }
 
         // Chưa có tài khoản -> yêu cầu hoàn thiện hồ sơ trước khi tạo.
@@ -214,11 +205,7 @@ public class LoginController : AuthControllerBase
         HttpContext.Session.Remove(PendingExternalKey);
         await SignInUserAsync(result.Data!);
 
-        if (!string.IsNullOrEmpty(pending.ReturnUrl) && Url.IsLocalUrl(pending.ReturnUrl))
-        {
-            return Redirect(pending.ReturnUrl);
-        }
-        return RedirectToAction("Index", "Home");
+        return RedirectAfterLogin(result.Data!.RoleName, pending.ReturnUrl);
     }
 
     [HttpGet("/access-denied")]

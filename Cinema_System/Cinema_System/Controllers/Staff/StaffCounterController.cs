@@ -10,6 +10,9 @@ namespace Cinema_System.Controllers.Staff;
 [Route("Staff/Counter")]
 public class StaffCounterController : Controller
 {
+    // Thời gian giữ ghế (phút) khi nhân viên chọn ghế tại quầy — khớp thời gian giữ của luồng đặt online.
+    private const int HoldMinutes = 10;
+
     private readonly ICounterBookingService _counterBookingService;
     private readonly IBookingManagementService _bookingService;
     private readonly IMemberService _memberService;
@@ -51,10 +54,46 @@ public class StaffCounterController : Controller
     [HttpGet("Seats/{showtimeId}")]
     public async Task<IActionResult> Seats(Guid showtimeId)
     {
-        var seatMap = await _counterBookingService.GetSeatMapAsync(showtimeId);
+        var seatMap = await _counterBookingService.GetSeatMapAsync(showtimeId, GetCurrentStaffId());
         if (seatMap is null) return NotFound();
 
         return Json(seatMap);
+    }
+
+    // --- AJAX: giữ 1 ghế trong lúc nhân viên nhập thông tin đơn (chặn người khác chọn trùng ghế) ---
+    [HttpPost("HoldSeat")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> HoldSeat(Guid showtimeId, Guid seatId)
+    {
+        var result = await _counterBookingService.HoldSeatAsync(showtimeId, seatId, GetCurrentStaffId(), HoldMinutes);
+        return Json(new { ok = result.Succeeded, message = result.Error });
+    }
+
+    // --- AJAX: bỏ giữ 1 ghế (nhân viên bỏ chọn) ---
+    [HttpPost("ReleaseSeat")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ReleaseSeat(Guid showtimeId, Guid seatId)
+    {
+        await _counterBookingService.ReleaseSeatAsync(showtimeId, seatId, GetCurrentStaffId());
+        return Json(new { ok = true });
+    }
+
+    // --- AJAX: bỏ giữ toàn bộ ghế đang giữ của 1 suất (đổi suất chiếu khác / rời trang) ---
+    [HttpPost("ReleaseAll")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ReleaseAll(Guid showtimeId)
+    {
+        await _counterBookingService.ReleaseAllAsync(showtimeId, GetCurrentStaffId());
+        return Json(new { ok = true });
+    }
+
+    // --- AJAX: xem trước áp mã giảm giá (tính trên ghế đang giữ + đồ ăn đã chọn) ---
+    [HttpPost("ApplyPromo")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ApplyPromo(Guid showtimeId, List<FoodOrderItemRequest> foods, Guid? customerId, string code)
+    {
+        var res = await _counterBookingService.PreviewPromoAsync(showtimeId, GetCurrentStaffId(), foods ?? new(), customerId, code ?? string.Empty);
+        return Json(new { ok = res.Ok, message = res.Message, discount = res.PromoDiscount, maxPoints = res.MaxUsablePoints, code = res.Code, target = res.Target });
     }
 
     // --- Trang tra cứu thành viên (#41) ---

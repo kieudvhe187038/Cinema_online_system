@@ -47,9 +47,12 @@
                         tertiary: '#002F59',
                         light: '#F8F9FA',
                     },
+                    // Bộ phông dùng chung toàn hệ thống — giữ GIỐNG NHAU ở mọi layout.
                     fontFamily: {
-                        heading: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        sans: ['"Be Vietnam Pro"', 'sans-serif'],
                         body: ['"Be Vietnam Pro"', 'sans-serif'],
+                        head: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        heading: ['"Plus Jakarta Sans"', 'sans-serif'],
                     }
                 }
             }
@@ -134,6 +137,8 @@
         </main>
     </div>
 </div>
+@* Modal xác nhận/thông báo dùng chung — thay cho confirm()/alert() của trình duyệt. *@
+<partial name="_ConfirmModal" />
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

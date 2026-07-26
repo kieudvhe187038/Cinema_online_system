@@ -11,7 +11,8 @@
     var poster = string.IsNullOrEmpty(rawPoster)
         ? $"https://placehold.co/300x420?text={Uri.EscapeDataString(Model.Title)}&font=raleway"
         : rawPoster;
-    var hideBuyButton = ViewData["HideBuyButton"] as bool? ?? false;
+    // Có suất chiếu sắp tới thì cho mua vé — kể cả phim sắp chiếu/chiếu sớm (đặt vé trước).
+    var canBuyTicket = Model.HasUpcomingShowtimes;
 }
 <article class="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-300/50 bg-white shadow-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-2">
     @if (!string.IsNullOrEmpty(badge))
@@ -49,7 +50,7 @@
             }
         </div>
         <div class="mt-auto flex flex-wrap gap-2 pt-4">
-            @if (!hideBuyButton)
+            @if (canBuyTicket)
             {
                 <a asp-controller="Showtime" asp-action="Index" asp-route-movieId="@Model.Id" data-book-movie="@Model.Id" class="flex-1 text-center rounded-full bg-gradient-to-r from-primary to-orange-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/30 transition hover:shadow-xl hover:scale-105 active:scale-95">MUA VÉ</a>
             }

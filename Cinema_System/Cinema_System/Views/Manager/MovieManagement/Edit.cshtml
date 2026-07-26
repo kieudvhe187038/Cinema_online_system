@@ -12,15 +12,23 @@
     const string sectionTitle = "font-bold text-base text-[#191c1d] mb-4 pb-2 border-b-2 border-[#edeeef]";
     const string fileInput = "w-full text-sm text-[#584237] border border-[#e0c0b2] rounded-lg p-2 cursor-pointer file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary file:text-white file:text-sm file:font-semibold hover:file:bg-primary-dark file:cursor-pointer";
 
-    // Phim đang chiếu thì khóa thời lượng & ngày khởi chiếu (không cho sửa).
-    bool lockSchedule = Model.Status == Cinema_System.Application.Common.MovieStatus.NowShowing;
-    string lockedInput = fieldInput + " bg-[#f3f3f3] cursor-not-allowed text-slate-500";
+    // Trạng thái do hệ thống suy ra theo ngày khởi chiếu + lịch chiếu, chỉ hiển thị.
+    var statusBadge = Model.Status switch
+    {
+        Cinema_System.Application.Common.MovieStatus.NowShowing => ("bg-green-100 text-green-700", "Đang chiếu"),
+        Cinema_System.Application.Common.MovieStatus.ComingSoon => ("bg-orange-50 text-orange-700", "Sắp chiếu"),
+        Cinema_System.Application.Common.MovieStatus.Special => ("bg-purple-100 text-purple-700", "Chiếu sớm"),
+        Cinema_System.Application.Common.MovieStatus.Stopped => ("bg-gray-100 text-gray-600", "Ngừng chiếu"),
+        _ => ("bg-gray-100 text-gray-600", Model.Status ?? "—")
+    };
 }
 
 <div class="max-w-[860px] mx-auto mb-8">
     <h1 class="font-head text-2xl font-extrabold text-[#191c1d] mb-6">Sửa Phim: @Model.Title</h1>
 
-    <form method="post" action="@Url.Action("Edit", "MovieManagement", new { id = Model.Id })" enctype="multipart/form-data">
+    <form method="post" action="@Url.Action("Edit", "MovieManagement", new { id = Model.Id })" enctype="multipart/form-data"
+          data-confirm="Xác nhận lưu các thay đổi cho phim này?" data-confirm-title="Lưu thay đổi"
+          data-confirm-type="info" data-confirm-ok="Lưu">
         @Html.AntiForgeryToken()
         <input type="hidden" asp-for="Id" />
         @* Giữ lại đường dẫn ảnh hiện tại nếu không upload ảnh mới (trailer nhập trực tiếp nên không cần hidden) *@
@@ -40,13 +48,15 @@
 
                 <div class="mb-3.5">
                     <label asp-for="Status" class="@fieldLabel"></label>
-                    <select asp-for="Status" class="@fieldInput">
-                        <option value="Coming Soon">Sắp chiếu</option>
-                        <option value="Now Showing">Đang chiếu</option>
-                        <option value="Special">Suất chiếu đặc biệt</option>
-                        <option value="Stopped">Tạm ngừng</option>
-                    </select>
-                    <span asp-validation-for="Status" class="@fieldError"></span>
+                    @* Trạng thái không cho chọn tay — gửi lại giá trị hiện tại để giữ đúng quy tắc khóa lịch. *@
+                    <input type="hidden" asp-for="Status" />
+                    <div id="status-preview"
+                         data-stopped="@(Model.Status == Cinema_System.Application.Common.MovieStatus.Stopped ? "true" : "false")"
+                         data-first-showtime="@(Model.FirstShowtimeStart?.ToString("yyyy-MM-dd") ?? "")"
+                         class="flex items-center gap-2 px-3 py-2.5 border border-dashed border-[#e0c0b2] rounded-lg bg-[#fff7f0]">
+                        <span id="status-badge" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold @statusBadge.Item1">@statusBadge.Item2</span>
+                        <span class="text-xs text-[#584237]">Tự động theo ngày khởi chiếu &amp; lịch chiếu</span>
+                    </div>
                 </div>
 
                 <div class="mb-3.5">
@@ -62,24 +72,14 @@
 
                 <div class="mb-3.5">
                     <label asp-for="DurationMinutes" class="@fieldLabel"></label>
-                    <input asp-for="DurationMinutes" type="number" min="1" max="600"
-                           class="@(lockSchedule ? lockedInput : fieldInput)" disabled="@lockSchedule" />
-                    @if (lockSchedule)
-                    {
-                        <p class="text-xs text-amber-600 mt-1">⚠ Phim đang chiếu — không thể đổi thời lượng.</p>
-                    }
+                    <input asp-for="DurationMinutes" type="number" min="1" max="600" class="@fieldInput" />
                     <span asp-validation-for="DurationMinutes" class="@fieldError"></span>
                 </div>
 
                 <div class="mb-3.5">
                     <label asp-for="ReleaseDate" class="@fieldLabel"></label>
-                    <input asp-for="ReleaseDate" type="date"
-                           min="@DateOnly.FromDateTime(DateTime.Today).ToString("yyyy-MM-dd")"
-                           class="@(lockSchedule ? lockedInput : fieldInput)" disabled="@lockSchedule" />
-                    @if (lockSchedule)
-                    {
-                        <p class="text-xs text-amber-600 mt-1">⚠ Phim đang chiếu — không thể đổi ngày khởi chiếu.</p>
-                    }
+                    <input asp-for="ReleaseDate" type="date" class="@fieldInput" />
+                    <p class="text-xs text-[#584237] mt-1">Đổi ngày này sẽ tự cập nhật lại trạng thái phim.</p>
                     <span asp-validation-for="ReleaseDate" class="@fieldError"></span>
                 </div>
 
@@ -177,8 +177,7 @@
         </div>
 
         <div class="flex gap-3 mt-6">
-            <button type="submit" class="inline-flex items-center px-5 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-semibold transition-colors"
-                    onclick="return confirm('Xác nhận lưu các thay đổi cho phim này?');">Lưu thay đổi</button>
+            <button type="submit" class="inline-flex items-center px-5 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-semibold transition-colors">Lưu thay đổi</button>
             <a class="inline-flex items-center px-5 py-2.5 bg-[#edeeef] text-[#191c1d] rounded-lg text-sm font-semibold hover:bg-gray-200 transition-colors" href="@Url.Action("Index", "MovieManagement")">Hủy</a>
         </div>
     </form>
@@ -194,6 +193,44 @@
             var max = ta.getAttribute('maxlength') || 3000;
             function upd() { c.textContent = ta.value.length + '/' + max + ' ký tự'; }
             ta.addEventListener('input', upd); upd();
+        })();
+
+        // Đổi ngày khởi chiếu -> cập nhật ngay badge trạng thái (cùng quy tắc MovieStatusPolicy ở server).
+        (function () {
+            var box = document.getElementById('status-preview'),
+                badge = document.getElementById('status-badge'),
+                dateInput = document.getElementById('ReleaseDate');
+            if (!box || !badge || !dateInput || dateInput.disabled) return;
+
+            // Phim ngừng chiếu: trạng thái do Manager bật/tắt tay, không suy ra theo ngày.
+            if (box.dataset.stopped === 'true') return;
+
+            var firstShowtime = box.dataset.firstShowtime || '';   // yyyy-MM-dd, rỗng nếu phim chưa có lịch
+            var styles = {
+                none: ['Chưa xác định', 'bg-gray-100 text-gray-600'],
+                coming: ['Sắp chiếu', 'bg-orange-50 text-orange-700'],
+                early: ['Chiếu sớm', 'bg-purple-100 text-purple-700'],
+                now: ['Đang chiếu', 'bg-green-100 text-green-700']
+            };
+
+            function todayIso() {
+                var d = new Date();
+                return d.getFullYear() + '-' +
+                    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                    String(d.getDate()).padStart(2, '0');
+            }
+
+            function upd() {
+                var picked = dateInput.value;   // yyyy-MM-dd nên so sánh chuỗi là đủ
+                var key = !picked ? 'none'
+                    : picked <= todayIso() ? 'now'
+                    : (firstShowtime && firstShowtime < picked) ? 'early' : 'coming';
+                badge.textContent = styles[key][0];
+                badge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ' + styles[key][1];
+            }
+
+            dateInput.addEventListener('change', upd);
+            dateInput.addEventListener('input', upd);
         })();
     </script>
 }

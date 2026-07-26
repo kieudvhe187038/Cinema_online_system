@@ -23,10 +23,15 @@
                         tertiary: '#001c3a',
                         light: '#f8f9fa',
                     },
-                    fontFamily: { 
-                        heading: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    // Bộ phông dùng chung toàn hệ thống — giữ GIỐNG NHAU ở mọi layout.
+                    // sans: mặc định cho mọi thẻ (không cần gắn class vẫn đúng phông).
+                    // head/heading: cùng trỏ phông tiêu đề để view dùng tên nào cũng chạy.
+                    fontFamily: {
+                        sans: ['"Be Vietnam Pro"', 'sans-serif'],
                         body: ['"Be Vietnam Pro"', 'sans-serif'],
-                    } 
+                        head: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        heading: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    }
                 }
             }
         }
@@ -121,7 +126,7 @@
                                     }
                                     @if (User.IsInRole("STAFF"))
                                     {
-                                        <a asp-controller="RoomManagement" asp-action="Index" class="flex items-center gap-3 border-b border-slate-100 px-4 py-2.5 font-semibold text-primary transition hover:bg-primary/5">
+                                        <a asp-controller="StaffCounter" asp-action="Index" class="flex items-center gap-3 border-b border-slate-100 px-4 py-2.5 font-semibold text-primary transition hover:bg-primary/5">
                                             <span class="material-symbols-outlined text-[20px]">dashboard</span> Khu quản lý
                                         </a>
                                     }
@@ -183,7 +188,6 @@
             <div>
                 <h4 class="mb-4 text-sm font-semibold uppercase tracking-[0.16em] text-slate-900">Hỗ Trợ Khách Hàng</h4>
                 <ul class="space-y-3 text-sm text-slate-600">
-                    <li><a class="transition hover:text-primary">AI Chatbot hỗ trợ</a></li>
                     <li><a class="transition hover:text-primary" href="#">Quy định xem phim</a></li>
                     <li><a class="transition hover:text-primary" href="#">Liên hệ quảng cáo</a></li>
                     <li><a class="transition hover:text-primary" href="#">Giải quyết khiếu nại</a></li>
@@ -247,6 +251,9 @@
             });
         })();
     </script>
+
+    @* Modal xác nhận/thông báo dùng chung — thay cho confirm()/alert() của trình duyệt. *@
+    <partial name="_ConfirmModal" />
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

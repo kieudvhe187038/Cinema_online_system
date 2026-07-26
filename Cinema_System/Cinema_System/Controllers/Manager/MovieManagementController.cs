@@ -67,8 +67,9 @@ public class MovieManagementController : Controller
             return View(model);
         }
 
+        // Trạng thái do hệ thống suy ra từ ngày khởi chiếu nên không ghi vào log tạo phim.
         await _audit.LogAsync("CREATE_MOVIE", "Movies",
-            newValue: new { model.Title, model.Status, model.ReleaseDate });
+            newValue: new { model.Title, model.ReleaseDate });
 
         TempData["Success"] = "Thêm phim thành công.";
         return RedirectToAction(nameof(Index));
@@ -108,7 +109,7 @@ public class MovieManagementController : Controller
         }
 
         await _audit.LogAsync("UPDATE_MOVIE", "Movies", model.Id,
-            newValue: new { model.Title, model.Status, model.ReleaseDate });
+            newValue: new { model.Title, model.ReleaseDate });
 
         TempData["Success"] = "Cập nhật phim thành công.";
         return RedirectToAction(nameof(Index));

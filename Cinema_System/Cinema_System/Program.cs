@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Cinema_System.Application.Common;
 using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.Mappings;
 using Cinema_System.Application.Services;
@@ -52,9 +53,13 @@ builder.Services.Configure<RazorViewEngineOptions>(options =>
 builder.Services.AddAutoMapper(cfg => cfg.AddMaps(typeof(MovieProfile).Assembly));
 
 // Kết nối đến cơ sở dữ liệu SQL Server của ứng dụng.
+// Kèm interceptor tự ghi Audit_Logs cho mọi thay đổi dữ liệu do Admin/Manager/Staff thực hiện.
 var connectionStr = builder.Configuration.GetConnectionString("MyCnn");
-builder.Services.AddDbContext<CinemaWebDbContext>(options =>
-    options.UseSqlServer(connectionStr));
+builder.Services.AddScoped<AuditRequestLog>();
+builder.Services.AddScoped<AuditSaveChangesInterceptor>();
+builder.Services.AddDbContext<CinemaWebDbContext>((serviceProvider, options) =>
+    options.UseSqlServer(connectionStr)
+           .AddInterceptors(serviceProvider.GetRequiredService<AuditSaveChangesInterceptor>()));
 
 // Cấu hình email (SMTP) đọc từ section "EmailSettings".
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
@@ -67,6 +72,8 @@ builder.Services.AddScoped<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<IRegistrationService, RegistrationService>();
 builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 builder.Services.AddScoped<IMovieService, MovieService>();
+// Suy ra trạng thái phim theo ngày khởi chiếu + lịch chiếu (dùng chung cho phim, lịch chiếu, job nền).
+builder.Services.AddScoped<IMovieStatusService, MovieStatusService>();
 builder.Services.AddScoped<IShowtimeService, ShowtimeService>();
 builder.Services.AddScoped<IFoodBeverageService, FoodBeverageService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
@@ -96,9 +103,6 @@ builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 
-// Đăng ký chatbot AI service và HTTP client dùng để gọi Google Gemini API.
-builder.Services.AddScoped<IChatbotService, ChatbotService>();
-builder.Services.AddHttpClient();
 builder.Services.AddScoped<IShowtimeScheduleService, ShowtimeScheduleService>();
 
 // Đăng ký Background Service tự động cập nhật trạng thái lịch chiếu
@@ -114,7 +118,6 @@ builder.Services.AddSession(options =>
 });
 
 builder.Services.AddScoped<IBookingService, BookingService>();
-builder.Services.AddScoped<IRoomManagementService, RoomManagementService>();
 
 // Cookie Authentication.
 var authBuilder = builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

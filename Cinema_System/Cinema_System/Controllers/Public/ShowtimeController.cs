@@ -55,20 +55,25 @@ namespace Cinema_System.Controllers.Public
         }
 
         // Trang chọn ghế cho một suất chiếu (click từ lịch chiếu sang).
-        // Cho CUSTOMER (tự mua) và STAFF (mua hộ khách tại quầy); guest sẽ bị chuyển tới trang đăng nhập.
-        [Authorize(Roles = "CUSTOMER,STAFF")]
+        // Chỉ dành cho CUSTOMER đặt vé online; STAFF chỉ hỗ trợ đặt vé tại quầy. Guest sẽ bị chuyển tới trang đăng nhập.
+        [Authorize(Roles = "CUSTOMER")]
         public async Task<IActionResult> SelectSeats(Guid id)
         {
-            // Chặn đặt vé online khi khách chưa đủ tuổi theo phân loại phim (chỉ áp cho CUSTOMER;
-            // STAFF bán hộ tại quầy tự xác minh giấy tờ khách).
-            if (User.IsInRole("CUSTOMER"))
+            // Suất đã qua giờ / đang chiếu / đã hủy thì không cho vào trang chọn ghế
+            // (lịch chiếu đã lọc sẵn, nhưng trang có thể mở từ trước hoặc vào bằng link cũ).
+            var saleOpen = await _showtimeService.CheckSaleOpenAsync(id);
+            if (!saleOpen.Succeeded)
             {
-                var ageCheck = await _showtimeService.CheckAgeRestrictionAsync(id, CurrentUserId);
-                if (!ageCheck.Succeeded)
-                {
-                    TempData["Error"] = ageCheck.Error;
-                    return RedirectToAction(nameof(Index));
-                }
+                TempData["Error"] = saleOpen.Error;
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Chặn đặt vé online khi khách chưa đủ tuổi theo phân loại phim.
+            var ageCheck = await _showtimeService.CheckAgeRestrictionAsync(id, CurrentUserId);
+            if (!ageCheck.Succeeded)
+            {
+                TempData["Error"] = ageCheck.Error;
+                return RedirectToAction(nameof(Index));
             }
 
             var vm = await _showtimeService.GetSeatSelectionAsync(id, CurrentUserId);
@@ -78,7 +83,7 @@ namespace Cinema_System.Controllers.Public
 
         // Trang chọn đồ ăn & nước (bước sau khi chọn ghế).
         // Nếu user không còn giữ ghế nào (hết giờ giữ) -> quay lại trang chọn ghế.
-        [Authorize(Roles = "CUSTOMER,STAFF")]
+        [Authorize(Roles = "CUSTOMER")]
         public async Task<IActionResult> Food(Guid id)
         {
             var vm = await _showtimeService.GetFoodOrderAsync(id, CurrentUserId);
@@ -88,7 +93,7 @@ namespace Cinema_System.Controllers.Public
 
         // Trang thanh toán (nhận đồ ăn đã chọn từ trang Food qua form POST).
         [HttpPost]
-        [Authorize(Roles = "CUSTOMER,STAFF")]
+        [Authorize(Roles = "CUSTOMER")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Payment(Guid id, List<Guid> fbId, List<int> qty)
         {
@@ -99,7 +104,7 @@ namespace Cinema_System.Controllers.Public
 
         // Xác nhận thanh toán -> nếu chọn VNPay (đã cấu hình) thì sang cổng VNPay; còn lại thanh toán giả.
         [HttpPost]
-        [Authorize(Roles = "CUSTOMER,STAFF")]
+        [Authorize(Roles = "CUSTOMER")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Confirm(Guid id, string method, List<Guid> fbId, List<int> qty, int pointsUsed = 0, string? promoCode = null)
         {
@@ -109,6 +114,24 @@ namespace Cinema_System.Controllers.Public
             qty ??= new();
             if (pointsUsed < 0) pointsUsed = 0;
             promoCode = string.IsNullOrWhiteSpace(promoCode) ? null : promoCode.Trim();
+
+            // Đơn 0đ (mã giảm giá/điểm phủ hết tiền): tạo vé ngay, không cần chọn phương thức hay qua cổng.
+            var payVm = await _showtimeService.GetPaymentAsync(id, CurrentUserId, fbId, qty);
+            if (payVm is null) return RedirectToAction(nameof(SelectSeats), new { id });
+            var promoDiscount0 = await ResolvePromoDiscountAsync(id, fbId, qty, promoCode);
+            var afterPromo0 = payVm.GrandTotal - promoDiscount0;
+            var usePoints0 = Math.Max(0, Math.Min(Math.Min(pointsUsed, payVm.MaxUsablePoints), (int)(afterPromo0 / payVm.PointValueVnd)));
+            var payable0 = afterPromo0 - (decimal)usePoints0 * payVm.PointValueVnd;
+            if (payable0 <= 0)
+            {
+                var freeResult = await _showtimeService.ConfirmBookingAsync(id, CurrentUserId, "Free", fbId, qty, pointsUsed, promoCode);
+                if (!freeResult.Succeeded)
+                {
+                    TempData["Error"] = freeResult.Error;
+                    return RedirectToAction(nameof(SelectSeats), new { id });
+                }
+                return RedirectToAction(nameof(Success), new { id = freeResult.BookingId });
+            }
 
             // VietQR: hiển thị mã QR chuyển khoản; tạo đơn khi khách bấm "Đã chuyển khoản".
             if (method == "VietQR" && _vietqr.Enabled)
@@ -179,7 +202,7 @@ namespace Cinema_System.Controllers.Public
         }
 
         // VNPay redirect người dùng về đây sau khi thanh toán: verify chữ ký rồi tạo booking + cộng điểm.
-        [Authorize(Roles = "CUSTOMER,STAFF")]
+        [Authorize(Roles = "CUSTOMER")]
         public async Task<IActionResult> VnpayReturn()
         {
             var check = _vnpay.ValidateReturn(Request.Query);
@@ -213,7 +236,7 @@ namespace Cinema_System.Controllers.Public
         }
 
         // Trang đặt vé thành công.
-        [Authorize(Roles = "CUSTOMER,STAFF")]
+        [Authorize(Roles = "CUSTOMER")]
         public async Task<IActionResult> Success(Guid id)
         {
             var vm = await _showtimeService.GetBookingSuccessAsync(id, CurrentUserId);
@@ -223,7 +246,7 @@ namespace Cinema_System.Controllers.Public
 
         // Khách bấm "Đã chuyển khoản" trên trang VietQR -> tạo đơn (xác nhận thủ công).
         [HttpPost]
-        [Authorize(Roles = "CUSTOMER,STAFF")]
+        [Authorize(Roles = "CUSTOMER")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> VietQrPaid(Guid id, List<Guid> fbId, List<int> qty, int pointsUsed = 0, string? promoCode = null)
         {
@@ -239,12 +262,12 @@ namespace Cinema_System.Controllers.Public
 
         // Áp mã giảm giá (AJAX): kiểm tra mã + trả về số tiền giảm để cập nhật tổng trên trang thanh toán.
         [HttpPost]
-        [Authorize(Roles = "CUSTOMER,STAFF")]
+        [Authorize(Roles = "CUSTOMER")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ApplyPromo(Guid showtimeId, List<Guid> fbId, List<int> qty, string code)
         {
             var res = await _showtimeService.PreviewPromoAsync(showtimeId, CurrentUserId, fbId ?? new(), qty ?? new(), code ?? string.Empty);
-            return Json(new { ok = res.Ok, message = res.Message, discount = res.PromoDiscount, maxPoints = res.MaxUsablePoints, code = res.Code });
+            return Json(new { ok = res.Ok, message = res.Message, discount = res.PromoDiscount, maxPoints = res.MaxUsablePoints, code = res.Code, target = res.Target });
         }
 
         // Tính trước số tiền mã giảm cho luồng VietQR/VNPay (0 nếu mã không hợp lệ).
@@ -257,7 +280,7 @@ namespace Cinema_System.Controllers.Public
 
         // Giữ 1 ghế trong 10 phút cho user hiện tại.
         [HttpPost]
-        [Authorize(Roles = "CUSTOMER,STAFF")]
+        [Authorize(Roles = "CUSTOMER")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> HoldSeat(Guid showtimeId, Guid seatId)
         {
@@ -267,7 +290,7 @@ namespace Cinema_System.Controllers.Public
 
         // Bỏ giữ 1 ghế.
         [HttpPost]
-        [Authorize(Roles = "CUSTOMER,STAFF")]
+        [Authorize(Roles = "CUSTOMER")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ReleaseSeat(Guid showtimeId, Guid seatId)
         {
@@ -277,7 +300,7 @@ namespace Cinema_System.Controllers.Public
 
         // Bỏ giữ toàn bộ ghế đang giữ (gọi khi rời trang, qua navigator.sendBeacon).
         [HttpPost]
-        [Authorize(Roles = "CUSTOMER,STAFF")]
+        [Authorize(Roles = "CUSTOMER")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ReleaseAll(Guid showtimeId)
         {
@@ -287,7 +310,7 @@ namespace Cinema_System.Controllers.Public
 
         // Gia hạn thời gian giữ ghế (heartbeat khi khách vẫn ở trang chọn ghế).
         [HttpPost]
-        [Authorize(Roles = "CUSTOMER,STAFF")]
+        [Authorize(Roles = "CUSTOMER")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ExtendHolds(Guid showtimeId)
         {

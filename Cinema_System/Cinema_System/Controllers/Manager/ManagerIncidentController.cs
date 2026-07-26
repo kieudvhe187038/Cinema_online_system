@@ -6,8 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Cinema_System.Controllers.Manager
 {
-    // Manager khai báo sự cố suất chiếu + hoàn điểm. Chỉ MANAGER/ADMIN.
-    [Authorize(Roles = "MANAGER,ADMIN")]
+    // Manager khai báo sự cố suất chiếu + hoàn điểm. Chỉ MANAGER (đồng bộ với các màn quản lý khác).
+    [Authorize(Roles = "MANAGER")]
     [Route("Manager/Incident")]
     public class ManagerIncidentController : Controller
     {
@@ -25,9 +25,9 @@ namespace Cinema_System.Controllers.Manager
             => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
         [HttpGet("")]
-        public async Task<IActionResult> Index(string? scope, int page = 1)
+        public async Task<IActionResult> Index(string? scope, int page = 1, string? search = null)
         {
-            var vm = await _incidentService.GetIndexAsync(scope, page);
+            var vm = await _incidentService.GetIndexAsync(scope, page, search: search);
             return View(vm);
         }
 
@@ -82,46 +82,5 @@ namespace Cinema_System.Controllers.Manager
             TempData["Success"] = "Đã khai báo sự cố và hoàn điểm cho khách hàng.";
             return RedirectToAction(nameof(Index));
         }
-
-        [HttpGet("Maintain")]
-        public async Task<IActionResult> Maintain()
-        {
-            var vm = await _incidentService.BuildMaintainFormAsync();
-            return View(vm);
-        }
-
-        [HttpPost("Maintain")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Maintain(MaintainRoomViewModel form)
-        {
-            async Task<MaintainRoomViewModel> RebuildAsync()
-            {
-                var vm = await _incidentService.BuildMaintainFormAsync();
-                vm.RoomId = form.RoomId;
-                vm.FromTime = form.FromTime;
-                vm.ToTime = form.ToTime;
-                vm.Description = form.Description;
-                vm.RefundPointsRate = form.RefundPointsRate;
-                vm.CompensationPromoId = form.CompensationPromoId;
-                return vm;
-            }
-
-            if (!ModelState.IsValid)
-                return View(await RebuildAsync());
-
-            var result = await _incidentService.MaintainRoomAsync(form, GetCurrentUserId());
-            if (!result.Succeeded)
-            {
-                ModelState.AddModelError(string.Empty, result.Error!);
-                return View(await RebuildAsync());
-            }
-
-            await _audit.LogAsync("MAINTAIN_ROOM", "Rooms", form.RoomId,
-                newValue: new { form.FromTime, form.ToTime, form.RefundPointsRate });
-
-            TempData["Success"] = result.Data;
-            return RedirectToAction(nameof(Index));
-        }
-
     }
 }
