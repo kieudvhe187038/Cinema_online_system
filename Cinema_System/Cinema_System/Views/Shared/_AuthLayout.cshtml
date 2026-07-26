@@ -1,4 +1,4 @@
-@{
+﻿@{
     Layout = null;
 }
 <!DOCTYPE html>
@@ -7,9 +7,9 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>@ViewData["Title"] | CineStar</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script src="~/lib/tailwind/tailwind-forms.min.js" asp-append-version="true"></script>
+    <link href="~/fonts/text.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/fonts/icons.css" rel="stylesheet" asp-append-version="true" />
     <script>
         tailwind.config = {
             darkMode: "class",
@@ -69,6 +69,8 @@
         .login-bg-overlay { background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.8)); }
         .cinematic-shadow { box-shadow: 0px 4px 20px rgba(38, 95, 162, 0.1); }
     </style>
+    @* Bỏ dấu tiếng Việt phía client — nạp ở head vì nhiều view đặt script trong body. *@
+    <script src="~/js/vietnamese-text.js" asp-append-version="true"></script>
 </head>
 <body class="bg-surface font-body-md text-on-surface">
     <main class="min-h-screen flex items-center justify-center py-lg">
@@ -93,6 +95,9 @@
     </script>
     @* Modal xác nhận/thông báo dùng chung — thay cho confirm()/alert() của trình duyệt. *@
     <partial name="_ConfirmModal" />
+
+    @* Chặn nhập chữ vào các ô chỉ nhận số (xem wwwroot/js/numeric-input.js). *@
+    <script src="~/js/numeric-input.js" asp-append-version="true"></script>
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

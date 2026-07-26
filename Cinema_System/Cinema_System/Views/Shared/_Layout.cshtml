@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi" class="light">
 <head>
     <meta charset="utf-8" />
@@ -6,11 +6,11 @@
     <title>@ViewData["Title"] - CineStar</title>
 
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="~/fonts/text.css" rel="stylesheet" asp-append-version="true" />
     <!-- Material Symbols -->
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link href="~/fonts/icons.css" rel="stylesheet" asp-append-version="true" />
 
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="~/lib/tailwind/tailwind.min.js" asp-append-version="true"></script>
     <script>
         tailwind.config = {
             important: true,
@@ -39,6 +39,8 @@
 
     <partial name="_DarkMode" />
     @await RenderSectionAsync("Styles", required: false)
+    @* Bỏ dấu tiếng Việt phía client — nạp ở head vì nhiều view đặt script trong body. *@
+    <script src="~/js/vietnamese-text.js" asp-append-version="true"></script>
 </head>
 <body class="bg-slate-50 text-slate-900 font-body antialiased">
 
@@ -62,6 +64,9 @@
                         <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500" aria-label="Tìm kiếm">
                             <span class="material-symbols-outlined">search</span>
                         </button>
+                        @* Gợi ý tên phim khi đang gõ — nội dung do JS dựng, xem cuối file. *@
+                        <div id="movie-search-suggestions" role="listbox"
+                             class="absolute left-0 right-0 top-full z-50 mt-2 hidden max-h-96 overflow-y-auto rounded-2xl border border-slate-200 bg-white py-1.5 shadow-xl dark:border-slate-700 dark:bg-slate-800"></div>
                     </form>
                     <partial name="_DarkModeToggle" />
                     @if (User.Identity?.IsAuthenticated == true)
@@ -133,9 +138,12 @@
                                     <a asp-controller="Profile" asp-action="Index" class="flex items-center gap-3 px-4 py-2.5 text-slate-700 transition hover:bg-slate-50 hover:text-primary">
                                         <span class="material-symbols-outlined text-[20px]">person</span> Hồ sơ cá nhân
                                     </a>
-                                    <a asp-controller="Profile" asp-action="PointHistory" class="flex items-center gap-3 px-4 py-2.5 text-slate-700 transition hover:bg-slate-50 hover:text-primary">
-                                        <span class="material-symbols-outlined text-[20px]">stars</span> Lịch sử điểm
-                                    </a>
+                                    @if (User.IsInRole("CUSTOMER"))
+                                    {
+                                        <a asp-controller="Profile" asp-action="PointHistory" class="flex items-center gap-3 px-4 py-2.5 text-slate-700 transition hover:bg-slate-50 hover:text-primary">
+                                            <span class="material-symbols-outlined text-[20px]">stars</span> Lịch sử điểm
+                                        </a>
+                                    }
                                     <a asp-controller="Profile" asp-action="ChangePassword" class="flex items-center gap-3 px-4 py-2.5 text-slate-700 transition hover:bg-slate-50 hover:text-primary">
                                         <span class="material-symbols-outlined text-[20px]">lock</span> Đổi mật khẩu
                                     </a>
@@ -249,11 +257,198 @@
                 }
                 this.value = value;
             });
+
+            // ── Gợi ý tên phim khi đang gõ ────────────────────────────────────
+            const panel = document.getElementById('movie-search-suggestions');
+            const form = searchInput.closest('form');
+            if (!panel || !form) return;
+
+            const DEBOUNCE_MS = 200;
+            const STATUS_LABELS = {
+                'Now Showing': 'Đang chiếu',
+                'Coming Soon': 'Sắp chiếu',
+                'Special': 'Chiếu sớm'
+            };
+
+            let debounceTimer = null;
+            let inFlight = null;
+            let options = [];
+            let activeIndex = -1;
+            let lastQuery = '';
+
+            function closePanel() {
+                panel.classList.add('hidden');
+                panel.replaceChildren();
+                options = [];
+                activeIndex = -1;
+            }
+
+            function setActive(index) {
+                if (activeIndex >= 0 && options[activeIndex]) {
+                    options[activeIndex].classList.remove('bg-slate-100', 'dark:bg-slate-700');
+                    options[activeIndex].setAttribute('aria-selected', 'false');
+                }
+                activeIndex = index;
+                if (activeIndex >= 0 && options[activeIndex]) {
+                    options[activeIndex].classList.add('bg-slate-100', 'dark:bg-slate-700');
+                    options[activeIndex].setAttribute('aria-selected', 'true');
+                    options[activeIndex].scrollIntoView({ block: 'nearest' });
+                }
+            }
+
+            // Dựng phần tên phim, tô đậm đoạn trùng từ khóa. Dùng textContent nên an toàn với HTML.
+            function buildTitle(title, key) {
+                const holder = document.createElement('span');
+                holder.className = 'block truncate text-sm font-semibold text-slate-800 dark:text-slate-100';
+
+                // Bỏ dấu để tô đậm đúng đoạn khớp — server đã khớp không dấu rồi.
+                const folded = VietnameseText.fold(title);
+                const at = folded.aligned ? folded.key.indexOf(key) : -1;
+                if (at < 0) {
+                    holder.textContent = title;
+                    return holder;
+                }
+
+                const before = folded.chars.slice(0, at).join('');
+                const hit = folded.chars.slice(at, at + key.length).join('');
+                const after = folded.chars.slice(at + key.length).join('');
+
+                if (before) holder.appendChild(document.createTextNode(before));
+                const mark = document.createElement('span');
+                mark.className = 'text-primary';
+                mark.textContent = hit;
+                holder.appendChild(mark);
+                if (after) holder.appendChild(document.createTextNode(after));
+                return holder;
+            }
+
+            function buildRow(movie, key) {
+                const row = document.createElement('a');
+                row.href = '/Movies/Details/' + encodeURIComponent(movie.slug);
+                row.setAttribute('role', 'option');
+                row.setAttribute('aria-selected', 'false');
+                row.className = 'flex items-center gap-3 px-3 py-2 transition hover:bg-slate-100 dark:hover:bg-slate-700';
+
+                const poster = document.createElement('span');
+                poster.className = 'block h-14 w-10 shrink-0 overflow-hidden rounded bg-slate-200 dark:bg-slate-700';
+                if (movie.posterUrl) {
+                    const img = document.createElement('img');
+                    img.src = movie.posterUrl;
+                    img.alt = '';
+                    img.loading = 'lazy';
+                    img.className = 'h-full w-full object-cover';
+                    poster.appendChild(img);
+                }
+                row.appendChild(poster);
+
+                const text = document.createElement('span');
+                text.className = 'min-w-0 flex-1';
+                text.appendChild(buildTitle(movie.title, key));
+
+                const parts = [];
+                if (movie.status && STATUS_LABELS[movie.status]) parts.push(STATUS_LABELS[movie.status]);
+                if (movie.releaseYear) parts.push(String(movie.releaseYear));
+                const meta = document.createElement('span');
+                meta.className = 'block truncate text-xs text-slate-500 dark:text-slate-400';
+                meta.textContent = parts.join(' • ');
+                text.appendChild(meta);
+
+                row.appendChild(text);
+                return row;
+            }
+
+            function render(movies, key) {
+                panel.replaceChildren();
+                options = [];
+                activeIndex = -1;
+
+                if (!movies.length) {
+                    const empty = document.createElement('p');
+                    empty.className = 'px-4 py-3 text-sm text-slate-500 dark:text-slate-400';
+                    empty.textContent = 'Không tìm thấy phim phù hợp.';
+                    panel.appendChild(empty);
+                    panel.classList.remove('hidden');
+                    return;
+                }
+
+                movies.forEach(function (movie) {
+                    const row = buildRow(movie, key);
+                    options.push(row);
+                    panel.appendChild(row);
+                });
+
+                // Dòng cuối: mở trang kết quả đầy đủ (submit chính form này).
+                const seeAll = document.createElement('button');
+                seeAll.type = 'submit';
+                seeAll.className = 'mt-1 block w-full border-t border-slate-200 px-4 py-2.5 text-left text-sm font-semibold text-primary transition hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-700';
+                seeAll.textContent = 'Xem tất cả kết quả cho "' + searchInput.value.trim() + '"';
+                panel.appendChild(seeAll);
+
+                panel.classList.remove('hidden');
+            }
+
+            function requestSuggestions(query) {
+                if (inFlight) inFlight.abort();
+                inFlight = new AbortController();
+
+                fetch('/Movies/Suggest?find=' + encodeURIComponent(query), {
+                    signal: inFlight.signal,
+                    headers: { 'Accept': 'application/json' }
+                })
+                    .then(function (response) { return response.ok ? response.json() : []; })
+                    .then(function (movies) {
+                        // Người dùng đã gõ tiếp trong lúc chờ -> bỏ qua kết quả cũ.
+                        if (query !== lastQuery || document.activeElement !== searchInput) return;
+                        render(movies, VietnameseText.searchKey(query));
+                    })
+                    .catch(function () { /* huỷ request hoặc lỗi mạng -> giữ nguyên dropdown */ });
+            }
+
+            function scheduleSuggestions() {
+                const query = searchInput.value.trim();
+                lastQuery = query;
+                clearTimeout(debounceTimer);
+
+                if (query.length < 1) {
+                    closePanel();
+                    return;
+                }
+                debounceTimer = setTimeout(function () { requestSuggestions(query); }, DEBOUNCE_MS);
+            }
+
+            searchInput.addEventListener('input', scheduleSuggestions);
+            searchInput.addEventListener('focus', function () {
+                if (searchInput.value.trim().length >= 1 && !options.length) scheduleSuggestions();
+            });
+
+            searchInput.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') { closePanel(); return; }
+                if (!options.length) return;
+
+                if (event.key === 'ArrowDown') {
+                    event.preventDefault();
+                    setActive(activeIndex + 1 >= options.length ? 0 : activeIndex + 1);
+                } else if (event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    setActive(activeIndex - 1 < 0 ? options.length - 1 : activeIndex - 1);
+                } else if (event.key === 'Enter' && activeIndex >= 0) {
+                    // Đang chọn một gợi ý -> vào thẳng phim đó thay vì mở trang kết quả.
+                    event.preventDefault();
+                    window.location.href = options[activeIndex].href;
+                }
+            });
+
+            document.addEventListener('click', function (event) {
+                if (!form.contains(event.target)) closePanel();
+            });
         })();
     </script>
 
     @* Modal xác nhận/thông báo dùng chung — thay cho confirm()/alert() của trình duyệt. *@
     <partial name="_ConfirmModal" />
+
+    @* Chặn nhập chữ vào các ô chỉ nhận số (xem wwwroot/js/numeric-input.js). *@
+    <script src="~/js/numeric-input.js" asp-append-version="true"></script>
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

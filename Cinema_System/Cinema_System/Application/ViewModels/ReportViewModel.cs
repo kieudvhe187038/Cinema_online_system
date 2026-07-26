@@ -34,7 +34,11 @@ public class TopMovieItem
 
 public class PaymentMethodItem
 {
+    // Mã lưu trong DB (Cash/Transfer/VNPay/VietQR/Free).
     public string Method { get; set; } = string.Empty;
+
+    // Nhãn tiếng Việt để hiển thị — xem PaymentMethod.Label.
+    public string Label { get; set; } = string.Empty;
     public int Count { get; set; }
     public decimal Amount { get; set; }
 }

@@ -13,6 +13,10 @@ public partial class SeatHold
 
     public Guid? UserId { get; set; }
 
+    /// <summary>Mã phiên giữ ghế của từng tab/máy quầy (null với luồng khách đặt online).
+    /// Cùng 1 tài khoản Staff mở 2 máy/2 tab sẽ có token khác nhau nên vẫn chặn được nhau.</summary>
+    public Guid? HoldToken { get; set; }
+
     public DateTime? HeldAt { get; set; }
 
     public DateTime ExpiresAt { get; set; }

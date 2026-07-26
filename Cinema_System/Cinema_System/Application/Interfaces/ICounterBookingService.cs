@@ -13,25 +13,27 @@ public interface ICounterBookingService
     /// <summary>Các suất chiếu sắp tới của một phim.</summary>
     Task<IEnumerable<ShowtimeOptionDTO>> GetShowtimesAsync(Guid movieId);
 
-    /// <summary>Sơ đồ ghế + giá của một suất chiếu (ghế nhân viên đang tự giữ thì KHÔNG tính là đã chiếm).</summary>
-    Task<SeatMapDTO?> GetSeatMapAsync(Guid showtimeId, Guid staffId);
+    /// <summary>Sơ đồ ghế + giá của một suất chiếu (ghế chính tab quầy này đang giữ thì KHÔNG tính là đã chiếm).</summary>
+    /// <param name="holdToken">Phiên giữ ghế của tab/máy quầy đang thao tác (xem <see cref="HoldSeatAsync"/>).</param>
+    Task<SeatMapDTO?> GetSeatMapAsync(Guid showtimeId, Guid staffId, Guid holdToken);
 
     /// <summary>Tạo đơn đặt vé tại quầy + thanh toán; trả về Id đơn vừa tạo.</summary>
     Task<Result<Guid>> CreateAsync(CounterBookingRequest request, Guid staffId);
 
+    /// <summary>Xem trước mã khuyến mãi (AJAX): kiểm tra hợp lệ + tính số tiền giảm trên tạm tính hiện tại.</summary>
+    /// <param name="customerPhone">SĐT nhân viên đang gõ — truyền kèm để xem trước tra ra khách hàng
+    /// GIỐNG lúc chốt đơn (mã giảm giá bắt buộc phải có tài khoản khách hàng mới dùng được).</param>
+    Task<CounterPromoPreviewDTO> PreviewPromoAsync(string code, Guid? customerId, string? customerPhone, decimal seatTotal, decimal foodTotal);
+
     /// <summary>Giữ 1 ghế cho nhân viên trong holdMinutes phút (tạo mới hoặc gia hạn nếu đã giữ).</summary>
-    Task<Result> HoldSeatAsync(Guid showtimeId, Guid seatId, Guid staffId, int holdMinutes);
+    /// <param name="holdToken">Phiên giữ ghế của tab/máy quầy đang thao tác. Nhiều máy quầy thường dùng
+    /// CHUNG 1 tài khoản Staff nên chỉ khóa theo staffId là chưa đủ — token khác nhau thì máy này vẫn
+    /// bị chặn khi bấm đúng ghế máy kia đang giữ.</param>
+    Task<Result> HoldSeatAsync(Guid showtimeId, Guid seatId, Guid staffId, Guid holdToken, int holdMinutes);
 
-    /// <summary>Bỏ giữ 1 ghế (nhân viên bỏ chọn ghế).</summary>
-    Task ReleaseSeatAsync(Guid showtimeId, Guid seatId, Guid staffId);
+    /// <summary>Bỏ giữ 1 ghế (nhân viên bỏ chọn ghế) — chỉ nhả hold của chính tab quầy này.</summary>
+    Task ReleaseSeatAsync(Guid showtimeId, Guid seatId, Guid staffId, Guid holdToken);
 
-    /// <summary>Bỏ giữ toàn bộ ghế nhân viên đang giữ của 1 suất (đổi suất/rời trang).</summary>
-    Task ReleaseAllAsync(Guid showtimeId, Guid staffId);
-
-    /// <summary>
-    /// Xem trước kết quả áp mã giảm giá cho đơn tại quầy (AJAX): tính trên các ghế nhân viên đang giữ
-    /// + đồ ăn đã chọn, kèm số điểm tối đa còn dùng được sau khi trừ mã (nếu có gắn thành viên).
-    /// </summary>
-    Task<PromoPreviewResult> PreviewPromoAsync(
-        Guid showtimeId, Guid staffId, List<FoodOrderItemRequest> foods, Guid? customerId, string code);
+    /// <summary>Bỏ giữ toàn bộ ghế tab quầy này đang giữ của 1 suất (đổi suất/rời trang).</summary>
+    Task ReleaseAllAsync(Guid showtimeId, Guid staffId, Guid holdToken);
 }

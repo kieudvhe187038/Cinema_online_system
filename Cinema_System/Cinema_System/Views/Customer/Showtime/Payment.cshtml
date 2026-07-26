@@ -1,4 +1,4 @@
-@* Trang thanh toán (giả lập): chọn phương thức VNPay/MoMo, xem tổng tiền, xác nhận đặt vé. *@
+@* Trang thanh toán: chọn phương thức VietQR/VNPay, xem tổng tiền, xác nhận đặt vé. *@
 @model Cinema_System.Application.ViewModels.PaymentViewModel
 @{
     ViewData["Title"] = "Thanh toán";
@@ -25,22 +25,17 @@
         <!-- Phương thức thanh toán -->
         <div id="payment-methods" class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 class="font-heading text-lg font-bold text-tertiary">Phương thức thanh toán</h2>
-            <p class="mt-1 text-xs text-slate-400">VNPay dùng môi trường sandbox (tiền thử nghiệm); MoMo là mô phỏng.</p>
+            <p class="mt-1 text-xs text-slate-400">VNPay dùng môi trường sandbox (tiền thử nghiệm); VietQR chuyển khoản ngân hàng.</p>
 
             <label class="mt-4 flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 p-3 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                <input type="radio" name="method" value="VietQR" class="accent-primary" checked />
-                <span class="flex h-9 w-14 items-center justify-center rounded bg-emerald-600 text-[10px] font-bold text-white">VietQR</span>
-                <span class="text-sm font-semibold text-slate-700">Chuyển khoản VietQR</span>
-            </label>
-            <label class="mt-3 flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 p-3 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                <input type="radio" name="method" value="VNPay" class="accent-primary" />
+                <input type="radio" name="method" value="VNPay" class="accent-primary" checked />
                 <span class="flex h-9 w-14 items-center justify-center rounded bg-[#005baa] text-xs font-bold text-white">VNPay</span>
                 <span class="text-sm font-semibold text-slate-700">Ví điện tử VNPay</span>
             </label>
             <label class="mt-3 flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 p-3 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                <input type="radio" name="method" value="MoMo" class="accent-primary" />
-                <span class="flex h-9 w-14 items-center justify-center rounded bg-[#a50064] text-xs font-bold text-white">MoMo</span>
-                <span class="text-sm font-semibold text-slate-700">Ví MoMo</span>
+                <input type="radio" name="method" value="VietQR" class="accent-primary" />
+                <span class="flex h-9 w-14 items-center justify-center rounded bg-emerald-600 text-[10px] font-bold text-white">VietQR</span>
+                <span class="text-sm font-semibold text-slate-700">Chuyển khoản VietQR</span>
             </label>
         </div>
 

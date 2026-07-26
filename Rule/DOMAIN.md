@@ -46,7 +46,6 @@
 - `SystemConfig` — cấu hình hệ thống dạng key-value.
 - `AuditLog` — nhật ký thao tác (audit trail).
 - `EmailLog` — nhật ký gửi email.
-- `ChatbotLog` — nhật ký hội thoại AI chatbot.
 
 ---
 

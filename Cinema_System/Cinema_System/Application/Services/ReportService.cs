@@ -1,3 +1,5 @@
+using ClosedXML.Excel;
+using Cinema_System.Application.Common;
 using Cinema_System.Application.Interfaces;
 using Cinema_System.Application.ViewModels;
 using Microsoft.EntityFrameworkCore;
@@ -66,15 +68,19 @@ public class ReportService : IReportService
         // ── Tỉ lệ phương thức thanh toán (từ các payment thành công trong khoảng) ──
         var payments = await _unitOfWork.Payments.GetAllAsync(
             predicate: p => p.Status == "Success" && p.PaidAt >= fromDt && p.PaidAt < toEndDt);
+        // Xếp theo thứ tự phương thức hệ thống đang có; giá trị lạ (dữ liệu cũ chưa chuẩn hóa)
+        // rơi xuống cuối và giữ nguyên mã — không bỏ đi để tổng tiền báo cáo không bị hụt.
         var payMethods = payments
             .GroupBy(p => p.PaymentMethod)
             .Select(g => new PaymentMethodItem
             {
                 Method = g.Key,
+                Label = PaymentMethod.Label(g.Key),
                 Count = g.Count(),
                 Amount = g.Sum(x => x.Amount)
             })
-            .OrderByDescending(x => x.Amount)
+            .OrderBy(x => PaymentMethod.SortIndex(x.Method))
+            .ThenByDescending(x => x.Amount)
             .ToList();
 
         return new ReportViewModel
@@ -89,5 +95,111 @@ public class ReportService : IReportService
             TopMovies = topMovies,
             PaymentMethods = payMethods
         };
+    }
+
+    // Xuất báo cáo ra 1 sheet Excel gồm: khoảng thời gian, KPI, doanh thu theo ngày, top phim, phương thức thanh toán.
+    public async Task<(byte[] Content, string FileName)> ExportExcelAsync(DateOnly? from, DateOnly? to)
+    {
+        var vm = await GetReportAsync(from, to);
+
+        const string moneyFmt = "#,##0 \"₫\"";
+        using var wb = new XLWorkbook();
+        var ws = wb.Worksheets.Add("Báo cáo");
+        var row = 1;
+
+        // Tiêu đề + khoảng thời gian.
+        ws.Cell(row, 1).Value = "BÁO CÁO & THỐNG KÊ";
+        ws.Range(row, 1, row, 4).Merge();
+        ws.Cell(row, 1).Style.Font.Bold = true;
+        ws.Cell(row, 1).Style.Font.FontSize = 15;
+        row++;
+        ws.Cell(row, 1).Value = $"Khoảng thời gian: {vm.DateFrom:dd/MM/yyyy} - {vm.DateTo:dd/MM/yyyy}";
+        ws.Range(row, 1, row, 4).Merge();
+        ws.Cell(row, 1).Style.Font.Italic = true;
+        row += 2;
+
+        // ── Chỉ số tổng quan ──
+        row = WriteSectionTitle(ws, row, "Chỉ số tổng quan");
+        WriteKpi(ws, row++, "Tổng doanh thu", vm.TotalRevenue, moneyFmt);
+        WriteKpi(ws, row++, "Số đơn", vm.TotalBookings, "#,##0");
+        WriteKpi(ws, row++, "Vé bán", vm.TotalTickets, "#,##0");
+        WriteKpi(ws, row++, "Trung bình / đơn", vm.AvgOrderValue, moneyFmt);
+        row++;
+
+        // ── Doanh thu theo ngày ──
+        row = WriteSectionTitle(ws, row, "Doanh thu theo ngày");
+        row = WriteHeader(ws, row, "Ngày", "Doanh thu");
+        foreach (var d in vm.DailyRevenue)
+        {
+            ws.Cell(row, 1).Value = d.Date.ToString("dd/MM/yyyy");
+            ws.Cell(row, 2).Value = d.Revenue;
+            ws.Cell(row, 2).Style.NumberFormat.Format = moneyFmt;
+            row++;
+        }
+        row++;
+
+        // ── Top 5 phim theo doanh thu vé ──
+        row = WriteSectionTitle(ws, row, "Top 5 phim theo doanh thu vé");
+        row = WriteHeader(ws, row, "Hạng", "Phim", "Số vé", "Doanh thu");
+        var rank = 1;
+        foreach (var m in vm.TopMovies)
+        {
+            ws.Cell(row, 1).Value = rank++;
+            ws.Cell(row, 2).Value = m.Title;
+            ws.Cell(row, 3).Value = m.TicketsSold;
+            ws.Cell(row, 4).Value = m.Revenue;
+            ws.Cell(row, 4).Style.NumberFormat.Format = moneyFmt;
+            row++;
+        }
+        row++;
+
+        // ── Phương thức thanh toán ──
+        row = WriteSectionTitle(ws, row, "Phương thức thanh toán");
+        row = WriteHeader(ws, row, "Phương thức", "Số giao dịch", "Số tiền");
+        foreach (var p in vm.PaymentMethods)
+        {
+            ws.Cell(row, 1).Value = p.Label;
+            ws.Cell(row, 2).Value = p.Count;
+            ws.Cell(row, 3).Value = p.Amount;
+            ws.Cell(row, 3).Style.NumberFormat.Format = moneyFmt;
+            row++;
+        }
+
+        ws.Columns().AdjustToContents();
+
+        using var ms = new MemoryStream();
+        wb.SaveAs(ms);
+        var fileName = $"BaoCao_{vm.DateFrom:yyyyMMdd}_{vm.DateTo:yyyyMMdd}.xlsx";
+        return (ms.ToArray(), fileName);
+    }
+
+    // Dòng tiêu đề mục (bôi đậm, có nền), trả về dòng kế tiếp.
+    private static int WriteSectionTitle(IXLWorksheet ws, int row, string title)
+    {
+        ws.Cell(row, 1).Value = title;
+        ws.Cell(row, 1).Style.Font.Bold = true;
+        ws.Cell(row, 1).Style.Font.FontSize = 12;
+        return row + 1;
+    }
+
+    // Dòng KPI: nhãn + giá trị.
+    private static void WriteKpi(IXLWorksheet ws, int row, string label, decimal value, string fmt)
+    {
+        ws.Cell(row, 1).Value = label;
+        ws.Cell(row, 2).Value = value;
+        ws.Cell(row, 2).Style.NumberFormat.Format = fmt;
+    }
+
+    // Hàng tiêu đề bảng (bôi đậm + nền xám), trả về dòng kế tiếp.
+    private static int WriteHeader(IXLWorksheet ws, int row, params string[] headers)
+    {
+        for (var i = 0; i < headers.Length; i++)
+        {
+            var cell = ws.Cell(row, i + 1);
+            cell.Value = headers[i];
+            cell.Style.Font.Bold = true;
+            cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#F1F5F9");
+        }
+        return row + 1;
     }
 }

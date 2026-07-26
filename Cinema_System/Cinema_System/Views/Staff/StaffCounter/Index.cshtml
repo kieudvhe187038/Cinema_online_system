@@ -2,196 +2,302 @@
 @{
     ViewData["Title"] = "Đặt Vé Tại Quầy";
     Layout = "_StaffLayout";
+
+    const string cardCls = "rounded-xl border border-[#e8eaed] bg-white p-5 shadow-sm";
+    const string cardTitleCls = "mb-4 flex items-center justify-between gap-2 font-head text-base font-bold text-[#191c1d]";
+    const string stepNumCls = "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white";
+    const string labelCls = "mb-1.5 block text-sm font-semibold text-gray-600";
+    const string inputCls = "w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20";
+    const string btnCls = "shrink-0 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400";
+    const string sumRowCls = "flex items-start justify-between gap-2 py-1 text-sm";
+    const string sumValCls = "min-w-0 text-right font-semibold text-[#191c1d] [overflow-wrap:anywhere]";
+    const string summaryCls = "flex cursor-pointer list-none items-center justify-between gap-2 font-head text-base font-bold text-[#191c1d]";
+    const string legendCls = "inline-flex items-center gap-1.5";
+
+    // 4 bước của quy trình bán vé — JS (updateSteps) cập nhật trạng thái theo thao tác.
+    var steps = new[]
+    {
+        (No: 1, Name: "Phim & suất chiếu"),
+        (No: 2, Name: "Chọn ghế"),
+        (No: 3, Name: "Đồ ăn (tùy chọn)"),
+        (No: 4, Name: "Thu tiền")
+    };
 }
 
 @section Styles {
-    <link rel="stylesheet" href="~/css/site.css" />
     <style>
-        .ct-wrap { max-width: 1280px; margin: 0 auto 3rem; padding: 0; }
-        .ct-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; gap: 1rem; flex-wrap: wrap; }
-        .ct-title { font-family: var(--font-head); font-size: 1.7rem; font-weight: 800; color: var(--on-surface); }
-        .ct-staff { font-size: .85rem; color: var(--on-surface-variant); }
-        .ct-alert { padding: .75rem 1rem; border-radius: var(--radius); margin-bottom: 1rem; font-size: .9rem; }
-        .ct-alert.error { background: #fde8e8; color: #b91c1c; border: 1px solid #b91c1c33; }
-        .ct-alert.warn { background: #fef9c3; color: #854d0e; border: 1px solid #854d0e33; }
-        .ct-grid { display: grid; grid-template-columns: 1fr 360px; gap: 1.25rem; align-items: start; }
-        .ct-card { background: var(--white); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); padding: 1.25rem 1.4rem; margin-bottom: 1.25rem; }
-        .ct-card h3 { font-family: var(--font-head); font-size: 1.05rem; font-weight: 700; margin-bottom: .9rem; color: var(--on-surface); }
-        .ct-step { display: inline-flex; width: 1.4rem; height: 1.4rem; border-radius: 50%; background: var(--primary); color: #fff; align-items: center; justify-content: center; font-size: .8rem; margin-right: .5rem; }
-        label.ct-lbl { display:block; font-weight:600; color: var(--on-surface-variant); margin-bottom:.35rem; font-size:.85rem; }
-        .ct-input, .ct-select { width: 100%; padding: .55rem .75rem; border: 1px solid var(--outline-variant); border-radius: var(--radius); background: var(--white); font-family: var(--font-body); }
-        .ct-showtimes { display: flex; flex-wrap: wrap; gap: .6rem; }
-        .ct-show { border: 1px solid var(--outline-variant); border-radius: var(--radius); padding: .55rem .8rem; cursor: pointer; font-size: .85rem; background: var(--white); text-align: left; }
-        .ct-show:hover { border-color: var(--primary); }
-        .ct-show.active { border-color: var(--primary); background: rgba(243,112,33,.08); }
-        .ct-show .t { font-weight: 700; color: var(--on-surface); }
-        .ct-show .m { color: var(--on-surface-variant); font-size: .78rem; }
-        .ct-screen { text-align:center; background: var(--surface-container); color: var(--on-surface-variant); border-radius: 999px; padding: .35rem; font-size: .8rem; letter-spacing: .3em; margin-bottom: 1rem; }
-        .ct-seatmap { display: flex; flex-direction: column; gap: .4rem; align-items: center; overflow-x: auto; }
-        .ct-seatrow { display: flex; gap: .4rem; align-items: center; }
-        .ct-rowlabel { width: 1.2rem; font-size: .75rem; color: var(--on-surface-variant); font-weight: 700; }
-        .seat { min-width: 2rem; height: 2rem; border-radius: .35rem .35rem .55rem .55rem; border: 1px solid var(--outline-variant); background: var(--white); font-size: .7rem; cursor: pointer; color: var(--on-surface); }
-        .seat:hover:not(.occupied):not(.selected) { border-color: var(--primary); }
-        .seat.selected { background: var(--primary); color: #fff; border-color: var(--primary); }
-        .seat.occupied { background: #e5e7eb; color: #9ca3af; cursor: not-allowed; }
-        .ct-legend { display:flex; gap:1rem; justify-content:center; margin-top:1rem; font-size:.78rem; color: var(--on-surface-variant); }
-        .ct-legend span { display:inline-flex; align-items:center; gap:.35rem; }
-        .ct-dot { width:.9rem; height:.9rem; border-radius:.2rem; display:inline-block; border:1px solid var(--outline-variant); }
-        .ct-foodrow { display:flex; align-items:center; justify-content:space-between; gap:.5rem; padding:.45rem 0; border-bottom:1px dashed var(--surface-container); font-size:.88rem; }
-        .ct-qty { width: 4rem; padding:.35rem; border:1px solid var(--outline-variant); border-radius: var(--radius); text-align:center; }
-        .ct-summary { position: sticky; top: 5.5rem; }
-        .ct-sumrow { display:flex; justify-content:space-between; padding:.3rem 0; font-size:.9rem; }
-        .ct-sumrow.total { font-size:1.15rem; font-weight:800; color: var(--primary); border-top:1px solid var(--surface-container); margin-top:.5rem; padding-top:.6rem; }
-        .ct-chips { display:flex; flex-wrap:wrap; gap:.3rem; margin:.4rem 0; }
-        .ct-chip { background: rgba(243,112,33,.1); color: var(--primary); border-radius:999px; padding:.15rem .55rem; font-size:.75rem; font-weight:600; }
-        .ct-pay { display:flex; gap:.5rem; margin:.5rem 0; }
-        .ct-pay label { flex:1; border:1px solid var(--outline-variant); border-radius: var(--radius); padding:.5rem; text-align:center; cursor:pointer; font-size:.85rem; }
-        .ct-pay input { display:none; }
-        .ct-pay input:checked + span { font-weight:700; color: var(--primary); }
-        .ct-btn { width:100%; padding:.7rem; border:none; border-radius: var(--radius); font-weight:700; cursor:pointer; font-family: var(--font-body); background: var(--primary); color:#fff; font-size:.95rem; }
-        .ct-btn:disabled { background: var(--surface-container); color: var(--on-surface-variant); cursor: not-allowed; }
-        .ct-member { font-size:.83rem; margin-top:.4rem; }
-        .ct-member.ok { color:#166534; }
-        .ct-member.no { color:#b45309; }
-        @@media (max-width: 980px) { .ct-grid { grid-template-columns: 1fr; } .ct-summary { position: static; } }
+        /* CHỈ giữ những class mà JS thao tác trực tiếp bằng TÊN (addClass/removeClass/toggleClass
+           hoặc dựng bằng chuỗi HTML) — phần còn lại của màn dùng Tailwind utilities.
+           Các rule dạng #id.class có độ ưu tiên cao hơn utility 1 class nên luôn đè được. */
+
+        /* Ghế: JS render `$('<button class="seat">')` rồi addClass('selected'/'occupied'/'held').
+           Màu & kích thước đồng bộ với màn chọn ghế của khách online (Customer/Showtime/SelectSeats). */
+        .seat { min-width: 2.25rem; height: 2.25rem; border-radius: .4rem; border: 1px solid #cbd5e1; background: #fff; font-size: .7rem; color: #334155; cursor: pointer; transition: background-color .15s, border-color .15s; }
+        .seat:hover:not(.occupied):not(.selected) { border-color: #f37021; }
+        .seat.selected { background: #f37021; color: #fff; border-color: #f37021; }
+        .seat.occupied { background: #cbd5e1; color: #64748b; cursor: not-allowed; }
+        .seat.occupied.held { background: #fde68a; color: #b45309; border-color: #fcd34d; }
+        /* Ô mẫu trong phần chú thích màu (dùng lại chính class ghế cho khỏi lệch màu) */
+        .seat-sm { min-width: 1rem; width: 1rem; height: 1rem; padding: 0; cursor: default; }
+
+        /* Nút suất chiếu: JS dựng bằng chuỗi HTML (kèm class Tailwind) + addClass('active').
+           Scope theo #showtimeList để độ ưu tiên vượt cả rule dark mode (html.dark .bg-white) —
+           nếu không, ở chế độ tối suất đang chọn sẽ mất viền cam lẫn nền nhấn. */
+        #showtimeList .ct-show.active { border-color: #f37021; background: rgba(243,112,33,.12); }
+
+        /* Trạng thái do JS bật/tắt bằng tên class */
+        #holdCountdown.warn { color: #b91c1c; background: #fde8e8; border-color: #b91c1c33; }
+        #memberInfo.ok { color: #16a34a; }
+        #memberInfo.no { color: #b45309; }
+        #promoMsg.ok { color: #16a34a; }
+        #promoMsg.no { color: #dc2626; }
+
+        /* Chọn phương thức thanh toán (CSS thuần thay cho has-[:checked] cho chắc chắn).
+           Cũng scope theo id để thắng rule dark mode như phần suất chiếu ở trên. */
+        #ctPay input:checked + span { font-weight: 700; color: #f37021; }
+        #ctPay label:has(input:checked) { border-color: #f37021; background: rgba(243,112,33,.1); }
+
+        /* Khối thu gọn ở cột phải */
+        summary::-webkit-details-marker { display: none; }
+        details[open] .ct-chevron { transform: rotate(180deg); }
     </style>
 }
 
-<div class="ct-wrap">
-    <div class="ct-head">
-        <h1 class="ct-title">Đặt Vé Tại Quầy</h1>
-        <div class="ct-staff">Nhân viên: <strong>@Model.ActingStaffName</strong></div>
+<div class="mx-auto max-w-[1400px] pb-28">
+    <div class="mb-5 flex flex-wrap items-start justify-between gap-4">
+        <div>
+            <h1 class="mb-0.5 font-head text-2xl font-extrabold text-[#191c1d]">Đặt Vé Tại Quầy</h1>
+            <p class="text-sm text-gray-500">Chọn phim &amp; suất chiếu, giữ ghế cho khách rồi thu tiền</p>
+        </div>
+        <div class="inline-flex items-center gap-2 rounded-full border border-[#e8eaed] bg-white px-3 py-1.5 text-sm">
+            <span class="material-symbols-outlined text-primary" style="font-size:18px">badge</span>
+            <span class="text-gray-500">Nhân viên:</span>
+            <strong class="text-[#191c1d]">@Model.ActingStaffName</strong>
+        </div>
     </div>
 
-    <style>
-        /* Chặn số tiền dài làm tràn viền khung "Thông tin đơn" */
-        .ct-sumrow { align-items: flex-start; gap: .5rem; }
-        .ct-sumrow > span:first-child { flex: 0 0 auto; }
-        .ct-sumrow > span:last-child { text-align: right; min-width: 0; overflow-wrap: anywhere; word-break: break-word; }
-        .ct-alert { overflow-wrap: anywhere; }
-        #cashReceived { width: 100%; max-width: 100%; box-sizing: border-box; }
-        .ct-cashwarn { color: #c0392b; font-size: .8rem; margin-top: .35rem; line-height: 1.35; overflow-wrap: anywhere; }
-    </style>
+    @* Thanh tiến trình 4 bước — trạng thái do updateSteps() (gọi ở cuối recalc) cập nhật. *@
+    <ol id="ctSteps" class="mb-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+        @foreach (var s in steps)
+        {
+            <li data-step="@s.No" class="ct-stepitem flex items-center gap-2.5 rounded-xl border border-gray-200 bg-white px-3 py-2.5 transition-colors">
+                <span data-step-badge class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-bold text-gray-400">@s.No</span>
+                <span class="min-w-0 flex-1">
+                    <span class="block text-[.65rem] font-semibold uppercase tracking-wider text-gray-400">Bước @s.No</span>
+                    <span class="block truncate text-sm font-semibold text-gray-700">@s.Name</span>
+                </span>
+                <span data-step-note class="shrink-0 text-xs text-gray-400"></span>
+            </li>
+        }
+    </ol>
 
-    <div id="ctErrorAlert" class="ct-alert error" style="display:none;"></div>
+    <div id="ctErrorAlert" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 [overflow-wrap:anywhere]" style="display:none;"></div>
     @if (!Model.HasStaff)
     {
-        <div class="ct-alert warn">Chưa có tài khoản nhân viên (role Staff) đang hoạt động — không thể tạo đơn. Vui lòng tạo nhân viên trước.</div>
+        <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+            Tài khoản nhân viên của bạn hiện không hoạt động (có thể đã bị khóa) — không thể tạo đơn. Vui lòng liên hệ Quản lý/Quản trị viên để được kích hoạt lại.
+        </div>
     }
     @if (!Model.Movies.Any())
     {
-        <div class="ct-alert warn">
+        <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
             Hiện chưa có phim nào có suất chiếu sắp tới (trạng thái <strong>Scheduled</strong>) để bán vé.
             Vui lòng tạo/lên lịch suất chiếu trong tương lai trước khi đặt vé tại quầy.
         </div>
     }
 
-    <div class="ct-grid">
-        <div>
-            <div class="ct-card">
-                <h3><span class="ct-step">1</span>Chọn phim & suất chiếu</h3>
-                <label class="ct-lbl" for="movieSelect">Phim</label>
-                <select id="movieSelect" class="ct-select">
+    <div class="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+        @* ---------- CỘT TRÁI: phim/suất → ghế → đồ ăn ---------- *@
+        <div class="min-w-0 space-y-5">
+            <div class="@cardCls">
+                <h3 class="@cardTitleCls"><span class="flex items-center gap-2"><span class="@stepNumCls">1</span>Chọn phim &amp; suất chiếu</span></h3>
+
+                <label class="@labelCls" for="movieSelect">Phim</label>
+                <select id="movieSelect" class="@inputCls">
                     <option value="">-- Chọn phim --</option>
                     @foreach (var m in Model.Movies)
                     {
-                        <option value="@m.Id">@m.Title @(m.DurationMinutes.HasValue ? $"({m.DurationMinutes} phút)" : "")</option>
+                        <option value="@m.Id" data-age="@m.AgeRating">@m.Title @(m.DurationMinutes.HasValue ? $"({m.DurationMinutes} phút)" : "")</option>
                     }
                 </select>
 
-                <div style="margin-top:1rem;">
-                    <label class="ct-lbl">Suất chiếu</label>
-                    <div id="showtimeList" class="ct-showtimes"><span class="ct-staff">Chọn phim để xem suất chiếu.</span></div>
+                @* display:none inline (KHÔNG dùng class hidden) vì JS bật/tắt bằng .show()/.hide();
+                   class flex đặt sẵn để khi hiện lại vẫn là flex chứ không rơi về block. *@
+                <div id="ageWarn" class="mt-3 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-semibold text-red-700" style="display:none;">
+                    <span class="material-symbols-outlined shrink-0" style="font-size:20px">warning</span>
+                    <span id="ageWarnText"></span>
+                </div>
+
+                <div class="mt-4">
+                    <label class="@labelCls">Suất chiếu</label>
+                    <div id="showtimeList" class="flex flex-wrap gap-2"><span class="text-sm text-gray-400">Chọn phim để xem suất chiếu.</span></div>
                 </div>
             </div>
 
-            <div class="ct-card" id="seatCard" style="display:none;">
-                <h3><span class="ct-step">2</span>Chọn ghế</h3>
-                <div class="ct-screen">MÀN HÌNH</div>
-                <div id="seatMap" class="ct-seatmap"></div>
-                <div class="ct-legend">
-                    <span><i class="ct-dot" style="background:var(--white)"></i> Trống</span>
-                    <span><i class="ct-dot" style="background:var(--primary)"></i> Đang chọn</span>
-                    <span><i class="ct-dot" style="background:#e5e7eb"></i> Đã bán/giữ</span>
+            <div class="@cardCls" id="seatCard" style="display:none;">
+                <h3 class="@cardTitleCls">
+                    <span class="flex items-center gap-2"><span class="@stepNumCls">2</span>Chọn ghế</span>
+                    <span id="holdCountdown" class="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700" style="display:none;"></span>
+                </h3>
+
+                <div class="mx-auto mb-6 max-w-md">
+                    <div class="h-2 rounded-t-[50%] bg-gradient-to-b from-gray-400 to-gray-200"></div>
+                    <div class="mt-1.5 text-center text-[.7rem] uppercase tracking-[.3em] text-gray-400">Màn hình</div>
+                </div>
+
+                <div id="seatMap" class="flex flex-col items-center gap-1.5 overflow-x-auto"></div>
+
+                <div class="mt-6 flex flex-wrap justify-center gap-4 text-xs text-gray-500">
+                    <span class="@legendCls"><i class="seat seat-sm"></i> Trống</span>
+                    <span class="@legendCls"><i class="seat seat-sm selected"></i> Đang chọn</span>
+                    <span class="@legendCls"><i class="seat seat-sm occupied held"></i> Đang được giữ tạm</span>
+                    <span class="@legendCls"><i class="seat seat-sm occupied"></i> Đã bán</span>
                 </div>
             </div>
 
-            <div class="ct-card" id="foodCard" style="display:none;">
-                <h3><span class="ct-step">3</span>Đồ ăn & thức uống (tùy chọn)</h3>
+            <div class="@cardCls" id="foodCard" style="display:none;">
+                <h3 class="@cardTitleCls"><span class="flex items-center gap-2"><span class="@stepNumCls">3</span>Đồ ăn &amp; thức uống (tùy chọn)</span></h3>
                 @foreach (var f in Model.Foods)
                 {
-                    <div class="ct-foodrow">
-                        <span>@f.Name</span>
-                        <span>
-                            <span class="ct-staff">@f.Price.ToString("#,##0") đ</span>
-                            <input type="number" min="0" value="0" class="ct-qty food-qty"
+                    <div class="flex items-center justify-between gap-3 border-b border-dashed border-gray-100 py-2.5 text-sm last:border-0">
+                        <span class="flex min-w-0 items-center gap-3">
+                            @if (!string.IsNullOrEmpty(f.ImageUrl))
+                            {
+                                <img src="@f.ImageUrl" alt="@f.Name" class="h-10 w-10 shrink-0 rounded-lg border border-gray-200 object-cover" />
+                            }
+                            <span class="truncate text-[#191c1d]">@f.Name</span>
+                        </span>
+                        <span class="flex shrink-0 items-center gap-3">
+                            <span class="text-sm text-gray-500">@f.Price.ToString("#,##0") đ</span>
+                            <input type="number" min="0" value="0" class="w-16 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-center text-sm outline-none focus:border-primary food-qty"
                                    data-id="@f.Id" data-price="@f.Price" />
                         </span>
                     </div>
                 }
                 @if (!Model.Foods.Any())
                 {
-                    <div class="ct-staff">Không có món nào đang bán.</div>
+                    <div class="text-sm text-gray-400">Không có món nào đang bán.</div>
                 }
             </div>
         </div>
 
-        <div class="ct-card ct-summary">
-            <h3>Thông tin đơn</h3>
+        @* ---------- CỘT PHẢI: khách → ưu đãi → tóm tắt → thanh toán ---------- *@
+        <aside class="min-w-0 space-y-4 xl:sticky xl:top-[76px] xl:max-h-[calc(100vh-140px)] xl:overflow-y-auto">
+            <details open class="@cardCls group">
+                <summary class="@summaryCls">
+                    <span class="flex items-center gap-2"><span class="material-symbols-outlined text-primary" style="font-size:20px">person</span>Khách hàng</span>
+                    <span class="material-symbols-outlined ct-chevron text-gray-400 transition-transform" style="font-size:20px">expand_more</span>
+                </summary>
+                <div class="mt-3">
+                    <label class="@labelCls" for="phoneInput">SĐT khách (tra cứu thành viên)</label>
+                    <div class="flex gap-2">
+                        <input type="tel" inputmode="numeric" maxlength="11" id="phoneInput" class="@inputCls" placeholder="Nhập SĐT..." />
+                        <button type="button" id="lookupBtn" class="@btnCls">Tra</button>
+                        <button type="button" id="clearMemberBtn" title="Bỏ chọn thành viên"
+                                class="shrink-0 rounded-lg bg-gray-100 px-3 py-2.5 text-sm font-semibold text-gray-500 transition-colors hover:bg-gray-200" style="display:none;">✕</button>
+                    </div>
+                    <div id="memberInfo" class="mt-1.5 text-sm"></div>
+                </div>
+            </details>
 
-            <label class="ct-lbl">SĐT khách (tra cứu thành viên)</label>
-            <div style="display:flex; gap:.4rem;">
-                <input type="text" id="phoneInput" class="ct-input" placeholder="Nhập SĐT..." />
-                <button type="button" id="lookupBtn" class="ct-btn" style="width:auto; padding:.55rem .9rem;">Tra</button>
+            <details open class="@cardCls group">
+                <summary class="@summaryCls">
+                    <span class="flex items-center gap-2"><span class="material-symbols-outlined text-primary" style="font-size:20px">local_offer</span>Ưu đãi</span>
+                    <span class="material-symbols-outlined ct-chevron text-gray-400 transition-transform" style="font-size:20px">expand_more</span>
+                </summary>
+                <div class="mt-3">
+                    @* Ưu đãi chỉ dành cho khách có tài khoản -> ẩn tới khi tra cứu SĐT ra thành viên. *@
+                    <p id="offerHint" class="text-xs text-gray-500">Nhập SĐT ở mục "Khách hàng" rồi bấm "Tra" để dùng mã ưu đãi và điểm thưởng.</p>
+
+                    <div id="promoBox" style="display:none;">
+                        <label class="@labelCls" for="promoInput">Mã khuyến mãi (tùy chọn)</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="promoInput" class="@inputCls uppercase" placeholder="Nhập mã..." />
+                            <button type="button" id="applyPromoBtn" class="@btnCls">Áp dụng</button>
+                        </div>
+                        <div id="promoMsg" class="mt-1.5 text-xs"></div>
+                    </div>
+
+                    <div id="pointsBox" class="mt-4" style="display:none;">
+                        <label class="@labelCls" for="pointsInput">Dùng điểm thưởng (khách còn <span id="pointsAvailable">0</span> điểm)</label>
+                        <div class="flex items-center gap-2">
+                            <input type="number" id="pointsInput" class="@inputCls" min="0" value="0" inputmode="numeric" />
+                            <span id="pointsMaxBtn" class="shrink-0 cursor-pointer whitespace-nowrap text-xs text-gray-500 underline">Dùng tối đa</span>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <div class="@cardCls">
+                <h3 class="@cardTitleCls"><span class="flex items-center gap-2"><span class="material-symbols-outlined text-primary" style="font-size:20px">receipt_long</span>Tóm tắt đơn</span></h3>
+
+                <div class="@labelCls">Ghế đã chọn</div>
+                <div id="seatChips" class="mb-3 flex flex-wrap gap-1.5"><span class="text-sm text-gray-400">Chưa chọn ghế.</span></div>
+
+                <div class="@sumRowCls"><span class="shrink-0 text-gray-500">Tiền vé</span><span id="seatTotal" class="@sumValCls">0 đ</span></div>
+                <div class="@sumRowCls"><span class="shrink-0 text-gray-500">Đồ ăn</span><span id="foodTotal" class="@sumValCls">0 đ</span></div>
+                <div class="@sumRowCls"><span class="shrink-0 text-gray-500">VAT (@Model.VatRate.ToString("0.##")%)</span><span id="vatTotal" class="@sumValCls">0 đ</span></div>
+                <div id="promoDiscountRow" class="@sumRowCls" style="display:none;"><span class="shrink-0 text-gray-500">Giảm giá (mã)</span><span id="promoDiscountTotal" class="@sumValCls">0 đ</span></div>
+                <div id="pointsDiscountRow" class="@sumRowCls" style="display:none;"><span class="shrink-0 text-gray-500">Giảm giá (điểm)</span><span id="pointsDiscountTotal" class="@sumValCls">0 đ</span></div>
+                <div class="mt-2 flex items-start justify-between gap-2 border-t border-gray-100 pt-2.5 text-lg font-extrabold text-primary">
+                    <span class="shrink-0">Tổng cộng</span><span id="grandTotal" class="min-w-0 text-right [overflow-wrap:anywhere]">0 đ</span>
+                </div>
             </div>
-            <div id="memberInfo" class="ct-member"></div>
 
-            <div id="pointsBox" style="display:none; margin-top:.6rem;">
-                <label class="ct-lbl">Dùng điểm thưởng (khách có <span id="availablePointsLbl">0</span> điểm)</label>
-                <input type="number" id="pointsInput" class="ct-input" min="0" step="1" value="0" inputmode="numeric" />
-            </div>
+            <details open class="@cardCls group">
+                <summary class="@summaryCls">
+                    <span class="flex items-center gap-2"><span class="material-symbols-outlined text-primary" style="font-size:20px">payments</span>Thanh toán</span>
+                    <span class="material-symbols-outlined ct-chevron text-gray-400 transition-transform" style="font-size:20px">expand_more</span>
+                </summary>
+                <div class="mt-3">
+                    <div id="ctPay" class="ct-pay flex gap-2">
+                        <label class="flex-1 cursor-pointer rounded-lg border border-gray-200 py-2.5 text-center text-sm transition-colors">
+                            <input type="radio" name="payMethod" value="Cash" checked class="hidden" /><span>Tiền mặt</span>
+                        </label>
+                        <label class="flex-1 cursor-pointer rounded-lg border border-gray-200 py-2.5 text-center text-sm transition-colors">
+                            <input type="radio" name="payMethod" value="Transfer" class="hidden" /><span>Chuyển khoản</span>
+                        </label>
+                    </div>
 
-            <hr style="border:none; border-top:1px solid var(--surface-container); margin:1rem 0;" />
+                    <div id="cashBox" class="mt-3">
+                        <label class="@labelCls" for="cashReceived">Tiền khách đưa</label>
+                        <input type="text" id="cashReceived" class="@inputCls" value="0" inputmode="numeric" autocomplete="off" />
+                        <div id="cashWarn" class="mt-1.5 text-xs text-red-600 [overflow-wrap:anywhere]" style="display:none;"></div>
+                        <div class="@sumRowCls mt-1"><span class="shrink-0 text-gray-500">Tiền thừa</span><span id="changeAmount" class="@sumValCls">0 đ</span></div>
+                    </div>
 
-            <label class="ct-lbl">Mã giảm giá</label>
-            <div style="display:flex; gap:.4rem;">
-                <input type="text" id="promoInput" class="ct-input" placeholder="Nhập mã (nếu có)..." />
-                <button type="button" id="applyPromoBtn" class="ct-btn" style="width:auto; padding:.55rem .9rem;">Áp mã</button>
-            </div>
-            <div id="promoInfo" class="ct-member"></div>
+                    <div id="transferBox" class="mt-3" style="display:none;">
+                        <div id="vietqrBox" class="rounded-lg border border-dashed border-gray-200 p-3 text-center">
+                            <span class="text-sm text-gray-400">Chọn suất chiếu để hiện mã QR chuyển khoản.</span>
+                        </div>
+                    </div>
+                </div>
+            </details>
+        </aside>
+    </div>
 
-            <hr style="border:none; border-top:1px solid var(--surface-container); margin:1rem 0;" />
+    <form id="createForm" method="post" action="@Url.Action("Create", "StaffCounter")" style="display:none;">
+        @Html.AntiForgeryToken()
+        <div id="formFields"></div>
+    </form>
+</div>
 
-            <div class="ct-lbl">Ghế đã chọn</div>
-            <div id="seatChips" class="ct-chips"><span class="ct-staff">Chưa chọn ghế.</span></div>
-
-            <div class="ct-sumrow"><span>Tiền vé</span><span id="seatTotal">0 đ</span></div>
-            <div class="ct-sumrow"><span>Đồ ăn</span><span id="foodTotal">0 đ</span></div>
-            <div class="ct-sumrow"><span>VAT (@Model.VatRate.ToString("0.##")%)</span><span id="vatTotal">0 đ</span></div>
-            <div class="ct-sumrow" id="promoRow" style="display:none;"><span>Giảm giá (mã)</span><span id="promoDiscountAmt">-0 đ</span></div>
-            <div class="ct-sumrow" id="pointsRow" style="display:none;"><span>Giảm giá (điểm)</span><span id="pointsDiscountAmt">-0 đ</span></div>
-            <div class="ct-sumrow total"><span>Tổng cộng</span><span id="grandTotal">0 đ</span></div>
-
-            <label class="ct-lbl" style="margin-top:.8rem;">Phương thức thanh toán</label>
-            <div class="ct-pay">
-                <label><input type="radio" name="payMethod" value="Cash" checked /><span>Tiền mặt</span></label>
-                <label><input type="radio" name="payMethod" value="Transfer" /><span>Chuyển khoản</span></label>
-            </div>
-
-            <div id="cashBox">
-                <label class="ct-lbl">Tiền khách đưa</label>
-                <input type="number" id="cashReceived" class="ct-input" min="0" max="100000000" step="1000" value="0" inputmode="numeric" />
-                <div id="cashWarn" class="ct-cashwarn" style="display:none;"></div>
-                <div class="ct-sumrow"><span>Tiền thối</span><span id="changeAmount">0 đ</span></div>
-            </div>
-
-            <button type="button" id="submitBtn" class="ct-btn" style="margin-top:1rem;" @(Model.HasStaff ? "" : "disabled")>Xác nhận & Thanh toán</button>
-
-            <form id="createForm" method="post" action="@Url.Action("Create", "StaffCounter")" style="display:none;">
-                @Html.AntiForgeryToken()
-                <div id="formFields"></div>
-            </form>
+@* Thanh hành động dính đáy: luôn thấy tổng tiền + nút thu tiền, không phải cuộn tìm.
+   left-60 khớp ml-60 của _StaffLayout; z thấp hơn sidebar (100) / topbar (90) / modal (200). *@
+<div id="ctActionBar" class="fixed bottom-0 left-60 right-0 z-[80] border-t border-[#e8eaed] bg-white/95 px-7 py-3 shadow-[0_-4px_16px_rgba(0,0,0,.06)] backdrop-blur">
+    <div class="mx-auto flex max-w-[1400px] items-center gap-4">
+        <div class="hidden min-w-0 flex-1 sm:block">
+            <span id="barSeatCount" class="text-sm font-semibold text-[#191c1d]">0 ghế</span>
+            <span id="barMethod" class="ml-2 text-xs text-gray-500">Tiền mặt</span>
         </div>
+        <div class="ml-auto text-right">
+            <div class="text-[.7rem] uppercase tracking-wide text-gray-400">Tổng cộng</div>
+            <div id="barGrandTotal" class="font-head text-xl font-extrabold leading-tight text-primary">0 đ</div>
+        </div>
+        @* CHỈ chứa text: JS đổi nhãn bằng .text() nên mọi icon bên trong sẽ bị xoá vĩnh viễn. *@
+        <button type="button" id="submitBtn"
+                class="shrink-0 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
+                @(Model.HasStaff ? "" : "disabled")>Xác nhận &amp; Thanh toán</button>
     </div>
 </div>
 
@@ -199,23 +305,48 @@
     <script>
         const VAT_RATE = @Model.VatRate.ToString(System.Globalization.CultureInfo.InvariantCulture);
         const POINT_VALUE_VND = @Model.PointValueVnd;
+        const MAX_SEATS = 6; // khớp MaxSeatsPerBooking ở CounterBookingService
         let selectedShowtimeId = null;
         let selectedSeats = {}; // id -> { label, price }
         let memberId = null;
-        let availablePoints = 0;
-        let appliedPromo = null; // { code, discount, target }
+        let memberPoints = 0;
+        let appliedPromo = null; // { code, discount, subtotal } — subtotal để phát hiện đơn đổi sau khi áp mã
 
         const fmt = n => (Math.round(n)).toLocaleString('vi-VN') + ' đ';
 
         // --- Giữ ghế tại quầy (cùng cơ chế Seat_Holds với luồng khách đặt online) ---
         function afToken() { return $('#createForm input[name="__RequestVerificationToken"]').val(); }
 
+        // Mã phiên giữ ghế RIÊNG của tab này. Nhiều máy/tab quầy thường đăng nhập CHUNG 1 tài khoản Staff,
+        // nếu server chỉ khóa hold theo tài khoản thì máy này coi hold của máy kia là của chính mình và
+        // vẫn chọn được trùng ghế. sessionStorage: mỗi tab một giá trị, F5 vẫn giữ nguyên (chọn lại được
+        // đúng ghế mình đang giữ), đóng tab là mất.
+        const HOLD_TOKEN = (function () {
+            let t = sessionStorage.getItem('counterHoldToken');
+            if (!t) {
+                t = (window.crypto && crypto.randomUUID)
+                    ? crypto.randomUUID()
+                    : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                        const r = Math.random() * 16 | 0;
+                        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+                    });
+                sessionStorage.setItem('counterHoldToken', t);
+            }
+            return t;
+        })();
+
         function postSeatAction(action, showtimeId, seatId) {
             const fd = new FormData();
             fd.append('__RequestVerificationToken', afToken());
             fd.append('showtimeId', showtimeId);
+            fd.append('holdToken', HOLD_TOKEN);
             if (seatId) fd.append('seatId', seatId);
-            return fetch('/Staff/Counter/' + action, { method: 'POST', body: fd }).then(r => r.json());
+            return fetch('/Staff/Counter/' + action, { method: 'POST', body: fd }).then(function (r) {
+                // fetch KHÔNG reject khi server trả 4xx/5xx — không tách riêng thì lỗi server bị
+                // r.json() làm nghẹn rồi rơi vào catch và báo nhầm thành "không kết nối được".
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            });
         }
 
         // Bỏ giữ toàn bộ ghế đang giữ của 1 suất (đổi suất khác / rời trang) — không chặn UI nếu lỗi mạng.
@@ -224,27 +355,79 @@
             postSeatAction('ReleaseAll', showtimeId).catch(function () {});
         }
 
+        // --- Đếm ngược thời gian giữ ghế (khớp HoldMinutes = 10 phút ở StaffCounterController) ---
+        const HOLD_SECONDS = 10 * 60;
+        let holdSecondsLeft = 0;
+        let holdTimerId = null;
+
+        function fmtTime(s) {
+            const m = Math.floor(s / 60), ss = s % 60;
+            return m + ':' + (ss < 10 ? '0' : '') + ss;
+        }
+
+        // Bắt đầu (hoặc khởi động lại) đếm ngược 10 phút — gọi khi giữ được ghế ĐẦU TIÊN của lượt chọn.
+        function startHoldCountdown() {
+            holdSecondsLeft = HOLD_SECONDS;
+            const $el = $('#holdCountdown').removeClass('warn').show();
+            $el.text('Giữ ghế còn ' + fmtTime(holdSecondsLeft));
+            clearInterval(holdTimerId);
+            holdTimerId = setInterval(function () {
+                holdSecondsLeft--;
+                if (holdSecondsLeft <= 0) {
+                    stopHoldCountdown();
+                    // Hold đã hết hạn ở server -> bỏ chọn hết, tải lại sơ đồ ghế thật (ghế có thể đã bị người khác lấy).
+                    resetSeats();
+                    showError('Đã hết thời gian giữ ghế (10 phút). Vui lòng chọn lại ghế.');
+                    if (selectedShowtimeId) loadSeatMap(selectedShowtimeId, recalc);
+                    return;
+                }
+                $('#holdCountdown').toggleClass('warn', holdSecondsLeft <= 60).text('Giữ ghế còn ' + fmtTime(holdSecondsLeft));
+            }, 1000);
+        }
+
+        // Dừng đếm ngược — gọi khi bỏ hết ghế đã chọn (đổi phim/suất, bỏ chọn ghế cuối cùng, hết hạn).
+        function stopHoldCountdown() {
+            clearInterval(holdTimerId);
+            holdTimerId = null;
+            $('#holdCountdown').hide();
+        }
+
         // --- Bước 1: chọn phim → tải suất chiếu ---
+        // Cảnh báo giới hạn độ tuổi phim (nhắc nhân viên kiểm tra giấy tờ trước khi bán).
+        const AGE_WARN_LABELS = { C13: 'từ 13 tuổi', C16: 'từ 16 tuổi', C18: 'từ 18 tuổi' };
+        function updateAgeWarning() {
+            const age = $('#movieSelect option:selected').data('age');
+            if (age && AGE_WARN_LABELS[age]) {
+                $('#ageWarnText').text('Phim giới hạn độ tuổi ' + age + ' (' + AGE_WARN_LABELS[age] + ') — vui lòng kiểm tra giấy tờ tùy thân của khách trước khi bán vé.');
+                $('#ageWarn').show();
+            } else {
+                $('#ageWarn').hide();
+            }
+        }
+
         $('#movieSelect').on('change', function () {
             const movieId = this.value;
             hideError();
+            updateAgeWarning();
             releaseAllHeld(selectedShowtimeId);
             selectedShowtimeId = null;
             resetSeats();
             $('#seatCard,#foodCard').hide();
             const $list = $('#showtimeList');
-            if (!movieId) { $list.html('<span class="ct-staff">Chọn phim để xem suất chiếu.</span>'); return; }
-            $list.html('<span class="ct-staff">Đang tải...</span>');
+            if (!movieId) { $list.html('<span class="text-sm text-gray-400">Chọn phim để xem suất chiếu.</span>'); return; }
+            $list.html('<span class="text-sm text-gray-400">Đang tải...</span>');
             $.getJSON('/Staff/Counter/Showtimes/' + movieId, function (data) {
-                if (!data || data.length === 0) { $list.html('<span class="ct-staff">Không có suất chiếu sắp tới.</span>'); return; }
+                if (!data || data.length === 0) { $list.html('<span class="text-sm text-gray-400">Không có suất chiếu sắp tới.</span>'); return; }
                 $list.empty();
                 data.forEach(function (s) {
                     const start = new Date(s.startTime);
                     const t = start.toLocaleString('vi-VN', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
-                    $('<button type="button" class="ct-show"></button>')
+                    // Giữ class 'ct-show' (JS dùng làm selector + addClass('active')), phần nhìn dùng Tailwind.
+                    $('<button type="button" class="ct-show rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-sm transition-colors hover:border-primary"></button>')
                         .attr('data-id', s.id)
                         .attr('data-start', s.startTime)
-                        .html('<div class="t">' + t + '</div><div class="m">' + s.roomName + ' · ' + (s.roomType||'') + ' · còn ' + s.availableSeats + ' ghế</div>')
+                        .html('<div class="font-bold text-[#191c1d]">' + t + '</div>' +
+                              '<div class="text-xs text-gray-500">' + s.roomName + ' · ' + (s.roomType||'') + ' · còn ' + s.availableSeats + ' ghế</div>')
                         .appendTo($list);
                 });
                 sweepStartedShowtimes();
@@ -266,7 +449,7 @@
             });
 
             if ($('#movieSelect').val() && $('#showtimeList .ct-show').length === 0) {
-                $('#showtimeList').html('<span class="ct-staff">Không có suất chiếu sắp tới.</span>');
+                $('#showtimeList').html('<span class="text-sm text-gray-400">Không có suất chiếu sắp tới.</span>');
             }
 
             if (selectedExpired) {
@@ -293,8 +476,8 @@
 
         function loadSeatMap(showtimeId, done) {
             $('#seatCard').show();
-            $('#seatMap').html('<span class="ct-staff">Đang tải sơ đồ ghế...</span>');
-            $.getJSON('/Staff/Counter/Seats/' + showtimeId, function (map) {
+            $('#seatMap').html('<span class="text-sm text-gray-400">Đang tải sơ đồ ghế...</span>');
+            $.getJSON('/Staff/Counter/Seats/' + showtimeId, { holdToken: HOLD_TOKEN }, function (map) {
                 renderSeatMap(map);
                 $('#foodCard').show();
                 if (done) done();
@@ -308,15 +491,16 @@
             const rows = {};
             map.seats.forEach(function (s) { (rows[s.rowNumber] = rows[s.rowNumber] || []).push(s); });
             Object.keys(rows).map(Number).sort((a,b)=>a-b).forEach(function (r) {
-                const $row = $('<div class="ct-seatrow"></div>');
+                const $row = $('<div class="flex items-center gap-1.5"></div>');
                 const rowLabel = (r >= 1 && r <= 26) ? String.fromCharCode(64 + r) : r;
-                $row.append('<span class="ct-rowlabel">' + rowLabel + '</span>');
+                $row.append('<span class="w-6 shrink-0 text-center text-xs font-bold text-gray-400">' + rowLabel + '</span>');
                 rows[r].sort((a,b)=>a.seatNumber-b.seatNumber).forEach(function (s) {
                     const $seat = $('<button type="button" class="seat"></button>')
                         .text(s.label)
                         .attr('title', s.seatTypeName + ' · ' + fmt(s.price));
                     if (s.isOccupied) {
                         $seat.addClass('occupied').prop('disabled', true);
+                        if (s.isHeld) $seat.addClass('held');
                         delete selectedSeats[s.id];
                     } else {
                         $seat.attr('data-id', s.id).attr('data-price', s.price).attr('data-label', s.label);
@@ -326,15 +510,6 @@
                 });
                 $m.append($row);
             });
-        }
-
-        // Mã giảm giá đã áp gắn với tổng tiền hiện tại — mọi thay đổi ghế/đồ ăn/khách đều làm mã hết hiệu
-        // lực, buộc nhân viên áp lại để tránh hiển thị sai số tiền giảm.
-        function clearPromo() {
-            if (!appliedPromo) return;
-            appliedPromo = null;
-            $('#promoInfo').removeClass('ok no').text('');
-            recalc();
         }
 
         function showError(msg) {
@@ -355,9 +530,14 @@
                 // Bỏ chọn -> bỏ giữ ghế ngay (không chặn UI chờ phản hồi).
                 delete selectedSeats[id];
                 $seat.removeClass('selected');
-                clearPromo();
+                if (Object.keys(selectedSeats).length === 0) stopHoldCountdown();
                 recalc();
                 postSeatAction('ReleaseSeat', selectedShowtimeId, id).catch(function () {});
+                return;
+            }
+
+            if (Object.keys(selectedSeats).length >= MAX_SEATS) {
+                alertPopup({ title: 'Đã đạt giới hạn ghế', message: 'Mỗi đơn tối đa ' + MAX_SEATS + ' ghế.', type: 'warning' });
                 return;
             }
 
@@ -365,103 +545,159 @@
             postSeatAction('HoldSeat', selectedShowtimeId, id).then(function (res) {
                 $seat.prop('disabled', false);
                 if (res.ok) {
+                    if (Object.keys(selectedSeats).length === 0) startHoldCountdown();
                     selectedSeats[id] = { label: $seat.data('label'), price: parseFloat($seat.data('price')) };
                     $seat.addClass('selected');
-                    clearPromo();
                     recalc();
                 } else {
                     // Ghế vừa bị người khác giữ/đặt trong lúc thao tác -> khóa lại, không cho chọn nữa.
                     $seat.addClass('occupied').prop('disabled', true);
                     showError(res.message || 'Ghế vừa được người khác chọn. Vui lòng chọn ghế khác.');
                 }
-            }).catch(function () {
+            }).catch(function (err) {
                 $seat.prop('disabled', false);
-                showError('Không thể kết nối máy chủ, vui lòng thử lại.');
+                showError('Không giữ được ghế (' + (err && err.message ? err.message : 'lỗi kết nối') + '). Vui lòng thử lại.');
             });
         });
 
         // --- Đồ ăn ---
-        $('.food-qty').on('input', function () { clearPromo(); recalc(); });
+        $('.food-qty').on('input', recalc);
 
         // --- Thanh toán ---
         $('input[name="payMethod"]').on('change', function () {
             $('#cashBox').toggle(this.value === 'Cash');
+            $('#transferBox').toggle(this.value === 'Transfer');
             recalc();
         });
-        $('#cashReceived').on('input', recalc);
+        // Tiền khách đưa: hiển thị dấu phẩy phân cách nghìn cho dễ nhìn; giá trị dùng để tính là số thuần.
+        function cashNum() { return parseFloat(($('#cashReceived').val() || '').replace(/[^\d]/g, '')) || 0; }
+        $('#cashReceived').on('input', function () {
+            var digits = (this.value || '').replace(/[^\d]/g, '');
+            this.value = digits ? Number(digits).toLocaleString('en-US') : '';
+            recalc();
+        });
 
         // --- Tra cứu thành viên ---
-        function setMember(id, points) {
-            memberId = id;
-            availablePoints = points || 0;
-            $('#availablePointsLbl').text(availablePoints.toLocaleString('vi-VN'));
-            $('#pointsBox').toggle(!!memberId && availablePoints > 0 && POINT_VALUE_VND > 0);
-            if (!memberId) $('#pointsInput').val(0);
-            clearPromo();
-            recalc();
+        // Ẩn/hiện khối ưu đãi theo việc đã tra ra tài khoản khách hàng hay chưa.
+        function toggleOfferBoxes(hasMember) {
+            $('#offerHint').toggle(!hasMember);
+            $('#promoBox').toggle(hasMember);
+            $('#pointsBox').toggle(hasMember);
+        }
+
+        function resetMember() {
+            memberId = null;
+            memberPoints = 0;
+            $('#memberInfo').removeClass('ok no').text('');
+            $('#clearMemberBtn').hide();
+            $('#pointsInput').val(0);
+            toggleOfferBoxes(false);
+
+            // Mã giảm giá gắn với tài khoản khách -> đổi/bỏ khách thì khối nhập mã ẩn đi,
+            // phải xoá luôn mã đang áp nếu không giao diện vẫn trừ tiền mà server sẽ từ chối.
+            appliedPromo = null;
+            $('#promoInput').val('');
+            $('#promoMsg').removeClass('ok no').text('');
         }
 
         $('#lookupBtn').on('click', function () {
             const phone = $('#phoneInput').val().trim();
             const $info = $('#memberInfo');
-            if (!phone) { $info.removeClass('ok no').text(''); setMember(null, 0); return; }
+            if (!phone) { $info.removeClass('ok no').text(''); return; }
             $.getJSON('/Staff/Counter/LookupMember', { phone: phone }, function (res) {
+                $('#clearMemberBtn').show();
                 if (res.found) {
+                    memberId = res.member.id;
+                    memberPoints = res.member.rewardPoints || 0;
                     $info.removeClass('no').addClass('ok')
-                        .text('✓ ' + res.member.fullName + ' · ' + (res.member.rewardPoints || 0) + ' điểm');
-                    setMember(res.member.id, res.member.rewardPoints || 0);
+                        .text('✓ ' + res.member.fullName + ' · ' + memberPoints + ' điểm');
+                    $('#pointsAvailable').text(memberPoints);
+                    toggleOfferBoxes(true);
                 } else {
+                    memberId = null;
+                    memberPoints = 0;
                     $info.removeClass('ok').addClass('no').text('Không tìm thấy thành viên — sẽ tính là khách lẻ.');
-                    setMember(null, 0);
+                    $('#pointsInput').val(0);
+                    toggleOfferBoxes(false);
                 }
+                recalc();
             });
         });
-        $('#phoneInput').on('input', function () { $('#memberInfo').removeClass('ok no').text(''); setMember(null, 0); });
-        $('#pointsInput').on('input', recalc);
+        $('#phoneInput').on('input', function () { resetMember(); recalc(); });
+        $('#clearMemberBtn').on('click', function () { $('#phoneInput').val(''); resetMember(); recalc(); });
 
-        // --- Áp mã giảm giá ---
+        // --- Mã khuyến mãi ---
         $('#applyPromoBtn').on('click', function () {
-            const code = $('#promoInput').val().trim();
-            const $info = $('#promoInfo');
-            if (!code) { $info.removeClass('ok no').text(''); appliedPromo = null; recalc(); return; }
-            if (!selectedShowtimeId || Object.keys(selectedSeats).length === 0) {
-                $info.removeClass('ok').addClass('no').text('Vui lòng chọn ghế trước khi áp mã.');
-                return;
-            }
-            const fd = new FormData();
-            fd.append('__RequestVerificationToken', afToken());
-            fd.append('showtimeId', selectedShowtimeId);
-            fd.append('code', code);
-            if (memberId) fd.append('customerId', memberId);
-            let fi = 0;
+            const code = $('#promoInput').val().trim().toUpperCase();
+            const $msg = $('#promoMsg');
+            if (!code) { appliedPromo = null; $msg.removeClass('ok').addClass('no').text('Vui lòng nhập mã.'); recalc(); return; }
+
+            let seatTotal = 0;
+            Object.keys(selectedSeats).forEach(function (id) { seatTotal += selectedSeats[id].price; });
+            let foodTotal = 0;
             $('.food-qty').each(function () {
                 const q = parseInt(this.value) || 0;
-                if (q > 0) { fd.append('foods[' + fi + '].FbId', $(this).data('id')); fd.append('foods[' + fi + '].Quantity', q); fi++; }
+                if (q > 0) foodTotal += q * parseFloat($(this).data('price'));
             });
-            $.ajax({ url: '/Staff/Counter/ApplyPromo', method: 'POST', data: fd, processData: false, contentType: false })
-                .done(function (res) {
-                    if (res.ok) {
-                        appliedPromo = { code: res.code, discount: res.discount, target: res.target };
-                        $info.removeClass('no').addClass('ok').text(res.message);
-                    } else {
-                        appliedPromo = null;
-                        $info.removeClass('ok').addClass('no').text(res.message || 'Mã giảm giá không hợp lệ.');
-                    }
-                    recalc();
-                })
-                .fail(function () {
+
+            // Gửi kèm SĐT đang gõ: mã giảm giá bắt buộc có tài khoản khách hàng, mà nhân viên
+            // có thể chưa bấm "Tra" — để server tra y như lúc chốt đơn cho khỏi lệch kết quả.
+            $.getJSON('/Staff/Counter/PreviewPromo', {
+                code: code, customerId: memberId || '', customerPhone: $('#phoneInput').val().trim(),
+                seatTotal: seatTotal, foodTotal: foodTotal
+            }, function (res) {
+                if (res.ok) {
+                    appliedPromo = { code: res.code, discount: res.discount, subtotal: seatTotal + foodTotal };
+                    $msg.removeClass('no').addClass('ok').text(res.message);
+                } else {
                     appliedPromo = null;
-                    $info.removeClass('ok').addClass('no').text('Không thể kết nối máy chủ, vui lòng thử lại.');
-                    recalc();
-                });
+                    $msg.removeClass('ok').addClass('no').text(res.message || 'Mã không hợp lệ.');
+                }
+                recalc();
+            }).fail(function () {
+                appliedPromo = null;
+                $msg.removeClass('ok').addClass('no').text('Không thể kết nối máy chủ.');
+                recalc();
+            });
         });
+
+        // --- Điểm thưởng ---
+        $('#pointsInput').on('input', recalc);
+        $('#pointsMaxBtn').on('click', function () { $('#pointsInput').val(999999999); recalc(); });
+
+        // --- VietQR (Chuyển khoản): sinh mã QR theo số tiền cần thu hiện tại ---
+        let vietQrTimer = null;
+        function updateVietQr() {
+            if ($('input[name="payMethod"]:checked').val() !== 'Transfer') return;
+            const $box = $('#vietqrBox');
+            if (!selectedShowtimeId) { $box.html('<span class="text-sm text-gray-400">Chọn suất chiếu để hiện mã QR chuyển khoản.</span>'); return; }
+            const amount = window._grandTotal || 0;
+            if (amount <= 0) { $box.html('<span class="text-sm text-gray-400">Chưa có số tiền cần thu.</span>'); return; }
+
+            clearTimeout(vietQrTimer);
+            vietQrTimer = setTimeout(function () {
+                $.getJSON('/Staff/Counter/VietQrCode', { showtimeId: selectedShowtimeId, amount: amount }, function (res) {
+                    if (!res.enabled) {
+                        $box.html('<span class="text-sm text-gray-400">Chưa cấu hình VietQR — vui lòng xác nhận chuyển khoản thủ công.</span>');
+                        return;
+                    }
+                    $box.html(
+                        '<img src="' + res.qrUrl + '" alt="QR chuyển khoản" class="mx-auto max-w-[180px] rounded-lg border border-gray-200" />' +
+                        '<div class="mt-2 text-xs leading-relaxed text-gray-500"><b class="text-[#191c1d]">' + res.accountName + '</b><br/>' + res.bankCode + ' · ' + res.accountNo +
+                        '<br/>Nội dung: ' + res.content + '<br/>Số tiền: ' + fmt(amount) + '</div>'
+                    );
+                }).fail(function () {
+                    $box.html('<span class="text-sm text-gray-400">Không tải được mã QR.</span>');
+                });
+            }, 400);
+        }
 
         function recalc() {
             let seatTotal = 0;
             const chips = [];
             Object.keys(selectedSeats).forEach(function (id) {
                 seatTotal += selectedSeats[id].price;
-                chips.push('<span class="ct-chip">' + selectedSeats[id].label + '</span>');
+                chips.push('<span class="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary">' + selectedSeats[id].label + '</span>');
             });
             let foodTotal = 0;
             $('.food-qty').each(function () {
@@ -472,48 +708,94 @@
             const vat = Math.round(sub * VAT_RATE / 100);
             const gross = sub + vat;
 
-            // Giảm giá theo mã (đã xác nhận với server qua nút "Áp mã") rồi mới tới điểm thưởng —
-            // đúng thứ tự tính của server (ResolvePromoAsync trước, điểm trừ trên phần còn lại sau).
+            // Đơn thay đổi (ghế/đồ ăn) sau khi đã áp mã -> hủy áp dụng, yêu cầu nhân viên áp lại cho đúng.
+            if (appliedPromo && appliedPromo.subtotal !== sub) {
+                appliedPromo = null;
+                $('#promoMsg').removeClass('ok').addClass('no').text('Đơn đã thay đổi — vui lòng áp dụng lại mã.');
+            }
             const promoDiscount = appliedPromo ? appliedPromo.discount : 0;
             const afterPromo = Math.max(0, gross - promoDiscount);
 
-            const maxPoints = (memberId && availablePoints > 0 && POINT_VALUE_VND > 0)
-                ? Math.max(0, Math.min(availablePoints, Math.floor(afterPromo / POINT_VALUE_VND)))
+            const maxUsablePoints = POINT_VALUE_VND > 0
+                ? Math.max(0, Math.min(memberPoints, Math.floor(afterPromo / POINT_VALUE_VND)))
                 : 0;
-            $('#pointsInput').attr('max', maxPoints);
-            let pointsToUse = 0;
-            if (memberId && maxPoints > 0) {
-                pointsToUse = Math.max(0, Math.min(parseInt($('#pointsInput').val()) || 0, maxPoints));
-                if (pointsToUse !== (parseInt($('#pointsInput').val()) || 0)) $('#pointsInput').val(pointsToUse);
-            } else {
-                $('#pointsInput').val(0);
-            }
-            const pointsDiscount = pointsToUse * POINT_VALUE_VND;
-            const grand = Math.max(0, afterPromo - pointsDiscount);
+            let usePoints = parseInt($('#pointsInput').val()) || 0;
+            if (usePoints < 0) usePoints = 0;
+            if (usePoints > maxUsablePoints) usePoints = maxUsablePoints;
+            $('#pointsInput').val(usePoints);
+            $('#pointsMaxBtn').text('Dùng tối đa (' + maxUsablePoints + ')');
+            const pointsDiscount = usePoints * POINT_VALUE_VND;
+            const grand = afterPromo - pointsDiscount;
 
-            $('#seatChips').html(chips.length ? chips.join('') : '<span class="ct-staff">Chưa chọn ghế.</span>');
+            $('#seatChips').html(chips.length ? chips.join('') : '<span class="text-sm text-gray-400">Chưa chọn ghế.</span>');
             $('#seatTotal').text(fmt(seatTotal));
             $('#foodTotal').text(fmt(foodTotal));
             $('#vatTotal').text(fmt(vat));
-            $('#promoRow').toggle(promoDiscount > 0);
-            $('#promoDiscountAmt').text('-' + fmt(promoDiscount));
-            $('#pointsRow').toggle(pointsDiscount > 0);
-            $('#pointsDiscountAmt').text('-' + fmt(pointsDiscount));
+            $('#promoDiscountRow').toggle(promoDiscount > 0);
+            $('#promoDiscountTotal').text('-' + fmt(promoDiscount));
+            $('#pointsDiscountRow').toggle(pointsDiscount > 0);
+            $('#pointsDiscountTotal').text('-' + fmt(pointsDiscount));
             $('#grandTotal').text(fmt(grand));
 
-            const cash = parseFloat($('#cashReceived').val()) || 0;
+            const cash = cashNum();
             $('#changeAmount').text(fmt(Math.max(0, cash - grand)));
 
             window._grandTotal = grand;
-            window._pointsToUse = pointsToUse;
+            window._usePoints = usePoints;
             checkCash();
+            updateVietQr();
+
+            // Thanh dính đáy + thanh tiến trình bám theo trạng thái mới nhất. Đặt ở CUỐI recalc()
+            // vì mọi thao tác (đổi phim/suất, chọn ghế, đồ ăn, khách, ưu đãi, thanh toán) đều gọi recalc().
+            const payMethod = $('input[name="payMethod"]:checked').val();
+            $('#barSeatCount').text(Object.keys(selectedSeats).length + ' ghế');
+            $('#barMethod').text(payMethod === 'Transfer' ? 'Chuyển khoản' : 'Tiền mặt');
+            $('#barGrandTotal').text(fmt(grand));
+            updateSteps(grand, cash, payMethod);
+        }
+
+        // --- Thanh tiến trình 4 bước ---
+        const STEP_BOX_BASE = 'ct-stepitem flex items-center gap-2.5 rounded-xl border px-3 py-2.5 transition-colors';
+        const STEP_BADGE_BASE = 'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold';
+        // Chỉ dùng class Tailwind (không dùng CSS thuần) để partial _DarkMode áp được màu nền tối.
+        const STEP_CLS = {
+            todo:  { box: 'border-gray-200 bg-white',       badge: 'bg-gray-100 text-gray-400' },
+            doing: { box: 'border-primary bg-[#fff7f0]',    badge: 'bg-primary text-white' },
+            done:  { box: 'border-primary/40 bg-primary/5', badge: 'bg-primary text-white' }
+        };
+
+        function setStep(no, state, note) {
+            const $li = $('#ctSteps [data-step="' + no + '"]');
+            $li.attr('class', STEP_BOX_BASE + ' ' + STEP_CLS[state].box);
+            $li.find('[data-step-badge]')
+               .attr('class', STEP_BADGE_BASE + ' ' + STEP_CLS[state].badge)
+               .text(state === 'done' ? '✓' : no);
+            $li.find('[data-step-note]').text(note || '');
+        }
+
+        function updateSteps(grand, cash, payMethod) {
+            const seatCount = Object.keys(selectedSeats).length;
+            let foodCount = 0;
+            $('.food-qty').each(function () { foodCount += parseInt(this.value) || 0; });
+
+            const hasShowtime = !!selectedShowtimeId;
+            const hasSeats = seatCount > 0;
+            // Đồ ăn là tùy chọn -> không bao giờ chặn, chỉ hiển thị đã chọn gì.
+            const paidEnough = grand > 0 &&
+                (payMethod === 'Transfer' || (cash >= grand && cash <= MAX_CASH));
+
+            setStep(1, hasShowtime ? 'done' : 'doing', '');
+            setStep(2, hasSeats ? 'done' : (hasShowtime ? 'doing' : 'todo'), hasSeats ? seatCount + ' ghế' : '');
+            setStep(3, hasSeats ? 'done' : 'todo', hasSeats ? (foodCount > 0 ? foodCount + ' món' : 'Bỏ qua') : '');
+            setStep(4, paidEnough ? 'done' : (hasSeats ? 'doing' : 'todo'),
+                    paidEnough ? 'Đủ tiền' : (hasSeats && payMethod === 'Cash' ? 'Chờ thu' : ''));
         }
 
         // --- Kiểm tra tiền khách đưa: chặn số quá lớn, cảnh báo khi lớn bất thường ---
         const MAX_CASH = 100000000; // 100.000.000 đ cho 1 giao dịch tại quầy
 
         function checkCash() {
-            const cash = parseFloat($('#cashReceived').val()) || 0;
+            const cash = cashNum();
             const grand = window._grandTotal || 0;
             const $w = $('#cashWarn');
 
@@ -531,13 +813,15 @@
 
         // --- Submit (AJAX — không reload trang, để có thể xử lý lỗi tại chỗ) ---
         $('#submitBtn').on('click', function () {
+            const $btn = $(this);
             const seatIds = Object.keys(selectedSeats);
             if (!selectedShowtimeId) { alertPopup({ title: 'Chưa chọn suất chiếu', message: 'Vui lòng chọn suất chiếu.', type: 'warning' }); return; }
             if (seatIds.length === 0) { alertPopup({ title: 'Chưa chọn ghế', message: 'Vui lòng chọn ít nhất một ghế.', type: 'warning' }); return; }
 
             const method = $('input[name="payMethod"]:checked').val();
-            const cash = parseFloat($('#cashReceived').val()) || 0;
-            if (method === 'Cash' && cash < (window._grandTotal || 0)) {
+            const cash = cashNum();
+            const grand = window._grandTotal || 0;
+            if (method === 'Cash' && cash < grand) {
                 alertPopup({ title: 'Thiếu tiền mặt', message: 'Tiền khách đưa không đủ.', type: 'warning' });
                 return;
             }
@@ -552,47 +836,58 @@
 
             hideError();
 
-            const fd = new FormData();
-            fd.append('__RequestVerificationToken', $('#createForm input[name="__RequestVerificationToken"]').val());
-            fd.append('ShowtimeId', selectedShowtimeId);
-            seatIds.forEach(id => fd.append('SeatIds', id));
-            let fi = 0;
-            $('.food-qty').each(function () {
-                const q = parseInt(this.value) || 0;
-                if (q > 0) { fd.append('Foods[' + fi + '].FbId', $(this).data('id')); fd.append('Foods[' + fi + '].Quantity', q); fi++; }
-            });
-            if (memberId) fd.append('CustomerId', memberId);
-            fd.append('CustomerPhone', $('#phoneInput').val().trim());
-            if (appliedPromo) fd.append('PromoCode', appliedPromo.code);
-            fd.append('PointsUsed', window._pointsToUse || 0);
-            fd.append('PaymentMethod', method);
-            if (method === 'Cash') fd.append('CashReceived', cash);
+            const methodLabel = method === 'Cash' ? 'tiền mặt' : 'chuyển khoản';
+            confirmPopup({
+                title: 'Xác nhận thanh toán',
+                message: 'Thu ' + fmt(grand) + ' (' + methodLabel + ') cho ' + seatIds.length + ' ghế. Xác nhận tạo đơn?',
+                type: 'info',
+                okText: 'Thu tiền & tạo đơn'
+            }).then(function (ok) {
+                if (!ok) return;
 
-            const $btn = $(this).prop('disabled', true).text('Đang xử lý...');
+                const fd = new FormData();
+                fd.append('__RequestVerificationToken', $('#createForm input[name="__RequestVerificationToken"]').val());
+                fd.append('ShowtimeId', selectedShowtimeId);
+                fd.append('HoldToken', HOLD_TOKEN);
+                seatIds.forEach(id => fd.append('SeatIds', id));
+                let fi = 0;
+                $('.food-qty').each(function () {
+                    const q = parseInt(this.value) || 0;
+                    if (q > 0) { fd.append('Foods[' + fi + '].FbId', $(this).data('id')); fd.append('Foods[' + fi + '].Quantity', q); fi++; }
+                });
+                if (memberId) fd.append('CustomerId', memberId);
+                fd.append('CustomerPhone', $('#phoneInput').val().trim());
+                if (appliedPromo) fd.append('PromoCode', appliedPromo.code);
+                fd.append('PointsUsed', window._usePoints || 0);
+                fd.append('PaymentMethod', method);
+                if (method === 'Cash') fd.append('CashReceived', cash);
 
-            $.ajax({
-                url: $('#createForm').attr('action'),
-                method: 'POST',
-                data: fd,
-                processData: false,
-                contentType: false
-            }).done(function (res) {
-                if (res.ok) {
-                    window.location.href = res.ticketUrl;
-                    return;
-                }
-                // Lỗi (thường gặp nhất: ghế vừa bị người khác đặt/giữ trong lúc thao tác) —
-                // tải lại sơ đồ ghế thay vì reload cả trang, giữ nguyên đồ ăn/khách/thanh toán đã nhập.
-                showError(res.error || 'Có lỗi xảy ra, vui lòng thử lại.');
-                $btn.prop('disabled', false).text('Xác nhận & Thanh toán');
-                if (selectedShowtimeId) loadSeatMap(selectedShowtimeId, recalc);
-            }).fail(function () {
-                showError('Không thể kết nối máy chủ, vui lòng thử lại.');
-                $btn.prop('disabled', false).text('Xác nhận & Thanh toán');
+                $btn.prop('disabled', true).text('Đang xử lý...');
+
+                $.ajax({
+                    url: $('#createForm').attr('action'),
+                    method: 'POST',
+                    data: fd,
+                    processData: false,
+                    contentType: false
+                }).done(function (res) {
+                    if (res.ok) {
+                        window.location.href = res.ticketUrl;
+                        return;
+                    }
+                    // Lỗi (thường gặp nhất: ghế vừa bị người khác đặt/giữ trong lúc thao tác) —
+                    // tải lại sơ đồ ghế thay vì reload cả trang, giữ nguyên đồ ăn/khách/thanh toán đã nhập.
+                    showError(res.error || 'Có lỗi xảy ra, vui lòng thử lại.');
+                    $btn.prop('disabled', false).text('Xác nhận & Thanh toán');
+                    if (selectedShowtimeId) loadSeatMap(selectedShowtimeId, recalc);
+                }).fail(function () {
+                    showError('Không thể kết nối máy chủ, vui lòng thử lại.');
+                    $btn.prop('disabled', false).text('Xác nhận & Thanh toán');
+                });
             });
         });
 
-        function resetSeats() { selectedSeats = {}; appliedPromo = null; $('#promoInfo').removeClass('ok no').text(''); recalc(); }
+        function resetSeats() { selectedSeats = {}; stopHoldCountdown(); recalc(); }
         recalc();
 
         // Rời trang (đóng tab/chuyển trang khác) -> bỏ giữ toàn bộ ghế đang giữ.
@@ -602,6 +897,7 @@
             const fd = new FormData();
             fd.append('__RequestVerificationToken', afToken());
             fd.append('showtimeId', selectedShowtimeId);
+            fd.append('holdToken', HOLD_TOKEN);
             navigator.sendBeacon('/Staff/Counter/ReleaseAll', fd);
         });
     </script>
