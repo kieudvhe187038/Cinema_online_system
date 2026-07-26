@@ -74,4 +74,18 @@ public class StaffCheckinController : Controller
 
         return Json(new { success = false, error = "Không tìm thấy vé hoặc đơn với mã này." });
     }
+
+    // --- AJAX: đánh dấu đã in + trả về URL màn hình in vé (dùng chung với Counter Sales, UC14) ---
+    [HttpPost("Print")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Print(string? qr)
+    {
+        var result = await _checkinService.MarkPrintedAsync(qr, GetCurrentStaffId());
+        if (!result.Succeeded)
+            return Json(new { success = false, error = result.Error });
+
+        await _audit.LogAsync("PRINT_TICKET", "Tickets", newValue: new { qr });
+
+        return Json(new { success = true, printUrl = Url.Action("Ticket", "StaffCounter", new { id = result.Data }) });
+    }
 }

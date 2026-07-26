@@ -8,6 +8,8 @@ namespace Cinema_System.Infrastructure.Repositories;
 
 public class TicketRepository : GenericRepository<Ticket>, ITicketRepository
 {
+    private const string StatusBooked = "Booked";
+    private const string StatusPrinted = "Printed";
     private const string StatusCancelled = "Cancelled";
     private const string StatusCheckedIn = "Checked-in";
 
@@ -51,5 +53,23 @@ public class TicketRepository : GenericRepository<Ticket>, ITicketRepository
                 .SetProperty(t => t.ScannedAt, scannedAt));
 
         return rows > 0;
+    }
+
+    public async Task<bool> TryMarkPrintedAsync(Guid ticketId)
+    {
+        // Chỉ chuyển Booked -> Printed. Vé đang Checked-in/Cancelled/đã Printed sẽ không
+        // khớp điều kiện WHERE nên không bị đổi (không hạ cấp trạng thái đã cao hơn).
+        var rows = await _dbSet
+            .Where(t => t.Id == ticketId && t.Status == StatusBooked)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(t => t.Status, StatusPrinted));
+
+        return rows > 0;
+    }
+
+    public async Task<int> MarkBookingPrintedAsync(Guid bookingId)
+    {
+        return await _dbSet
+            .Where(t => t.BookingId == bookingId && t.Status == StatusBooked)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(t => t.Status, StatusPrinted));
     }
 }

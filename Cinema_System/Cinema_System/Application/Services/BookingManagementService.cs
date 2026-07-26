@@ -64,4 +64,17 @@ public class BookingManagementService : IBookingManagementService
         var b = await _unitOfWork.Bookings.GetDetailByIdAsync(bookingId);
         return b is null ? null : _mapper.Map<TicketPrintViewModel>(b);
     }
+
+    public async Task<Guid?> FindBookingIdByQrAsync(string? qr)
+    {
+        if (string.IsNullOrWhiteSpace(qr)) return null;
+        var code = qr.Trim();
+
+        // Mã đơn (BK...) trước; không khớp thì thử mã vé (TK...) rồi lấy BookingId của vé đó.
+        var booking = await _unitOfWork.Bookings.FirstOrDefaultAsync(b => b.QrCode == code);
+        if (booking is not null) return booking.Id;
+
+        var ticket = await _unitOfWork.Tickets.FirstOrDefaultAsync(t => t.QrCode == code);
+        return ticket?.BookingId;
+    }
 }

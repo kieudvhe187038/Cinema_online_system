@@ -130,6 +130,42 @@ public class TicketCheckinService : ITicketCheckinService
         return Result<BookingCheckinDTO>.Success(dto);
     }
 
+    public async Task<Result<Guid>> MarkPrintedAsync(string? qrCode, Guid staffId)
+    {
+        var staff = await _staffContext.GetCurrentStaffAsync(staffId);
+        if (staff is null)
+            return Result<Guid>.Failure("Chưa có tài khoản nhân viên (Staff) để in vé.");
+
+        // Mã vé đơn lẻ?
+        var ticket = await FindByQrAsync(qrCode);
+        if (ticket is not null)
+        {
+            if (string.Equals(ticket.Status, StatusCancelled, StringComparison.OrdinalIgnoreCase))
+                return Result<Guid>.Failure("Vé đã bị hủy, không thể in.");
+
+            if (!string.Equals(ticket.Booking?.PaymentStatus, PaymentPaid, StringComparison.OrdinalIgnoreCase))
+                return Result<Guid>.Failure("Đơn chưa thanh toán, không thể in vé.");
+
+            // Best-effort: chuyển Booked -> Printed. Vé đã Checked-in/đã Printed thì bỏ
+            // qua cập nhật (không phải lỗi) — vẫn cho mở màn hình in.
+            await _unitOfWork.Tickets.TryMarkPrintedAsync(ticket.Id);
+            return Result<Guid>.Success(ticket.BookingId);
+        }
+
+        // Mã đơn?
+        var booking = await FindBookingByQrAsync(qrCode);
+        if (booking is not null)
+        {
+            if (!string.Equals(booking.PaymentStatus, PaymentPaid, StringComparison.OrdinalIgnoreCase))
+                return Result<Guid>.Failure("Đơn chưa thanh toán, không thể in vé.");
+
+            await _unitOfWork.Tickets.MarkBookingPrintedAsync(booking.Id);
+            return Result<Guid>.Success(booking.Id);
+        }
+
+        return Result<Guid>.Failure("Không tìm thấy vé hoặc đơn với mã này.");
+    }
+
     private static bool IsCheckinable(Ticket t) =>
         !string.Equals(t.Status, StatusCancelled, StringComparison.OrdinalIgnoreCase)
         && !string.Equals(t.Status, StatusCheckedIn, StringComparison.OrdinalIgnoreCase);
