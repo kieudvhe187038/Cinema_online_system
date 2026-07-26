@@ -213,7 +213,7 @@
             ckHandled = false;
             ckShowMsg('');
             $('#ck-qr-reader').show();
-            $('#btnCamera').text('Đóng camera').prop('disabled', true);
+            $('#btnCamera').text('Đang mở camera...').prop('disabled', true);
 
             ckQr = new Html5Qrcode('ck-qr-reader');
             ckQr.start(
@@ -229,7 +229,7 @@
                 function () { /* không tìm thấy QR ở frame hiện tại — bỏ qua, không phải lỗi */ }
             ).then(function () {
                 ckScanning = true;
-                $('#btnCamera').prop('disabled', false);
+                $('#btnCamera').text('Đóng camera').prop('disabled', false);
             }).catch(function (err) {
                 $('#ck-qr-reader').hide();
                 $('#btnCamera').text('Mở camera').prop('disabled', false);
