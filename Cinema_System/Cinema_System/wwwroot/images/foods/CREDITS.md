@@ -1,16 +1,18 @@
 # Nguồn & giấy phép ảnh đồ ăn / thức uống
 
-Toàn bộ ảnh trong thư mục này lấy từ **Wikimedia Commons** với giấy phép tự do.
-Ảnh gắn CC BY / CC BY-SA **bắt buộc ghi công tác giả** khi dùng công khai — giữ nguyên file này.
-Trang gốc: `https://commons.wikimedia.org/wiki/File:<tên file gốc>`
+Ảnh lấy từ **Wikimedia Commons** và **Openverse** (gộp Flickr, Commons...), toàn bộ đều là
+giấy phép tự do cho phép dùng thương mại.
 
-| File trên server | Món | File gốc trên Commons | Giấy phép |
-|---|---|---|---|
-| `bap-rang-bo-vua.jpg` | Bắp rang bơ (vừa) | Regal Cinemas popcorn bucket.jpg | Public domain |
-| `bap-rang-bo-lon.jpg` | Bắp rang bơ (lớn) | Popcorn 11.jpg | CC BY-SA 4.0 |
-| `coca-cola-vua.jpg` | Coca-Cola (vừa) | Coca-Cola Glas mit Eis.jpg | Public domain |
-| `coca-cola-lon.jpg` | Coca-Cola (lớn) | Coca-Cola 200ml glass bottle 20080201.jpg | Public domain |
-| `combo-doi.jpg` | Combo Đôi | Lahaina, Maui, Hawaii (June 2019) - popcorn and drink.jpg | CC BY 2.0 |
-| `combo-gia-dinh.jpg` | Combo Gia Đình | Nelsonville, Ohio (31917186001).jpg | CC0 |
-| `nuoc-suoi.jpg` | Nước suối Aquafina | Bottle of Water.jpg | CC0 |
-| `khoai-tay-lac-pho-mai.jpg` | Khoai tây lắc phô mai | Cheese Fries.jpg | CC BY 2.0 |
+Ảnh gắn **CC BY / CC BY-SA bắt buộc ghi công tác giả** khi dùng công khai — giữ nguyên file này.
+Ảnh **Public domain / CC0** thì không ràng buộc.
+
+| File trên server | Món | Nội dung ảnh | Nguồn | Giấy phép |
+|---|---|---|---|---|
+| `bap-rang-bo-vua.jpg` | Bắp rang bơ (vừa) | Hộp bắp giấy sọc đỏ-trắng kiểu rạp chiếu | Openverse / Flickr — "Fresh Popcorn" | CC BY |
+| `bap-rang-bo-lon.jpg` | Bắp rang bơ (lớn) | Tô bắp rang bơ đầy ắp, nền trắng sạch | Openverse / Flickr — "Pop!" | CC BY |
+| `coca-cola-vua.jpg` | Coca-Cola (vừa) | Cận cảnh cola cùng đá viên và bọt gas | Openverse / Flickr — "Keeping It Cool" | CC BY |
+| `coca-cola-lon.jpg` | Coca-Cola (lớn) | Dãy chai Coca-Cola ướp lạnh trong tủ mát | Openverse / Flickr — "Always Coca-Cola" | CC BY |
+| `combo-doi.jpg` | Combo Đôi | Hai ly nước kèm tô bắp rang | Openverse / Flickr — "tumbler cups ... popcorn" | CC BY |
+| `combo-gia-dinh.jpg` | Combo Gia Đình | Bắp rang và ly nước cỡ lớn trên ghế rạp | Wikimedia Commons — Nelsonville, Ohio (31917186001).jpg | CC0 |
+| `nuoc-suoi.jpg` | Nước suối Aquafina | Chai nước suối 500ml | Wikimedia Commons — Bottle of Water.jpg | CC0 |
+| `khoai-tay-lac-pho-mai.jpg` | Khoai tây lắc phô mai | Khoai tây chiên phủ phô mai chảy | Wikimedia Commons — Cheese Fries.jpg | CC BY 2.0 |

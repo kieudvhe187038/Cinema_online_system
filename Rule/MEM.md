@@ -951,3 +951,14 @@ Nhật ký thay đổi mã nguồn / CSDL / quyết định kỹ thuật của d
   - **Sau khi pull code mới mà thấy thiếu ảnh/dữ liệu, hãy nghĩ tới CSDL trước khi nghi code.** File seed là ảnh chụp tại thời điểm chạy; sửa seed KHÔNG tự động cập nhật CSDL đã nạp. Hoặc chạy `SQL/Migrations.sql` (giữ dữ liệu), hoặc dựng lại từ `CinemaWebDB_v2.sql` + seed (mất dữ liệu test).
   - **Migration được viết idempotent và AN TOÀN với ảnh do người dùng upload:** chỉ ghi đè khi `image_url IS NULL` hoặc đang trỏ `/images/foods/%`. Ảnh Manager tự upload nằm ở `/uploads/foods/...` nên không bị đụng, chạy lại bao nhiêu lần cũng được.
   - **Đã kiểm chứng end-to-end thật:** chạy migration trên `CinemaWebDB` (8 dòng cập nhật, `thieu_anh = 0`), đối chiếu 8/8 đường dẫn có file thật trên đĩa, rồi **bật app ở cổng 5199 và `curl` từng ảnh — tất cả trả HTTP 200 đúng `Content-Type: image/jpeg`** (poster phim `.webp` cũng 200). Đã tắt app sau khi kiểm tra.
+
+### [2026-07-27] Thay bộ ảnh đồ ăn bằng ảnh đẹp & hợp món hơn (By: vkieu)
+- **What changed:** Thay nội dung 8 file trong `wwwroot/images/foods/` (tên file và đường dẫn GIỮ NGUYÊN nên **không cần đụng CSDL**). Nguồn mới chủ yếu là **Openverse** (gộp Flickr + Commons) — ảnh chụp sản phẩm đẹp hơn hẳn Wikimedia Commons thuần. Cập nhật lại `CREDITS.md`.
+  - Đổi luôn cách gán cho hợp lý: **hộp bắp giấy sọc đỏ-trắng → cỡ vừa**, **tô bắp đầy ắp nền trắng → cỡ lớn**.
+  - `Coca-Cola (vừa)` → cận cảnh cola + đá viên; `Coca-Cola (lớn)` → dãy chai Coca-Cola trong tủ mát; `Combo Đôi` → 2 ly nước kèm tô bắp.
+- **Why:** Bộ ảnh đầu quá xấu/lệch ngữ cảnh: thùng bắp in logo **Regal** (rạp đối thủ), ly cola chụp macro tối om, combo là ảnh cái quầy bán hàng.
+- **Impact/Notes for Team:**
+  - **Openverse API (`https://api.openverse.org/v1/images/?q=...&license=cc0,pdm,by,by-sa`) cho ảnh đẹp hơn Wikimedia Commons API rất nhiều** với cùng loại giấy phép tự do — lần sau cần ảnh minh hoạ thì tra Openverse trước. Không cần API key, nhưng vẫn phải nghỉ ~400ms giữa các lần gọi.
+  - **Bắt buộc xem tận mắt từng ảnh trước khi chọn.** Từ khoá tìm kiếm trả về rất nhiều ảnh sai ngữ cảnh mà tiêu đề nghe vẫn hợp lý: "popcorn bucket" ra chuột lang trong hộp bắp, "PopCorn mall" ra bánh pandan, "cinema snacks" ra cái nhà quầy bán hàng, "cheese fries" ra burger.
+  - **Còn 1 điểm chưa hoàn hảo:** ảnh `combo-gia-dinh.jpg` là ly **Pepsi** trên ghế rạp trong khi menu bán Coca-Cola, và hơi tối. Giữ lại vì đúng ngữ cảnh rạp chiếu và là CC0 (không cần ghi công) — ai tìm được ảnh tốt hơn thì thay, chỉ cần ghi đè file cùng tên, KHÔNG phải sửa CSDL.
+  - Đã kiểm chứng lại: bật app ở cổng 5199, `curl` cả 8 ảnh — **8/8 trả HTTP 200, `Content-Type: image/jpeg`**, kích thước khớp file trên đĩa. Đã tắt app.
