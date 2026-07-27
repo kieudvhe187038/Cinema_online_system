@@ -861,3 +861,11 @@ Nhật ký thay đổi mã nguồn / CSDL / quyết định kỹ thuật của d
   - `_StaffLayout` **không bật `important: true`** trong `tailwind.config` (khác `_Layout`). Các rule `@media print` ở đây vẫn để `!important` — cần thiết để đè utility, và vẫn đúng nếu sau này layout bật lại cờ đó.
   - Selector in ấn bám theo **cấu trúc DOM của `_StaffLayout`** (`aside` + `header` + `div.ml-60 > main` là con trực tiếp của `body`). Đổi cấu trúc layout đó thì phải sửa lại khối print này, nếu không bản in sẽ thừa lề trái 240px.
   - Build pass 0/0. Chưa xem mắt bản in thật — nên bấm thử Ctrl+P ở cả chế độ sáng lẫn tối.
+
+### [2026-07-27] Xóa `SQL/TestData.sql` khỏi repo (By: vkieu)
+- **What changed:** Xóa file `SQL/TestData.sql` (20KB, `git rm`). File này gộp 3 section dữ liệu DEV/TEST độc lập: (A/A2) reset mật khẩu dev về `Admin@123` cho `admin`/`manager1`/`staff1@cinemaweb.vn` + tạo/reset `User1@cinemaweb.vn` (role CUSTOMER); (B) seed idempotent cho màn Đặt vé tại quầy — tự tạo cinema/phòng 5x8/ghế/`Price_*_Configs`/VAT 8%/staff/phim `seed-counter-demo` + 3 suất chiếu tương lai; (C) 3 phòng test cho chức năng Sửa phòng + sơ đồ ghế (GUID prefix `aaaaaaaa-`, phủ 3 kịch bản khóa-ghế/versioning/sửa-tự-do). Thư mục `SQL/` còn lại 3 file: `CinemaWebDB_v2.sql` (schema), `CinemaWebDB_SeedData_Large.sql` (seed chính), `Migrations.sql` (migration cho CSDL đã tồn tại).
+- **Why:** User yêu cầu bỏ file SQL không cần — đây là file duy nhất trong `SQL/` chỉ phục vụ dev/test, không thuộc luồng dựng CSDL chính (schema → seed → migrations).
+- **Impact/Notes for Team:**
+  - **Quy ước cũ ở log `[2026-07-24]` (mục "`SQL/TestData.sql` — nơi tập trung MỌI dữ liệu dev/test, thêm section D, E… vào cuối file") KHÔNG còn hiệu lực** — file đã bị xóa. Cần data test mới thì tự viết script tạm, đừng tìm file này.
+  - **Mất cách reset mật khẩu dev:** seed chính `CinemaWebDB_SeedData_Large.sql` dùng `password_hash` mẫu nên **không login được** bằng tài khoản seed. Ai cần đăng nhập dev phải tự chạy lại `UPDATE [Users] SET [password_hash] = '$2a$10$spiC4CGfKOTsfXpOkVTK1OJtsH0PeuKkrzu.td9jClj.6DTiCbBRi'` (BCrypt cost=10 của chuỗi `Admin@123`) cho email cần dùng — hash này ghi lại đây để không phải sinh lại.
+  - Không đụng gì tới code C#, schema hay seed chính — không cần build lại. Nếu cần khôi phục: `git show <commit-trước>:SQL/TestData.sql`.
