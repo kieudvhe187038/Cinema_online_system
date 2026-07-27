@@ -943,3 +943,11 @@ Nhật ký thay đổi mã nguồn / CSDL / quyết định kỹ thuật của d
   - **Lấy ảnh từ Commons phải kiểm tra magic bytes.** Gọi nhanh liên tiếp sẽ bị chặn và trả về **trang HTML lỗi mang đuôi .jpg** — lần đầu tôi dính đúng lỗi này, 20/31 file tải về là HTML. Cần `res.ok` + kiểm tra 2 byte đầu (`FF D8` cho JPEG) + nghỉ ~600ms giữa các lần gọi, và đặt `User-Agent` mô tả rõ.
   - **Ảnh "Nước suối Aquafina" là chai nước không nhãn hiệu** (Commons không có ảnh Aquafina giấy phép tự do) — tên món và ảnh hơi lệch nhau, đổi tên món thành tên chung nếu thấy vướng.
   - Đã đối chiếu: 8/8 đường dẫn trong seed đều có file thật trên đĩa; nạp lại DB tạm, toàn bộ truy vấn kiểm tra vẫn 0 lỗi.
+
+### [2026-07-27] Migration gán ảnh đồ ăn cho CSDL đã tồn tại (By: vkieu)
+- **What changed:** Thêm section `[2026-07-27]` vào `SQL/Migrations.sql`: `UPDATE [Food_Beverages].[image_url]` cho 8 món, khớp theo `[name]`.
+- **Why:** Ảnh đồ ăn đã có trong repo và trong file seed, nhưng máy dev **không hiện ảnh** vì CSDL đang chạy được nạp từ bản seed CŨ (trước khi thêm cột `image_url`) — 8/8 dòng `image_url` là NULL. Chạy lại trọn `CinemaWebDB_v2.sql` + seed thì mất sạch dữ liệu test đang có, nên dùng migration thay vì dựng lại CSDL.
+- **Impact/Notes for Team:**
+  - **Sau khi pull code mới mà thấy thiếu ảnh/dữ liệu, hãy nghĩ tới CSDL trước khi nghi code.** File seed là ảnh chụp tại thời điểm chạy; sửa seed KHÔNG tự động cập nhật CSDL đã nạp. Hoặc chạy `SQL/Migrations.sql` (giữ dữ liệu), hoặc dựng lại từ `CinemaWebDB_v2.sql` + seed (mất dữ liệu test).
+  - **Migration được viết idempotent và AN TOÀN với ảnh do người dùng upload:** chỉ ghi đè khi `image_url IS NULL` hoặc đang trỏ `/images/foods/%`. Ảnh Manager tự upload nằm ở `/uploads/foods/...` nên không bị đụng, chạy lại bao nhiêu lần cũng được.
+  - **Đã kiểm chứng end-to-end thật:** chạy migration trên `CinemaWebDB` (8 dòng cập nhật, `thieu_anh = 0`), đối chiếu 8/8 đường dẫn có file thật trên đĩa, rồi **bật app ở cổng 5199 và `curl` từng ảnh — tất cả trả HTTP 200 đúng `Content-Type: image/jpeg`** (poster phim `.webp` cũng 200). Đã tắt app sau khi kiểm tra.
