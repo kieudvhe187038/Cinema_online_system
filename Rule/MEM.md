@@ -900,3 +900,17 @@ Nhật ký thay đổi mã nguồn / CSDL / quyết định kỹ thuật của d
   - **`trailer_url` không được là chuỗi chứa đúng 11 ký tự `[A-Za-z0-9_-]` sau `?v=`** — `Views/Public/Movies/Details.cshtml` bắt regex đó để nhúng iframe YouTube, slug 11 ký tự sẽ tạo player hỏng trông như bug.
   - **The Odyssey dài 173 phút** — dài hơn mọi phim trong seed cũ, nên các khung giờ chiếu đã được giãn lại (suất chiếu sớm ở phòng IMAX dời sang 22:45, suất cuối phim ngừng chiếu ở Phòng 1 dời sang 22:15) để không chồng lịch. Thêm phim dài vào rotation phải kiểm tra lại khoảng cách khung giờ.
   - Đã chạy lại toàn bộ 18 truy vấn đối chiếu trên database tạm — **tất cả PASS**, trong đó có 2 kiểm tra mới: `DATEDIFF(end_time, start_time) = duration_minutes` và 0 suất chồng lịch. Database tạm đã xoá, `CinemaWebDB` trên máy dev không bị đụng tới.
+
+### [2026-07-27] Ảnh phim lưu trên server thay vì trỏ ra CDN ngoài (By: vkieu)
+- **What changed:** Tải **13 poster + 10 banner thật** của các phim trong seed về `wwwroot`, và sửa `SQL/CinemaWebDB_SeedData.sql` trỏ vào ảnh nội bộ:
+  - `wwwroot/images/<slug>.webp` — 13 poster dọc **400x600** (478 KB tổng).
+  - `wwwroot/banner/banner_<slug>.webp` — 10 ảnh ngang **800x420** (324 KB tổng).
+  - `[poster_url]` = `"<slug>.webp"`, `[banner_url]` = `"banner_<slug>.webp"` — **tên file trần**, đúng quy ước `Application/Common/MediaUrl.cs` (`MediaUrl.Poster` ghép `/images/`, `MediaUrl.Banner` thấy tên chứa `banner` thì ghép `/banner/`).
+  - 3 phim (Người Nhện: Khởi Đầu Mới, Mùi Cỏ Cháy, Mẹ Ơi Về Nhà) nguồn không có ảnh ngang → `[banner_url] = NULL`.
+- **Why:** Seed đang trỏ `poster_url`/`banner_url` sang `https://img.cinemaweb.vn/...` — **domain không tồn tại**, nên mọi ảnh phim trên trang chủ, danh sách phim, chi tiết phim, vé điện tử đều hỏng và rơi về `placehold.co` (lại là phụ thuộc mạng ngoài).
+- **Impact/Notes for Team:**
+  - **DB phải lưu TÊN FILE TRẦN, không lưu đường dẫn.** `MediaUrl` chỉ ghép tiền tố khi giá trị KHÔNG bắt đầu bằng `/` hoặc `http`. Lưu `/images/x.webp` thì vẫn chạy, nhưng lưu `images/x.webp` (thiếu `/`) sẽ thành `/images/images/x.webp` → hỏng ảnh.
+  - **`banner_url` NULL là hợp lệ, không phải thiếu dữ liệu.** `Home/Index.cshtml` và `Booking/ETicket.cshtml` đã có sẵn `MediaUrl.Banner(...) ?? MediaUrl.Poster(...)` nên tự lùi về poster.
+  - Ảnh dùng định dạng **`.webp`** (mọi trình duyệt hiện nay đều hỗ trợ), nhẹ hơn nhiều so với bộ `banner_movie*.png` cũ (mỗi file 1.5–2.6 MB, tổng ~30 MB). Toàn bộ 23 ảnh mới chỉ **802 KB**.
+  - Bộ ảnh cũ `wwwroot/images/movie1..15.jpg` + `wwwroot/banner/banner_movie1..15.png` **vẫn còn nhưng không còn seed nào tham chiếu tới** (chúng thuộc về 15 phim hư cấu của seed cũ). Ai dọn repo có thể xoá để nhẹ ~30 MB.
+  - Đã kiểm chéo: 13/13 tên file trong seed đều tồn tại thật trên đĩa; kiểm tra header WebP xác nhận poster đúng ảnh dọc (400x600) và banner đúng ảnh ngang (800x420); 18/18 truy vấn đối chiếu dữ liệu vẫn PASS.
