@@ -861,3 +861,74 @@ Nhật ký thay đổi mã nguồn / CSDL / quyết định kỹ thuật của d
   - `_StaffLayout` **không bật `important: true`** trong `tailwind.config` (khác `_Layout`). Các rule `@media print` ở đây vẫn để `!important` — cần thiết để đè utility, và vẫn đúng nếu sau này layout bật lại cờ đó.
   - Selector in ấn bám theo **cấu trúc DOM của `_StaffLayout`** (`aside` + `header` + `div.ml-60 > main` là con trực tiếp của `body`). Đổi cấu trúc layout đó thì phải sửa lại khối print này, nếu không bản in sẽ thừa lề trái 240px.
   - Build pass 0/0. Chưa xem mắt bản in thật — nên bấm thử Ctrl+P ở cả chế độ sáng lẫn tối.
+
+### [2026-07-27] Xóa `SQL/TestData.sql` khỏi repo (By: vkieu)
+- **What changed:** Xóa file `SQL/TestData.sql` (20KB, `git rm`). File này gộp 3 section dữ liệu DEV/TEST độc lập: (A/A2) reset mật khẩu dev về `Admin@123` cho `admin`/`manager1`/`staff1@cinemaweb.vn` + tạo/reset `User1@cinemaweb.vn` (role CUSTOMER); (B) seed idempotent cho màn Đặt vé tại quầy — tự tạo cinema/phòng 5x8/ghế/`Price_*_Configs`/VAT 8%/staff/phim `seed-counter-demo` + 3 suất chiếu tương lai; (C) 3 phòng test cho chức năng Sửa phòng + sơ đồ ghế (GUID prefix `aaaaaaaa-`, phủ 3 kịch bản khóa-ghế/versioning/sửa-tự-do). Thư mục `SQL/` còn lại 3 file: `CinemaWebDB_v2.sql` (schema), `CinemaWebDB_SeedData_Large.sql` (seed chính), `Migrations.sql` (migration cho CSDL đã tồn tại).
+- **Why:** User yêu cầu bỏ file SQL không cần — đây là file duy nhất trong `SQL/` chỉ phục vụ dev/test, không thuộc luồng dựng CSDL chính (schema → seed → migrations).
+- **Impact/Notes for Team:**
+  - **Quy ước cũ ở log `[2026-07-24]` (mục "`SQL/TestData.sql` — nơi tập trung MỌI dữ liệu dev/test, thêm section D, E… vào cuối file") KHÔNG còn hiệu lực** — file đã bị xóa. Cần data test mới thì tự viết script tạm, đừng tìm file này.
+  - **Mất cách reset mật khẩu dev:** seed chính `CinemaWebDB_SeedData_Large.sql` dùng `password_hash` mẫu nên **không login được** bằng tài khoản seed. Ai cần đăng nhập dev phải tự chạy lại `UPDATE [Users] SET [password_hash] = '$2a$10$spiC4CGfKOTsfXpOkVTK1OJtsH0PeuKkrzu.td9jClj.6DTiCbBRi'` (BCrypt cost=10 của chuỗi `Admin@123`) cho email cần dùng — hash này ghi lại đây để không phải sinh lại.
+  - Không đụng gì tới code C#, schema hay seed chính — không cần build lại. Nếu cần khôi phục: `git show <commit-trước>:SQL/TestData.sql`.
+
+### [2026-07-27] Viết lại seed data: `SQL/CinemaWebDB_SeedData.sql` thay cho `CinemaWebDB_SeedData_Large.sql` (By: vkieu)
+- **What changed:** Xoá `SQL/CinemaWebDB_SeedData_Large.sql` (5.8 MB / 28.436 dòng) và thay bằng **`SQL/CinemaWebDB_SeedData.sql`** (349 KB / 1.891 dòng, nhỏ hơn ~17 lần). Quy ước GUID giữ nguyên như file cũ (`00000000-0000-0000-<nhóm>-<số>`) nên mọi ID đã ghi trong các log cũ của MEM.md vẫn đúng: rạp `...-0003-...1`, phòng `...-0005-...`, phim `...-0008-...`, admin `...-0002-...1`.
+  - **Quy mô mới:** 27 user (1 admin / 2 manager / 4 staff / 20 khách) · 6 phòng · 283 ghế · 12 phim · 10 thể loại · 122 suất chiếu · 179 đơn · 389 vé · 171 thanh toán · 128 email log · 154 dòng điểm thưởng · 28 đánh giá · 6 lệnh giữ ghế.
+  - **MỐC THỜI GIAN TƯƠNG ĐỐI (thay đổi lớn nhất):** file khai báo `@Mon = thứ Hai của tuần hiện tại` bằng `DATEADD(DAY, -(DATEDIFF(DAY,'19000101',@Now) % 7), @Today)` (1900-01-01 là thứ Hai nên không phụ thuộc `@@DATEFIRST`). Mọi `datetime` đều là `DATEADD(...)` quanh `@Mon`/`@Today`/`@Now`. Suất chiếu trải từ `@Mon-5` đến `@Mon+8`.
+  - **Khối UPDATE hậu xử lý ở cuối file** gán những gì phụ thuộc thời điểm chạy: trạng thái `Showtimes` (Completed/Live/Scheduled theo `GETDATE()`), kéo `Bookings.created_at` về trước giờ chiếu và rải đều 10 ngày gần nhất, đồng bộ `Payments.paid_at` / `Email_Logs.sent_at` / `Reward_Point_History.created_at` theo `Bookings.created_at`, và chuyển vé của suất đã chiếu sang `Checked-in` + gán `scan_by`/`scanned_at`.
+  - **Mật khẩu đăng nhập được luôn:** mọi user dùng hash BCrypt của `Admin@123` (bù lại phần A của `TestData.sql` đã xoá cùng ngày).
+  - File lưu **UTF-8 CÓ BOM** (2 file SQL còn lại không có BOM) để SSMS/VS Code luôn đọc đúng tiếng Việt.
+- **Why:** Seed cũ hardcode ngày `2026-07-08..10` nên tới 2026-07-27 **không còn suất chiếu tương lai nào** — không test được đặt vé, giữ ghế, check-in; đồng thời 5.8 MB quá nặng để mở/diff/chạy lại. User yêu cầu tạo lại "cho thực tế và ít hơn".
+- **Impact/Notes for Team:**
+  - **Chạy lệnh phải thêm cờ `-I`:** `sqlcmd -S <server> -d CinemaWebDB -I -i SQL\CinemaWebDB_SeedData.sql`. Thiếu `-I` thì `CREATE INDEX` của các **filtered index** trong `CinemaWebDB_v2.sql` fail với lỗi `Msg 1934 ... QUOTED_IDENTIFIER`. Chạy trong SSMS thì không cần vì SSMS mặc định bật sẵn.
+  - **Giá vé trong seed khớp đúng `PricingService.GetPricingAsync`:** phụ thu khung giờ **KHÔNG cộng dồn** — code chỉ lấy quy tắc có `priority` cao nhất khớp được (`OrderByDescending(c => c.Priority).FirstOrDefault()`). Vì vậy `Price_Time_Configs` được đặt lại: Thứ Bảy/Chủ Nhật +15.000 (priority 1), Suất tối 18:00–23:59 +20.000 (priority 2) — suất tối luôn thắng. Sửa các con số này thì phải sửa lại `price_at_booking` của 389 vé cho khớp.
+  - **Đã kiểm chứng thật:** dựng database tạm `CinemaWebDB_SeedCheck` từ `CinemaWebDB_v2.sql` + seed rồi chạy 15 truy vấn đối chiếu — **tất cả PASS**: `final = total - discount + vat`, `vat = 8% × (total - discount)`, `total = tiền vé + tiền đồ ăn`, `Users.reward_points` = tổng `Reward_Point_History`, `Payments.amount = Bookings.final_amount`, giá vé khớp công thức PricingService, 0 suất chồng lịch trong cùng phòng, 0 đơn tạo sau giờ chiếu, 0 vé Checked-in ở suất chưa chiếu xong. Database tạm đã được xoá, `CinemaWebDB` của máy dev **không bị đụng tới**.
+  - **Dữ liệu phủ được các nhánh nghiệp vụ:** 2 suất `Cancelled`, 1 phòng `Maintenance`, 3 ghế `Broken`, ghế đôi (`Couple`, span 2) ở Phòng Couple, đơn `Pending`/`Cancelled`/`Refunded`, vé `Printed`, ~10% vé no-show vẫn ở `Booked`, 3 lệnh giữ ghế còn hiệu lực (hết hạn sau `@Now` 7 phút), 1 tài khoản khách bị `Locked`, 1 mã khuyến mãi `Expired`, 2 email gửi lỗi + 1 email chờ gửi.
+  - File là **INSERT thuần**, sửa tay được bình thường. Muốn thêm dữ liệu mới thì thêm INSERT với `DATEADD(...)` quanh `@Mon`/`@Today`/`@Now` — **đừng hardcode ngày giờ**, nếu không sẽ lặp lại đúng lỗi của seed cũ.
+
+### [2026-07-27] Seed data dùng PHIM CÓ THẬT thay cho phim hư cấu (By: vkieu)
+- **What changed:** Thay toàn bộ 12 phim hư cấu trong `SQL/CinemaWebDB_SeedData.sql` bằng **13 phim có thật**, đối chiếu lịch chiếu CGV / Moveek / rapchieuphim ngày 27/07/2026. Tên phim, đạo diễn, diễn viên, thời lượng và phân loại tuổi đều là số liệu thật:
+  - **Đang chiếu (8):** The Odyssey (Christopher Nolan, 173'), Moana bản người đóng (Thomas Kail, 116'), Công Viên Giải Thoát (Thái, 111'), Thám Tử Lừng Danh Conan: Thiên Thần Sa Ngã Trên Xa Lộ (109'), Quỷ Bắt Hồn (Bùi Văn Hải, 103'), Câu Chuyện Đồ Chơi 5 (102'), Đêm Truy Sát (91'), Minions & Quái Vật (90').
+  - **Sắp chiếu (2):** Người Nhện: Khởi Đầu Mới (31/07/2026, 144'), Avengers: Doomsday (18/12/2026, 165').
+  - **Chiếu đặc biệt (1):** Đừng Đốt (Đặng Nhật Minh) — suất chiếu kỷ niệm Ngày Thương binh – Liệt sĩ 27/7, giá cơ bản ưu đãi 45.000đ.
+  - **Ngừng chiếu (2):** Mùi Cỏ Cháy (2011), Mẹ Ơi Về Nhà (khởi chiếu 10/07/2026 — ngoài đời đã rút suất ở Hà Nội từ 26/07, nên để `Stopped` là đúng thực tế).
+  - Thêm thể loại **`Chiến Tranh`** vào `Genres` (11 thể loại) cho 2 phim chiến tranh Việt Nam.
+  - `trailer_url` đổi từ `youtube.com/watch?v=<slug>` sang `youtube.com/results?search_query=...`.
+- **Why:** User yêu cầu "chỉnh lại dataseed phim thật" kèm 2 nguồn tham chiếu (CGV đang chiếu + danh sách phim đáng chờ 2026 của Deadline).
+- **Impact/Notes for Team:**
+  - **`release_date` vẫn là biểu thức tương đối** `DATEADD(DAY, <lệch>, @Today)` chứ không hardcode — số ngày lệch được quy từ ngày khởi chiếu thật tính tại 27/07/2026 (vd The Odyssey 17/07 → `-10`, Avengers: Doomsday 18/12 → `+144`). Nhờ vậy chạy lúc nào cũng có phim "vừa ra rạp" và phim "sắp chiếu". Đổi lại, càng để lâu thì ngày khởi chiếu hiển thị càng lệch so với ngày thật.
+  - **Phân loại tuổi vẫn dùng bộ P/C13/C16/C18**, KHÔNG dùng nhãn mới T13/T16/T18 của CGV. Lý do: `Application/Common/MovieConstants.cs` khoá cứng `AgeRatingPolicy.DisplayOrder = { "P","C13","C16","C18" }` cho bộ lọc độ tuổi, và `ShowtimeService.MinAgeFromRating` cũng parse theo bộ này — đưa `T16` vào sẽ rơi khỏi bộ lọc và cổng kiểm tra tuổi. Đã quy đổi T13→C13, T16→C16, T18→C18. **Muốn đổi sang nhãn mới thì phải sửa cả 2 chỗ trong code trước.**
+  - **`trailer_url` không được là chuỗi chứa đúng 11 ký tự `[A-Za-z0-9_-]` sau `?v=`** — `Views/Public/Movies/Details.cshtml` bắt regex đó để nhúng iframe YouTube, slug 11 ký tự sẽ tạo player hỏng trông như bug.
+  - **The Odyssey dài 173 phút** — dài hơn mọi phim trong seed cũ, nên các khung giờ chiếu đã được giãn lại (suất chiếu sớm ở phòng IMAX dời sang 22:45, suất cuối phim ngừng chiếu ở Phòng 1 dời sang 22:15) để không chồng lịch. Thêm phim dài vào rotation phải kiểm tra lại khoảng cách khung giờ.
+  - Đã chạy lại toàn bộ 18 truy vấn đối chiếu trên database tạm — **tất cả PASS**, trong đó có 2 kiểm tra mới: `DATEDIFF(end_time, start_time) = duration_minutes` và 0 suất chồng lịch. Database tạm đã xoá, `CinemaWebDB` trên máy dev không bị đụng tới.
+
+### [2026-07-27] Ảnh phim lưu trên server thay vì trỏ ra CDN ngoài (By: vkieu)
+- **What changed:** Tải **13 poster + 10 banner thật** của các phim trong seed về `wwwroot`, và sửa `SQL/CinemaWebDB_SeedData.sql` trỏ vào ảnh nội bộ:
+  - `wwwroot/images/<slug>.webp` — 13 poster dọc **400x600** (478 KB tổng).
+  - `wwwroot/banner/banner_<slug>.webp` — 10 ảnh ngang **800x420** (324 KB tổng).
+  - `[poster_url]` = `"<slug>.webp"`, `[banner_url]` = `"banner_<slug>.webp"` — **tên file trần**, đúng quy ước `Application/Common/MediaUrl.cs` (`MediaUrl.Poster` ghép `/images/`, `MediaUrl.Banner` thấy tên chứa `banner` thì ghép `/banner/`).
+  - 3 phim (Người Nhện: Khởi Đầu Mới, Mùi Cỏ Cháy, Mẹ Ơi Về Nhà) nguồn không có ảnh ngang → `[banner_url] = NULL`.
+- **Why:** Seed đang trỏ `poster_url`/`banner_url` sang `https://img.cinemaweb.vn/...` — **domain không tồn tại**, nên mọi ảnh phim trên trang chủ, danh sách phim, chi tiết phim, vé điện tử đều hỏng và rơi về `placehold.co` (lại là phụ thuộc mạng ngoài).
+- **Impact/Notes for Team:**
+  - **DB phải lưu TÊN FILE TRẦN, không lưu đường dẫn.** `MediaUrl` chỉ ghép tiền tố khi giá trị KHÔNG bắt đầu bằng `/` hoặc `http`. Lưu `/images/x.webp` thì vẫn chạy, nhưng lưu `images/x.webp` (thiếu `/`) sẽ thành `/images/images/x.webp` → hỏng ảnh.
+  - **`banner_url` NULL là hợp lệ, không phải thiếu dữ liệu.** `Home/Index.cshtml` và `Booking/ETicket.cshtml` đã có sẵn `MediaUrl.Banner(...) ?? MediaUrl.Poster(...)` nên tự lùi về poster.
+  - Ảnh dùng định dạng **`.webp`** (mọi trình duyệt hiện nay đều hỗ trợ), nhẹ hơn nhiều so với bộ `banner_movie*.png` cũ (mỗi file 1.5–2.6 MB, tổng ~30 MB). Toàn bộ 23 ảnh mới chỉ **802 KB**.
+  - Bộ ảnh cũ `wwwroot/images/movie1..15.jpg` + `wwwroot/banner/banner_movie1..15.png` **vẫn còn nhưng không còn seed nào tham chiếu tới** (chúng thuộc về 15 phim hư cấu của seed cũ). Ai dọn repo có thể xoá để nhẹ ~30 MB.
+  - Đã kiểm chéo: 13/13 tên file trong seed đều tồn tại thật trên đĩa; kiểm tra header WebP xác nhận poster đúng ảnh dọc (400x600) và banner đúng ảnh ngang (800x420); 18/18 truy vấn đối chiếu dữ liệu vẫn PASS.
+
+### [2026-07-27] Sửa `trailer_url` thành ID video YouTube thật (By: vkieu)
+- **What changed:** `[trailer_url]` của 13 phim trong `SQL/CinemaWebDB_SeedData.sql` đổi từ link tìm kiếm `youtube.com/results?search_query=...` sang **link video thật** `https://www.youtube.com/watch?v=<id 11 ký tự>`. Nguồn ưu tiên kênh chính chủ / nhà phát hành tại VN: CGV Cinemas Vietnam (6 phim), Walt Disney Studios Vietnam (2), Universal Pictures, Marvel Vietnam, Mega GS - Phim Việt, Viện Phim Việt Nam, Netflix Vietnam.
+- **Why:** Link `?search_query=` **không phát được video** — `Views/Public/Movies/Details.cshtml` bắt regex `[?&]v=([A-Za-z0-9_-]{11})` để lấy ID rồi nhúng iframe, link tìm kiếm không khớp nên khối trailer rơi vào nhánh fallback, bấm vào không ra trailer phim.
+- **Impact/Notes for Team:**
+  - **`trailer_url` bắt buộc chứa `?v=` + đúng 11 ký tự `[A-Za-z0-9_-]`.** View còn nhận thêm 3 dạng khác: `youtu.be/<id>`, `youtube.com/embed/<id>`, hoặc nhập trần 11 ký tự ID. Mọi dạng khác (link tìm kiếm, link có tham số phụ trước `v=`, link rút gọn kèm query) sẽ không nhúng được.
+  - **Cẩn thận ID bắt đầu bằng dấu `-`** (vd Người Nhện là `-aUE6APXrc0`) — hợp lệ với regex, đừng tưởng là lỗi rồi cắt đi.
+  - 2 phim cũ không có trailer chính thức nên dùng video thay thế trên kênh chính chủ: **Đừng Đốt** (2009) dùng bản phim đầy đủ của Viện Phim Việt Nam, **Mùi Cỏ Cháy** (2011) dùng trích đoạn của Netflix Vietnam.
+  - **Cách kiểm tra không cần mở trình duyệt:** gọi `https://www.youtube.com/oembed?url=https%3A//www.youtube.com/watch%3Fv%3D<id>&format=json` — trả 200 kèm `title` + `author_name` là video còn sống. Đã chạy đúng regex của view trên file seed rồi verify oEmbed cho cả 13 phim: **13/13 phát được, tiêu đề khớp đúng phim**.
+
+### [2026-07-27] Xoá 30 file ảnh không còn được tham chiếu (~31 MB) (By: vkieu)
+- **What changed:** Xoá `wwwroot/images/movie1..15.jpg` (15 file) và `wwwroot/banner/banner_movie1..15.png` (15 file) — bộ ảnh của 15 phim hư cấu thuộc seed cũ, không còn seed/view/code nào trỏ tới sau khi thay bằng ảnh phim thật. Repo nhẹ đi **~31 MB**. Kèm theo sửa comment tài liệu trong `Application/Common/MediaUrl.cs` (ví dụ đang nêu `"movie1.jpg"`, `"banner_movie1.png"` — 2 file vừa bị xoá) thành `"the-odyssey.webp"`, `"banner_the-odyssey.webp"`.
+- **Why:** Dọn rác sau khi seed chuyển sang phim thật; riêng phần banner PNG cũ mỗi file 1.5–2.6 MB, chiếm gần hết dung lượng repo.
+- **Impact/Notes for Team:**
+  - **`wwwroot/images/banner1.png`, `banner2.png`, `banner3.png` KHÔNG bị xoá** — đây là ảnh carousel/hero tĩnh, đang được dùng thật ở `Views/Public/Home/Index.cshtml` (dòng 64–66) và `Views/Public/Home/Info.cshtml`. Đừng nhầm chúng với bộ `banner_movie*.png` của phim.
+  - **Cách xác định file ảnh thừa:** phải dò cả tên đầy đủ (`movie1.jpg`) lẫn tên không đuôi (`movie1`) trên toàn bộ `.cshtml/.cs/.css/.js/.sql`, vì view có thể ghép đuôi động. Lưu ý **lọc bỏ kết quả nằm trong comment** — `movie1.jpg` và `banner_movie1.png` từng hiện ra như "đang được dùng" nhưng thực chất chỉ là ví dụ trong XML doc comment của `MediaUrl.cs`.
+  - Sau khi xoá: `wwwroot/images` + `wwwroot/banner` còn **26 file, 100% đều được tham chiếu**. Build lại toàn bộ project — **0 Warning, 0 Error**.
+  - Cần khôi phục thì `git show <commit-trước>:Cinema_System/Cinema_System/wwwroot/images/movie1.jpg > file.jpg`.

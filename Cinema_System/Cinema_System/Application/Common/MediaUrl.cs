@@ -2,7 +2,7 @@ namespace Cinema_System.Application.Common
 {
     /// <summary>
     /// Chuẩn hoá đường dẫn ảnh phim để hiển thị trên view.
-    /// DB seed lưu tên file trần (vd "movie1.jpg", "banner_movie1.png"); ảnh upload lưu sẵn đường dẫn tuyệt đối.
+    /// DB seed lưu tên file trần (vd "the-odyssey.webp", "banner_the-odyssey.webp"); ảnh upload lưu sẵn đường dẫn tuyệt đối.
     /// - Poster nằm ở wwwroot/images/  -> "/images/{file}"
     /// - Banner phim nằm ở wwwroot/banner/ (tên chứa "banner") -> "/banner/{file}"
     /// Giá trị đã có prefix "/" hoặc "http" thì giữ nguyên; rỗng thì trả về null để view tự dùng ảnh placeholder.
