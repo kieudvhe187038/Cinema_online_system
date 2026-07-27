@@ -923,3 +923,12 @@ Nhật ký thay đổi mã nguồn / CSDL / quyết định kỹ thuật của d
   - **Cẩn thận ID bắt đầu bằng dấu `-`** (vd Người Nhện là `-aUE6APXrc0`) — hợp lệ với regex, đừng tưởng là lỗi rồi cắt đi.
   - 2 phim cũ không có trailer chính thức nên dùng video thay thế trên kênh chính chủ: **Đừng Đốt** (2009) dùng bản phim đầy đủ của Viện Phim Việt Nam, **Mùi Cỏ Cháy** (2011) dùng trích đoạn của Netflix Vietnam.
   - **Cách kiểm tra không cần mở trình duyệt:** gọi `https://www.youtube.com/oembed?url=https%3A//www.youtube.com/watch%3Fv%3D<id>&format=json` — trả 200 kèm `title` + `author_name` là video còn sống. Đã chạy đúng regex của view trên file seed rồi verify oEmbed cho cả 13 phim: **13/13 phát được, tiêu đề khớp đúng phim**.
+
+### [2026-07-27] Xoá 30 file ảnh không còn được tham chiếu (~31 MB) (By: vkieu)
+- **What changed:** Xoá `wwwroot/images/movie1..15.jpg` (15 file) và `wwwroot/banner/banner_movie1..15.png` (15 file) — bộ ảnh của 15 phim hư cấu thuộc seed cũ, không còn seed/view/code nào trỏ tới sau khi thay bằng ảnh phim thật. Repo nhẹ đi **~31 MB**. Kèm theo sửa comment tài liệu trong `Application/Common/MediaUrl.cs` (ví dụ đang nêu `"movie1.jpg"`, `"banner_movie1.png"` — 2 file vừa bị xoá) thành `"the-odyssey.webp"`, `"banner_the-odyssey.webp"`.
+- **Why:** Dọn rác sau khi seed chuyển sang phim thật; riêng phần banner PNG cũ mỗi file 1.5–2.6 MB, chiếm gần hết dung lượng repo.
+- **Impact/Notes for Team:**
+  - **`wwwroot/images/banner1.png`, `banner2.png`, `banner3.png` KHÔNG bị xoá** — đây là ảnh carousel/hero tĩnh, đang được dùng thật ở `Views/Public/Home/Index.cshtml` (dòng 64–66) và `Views/Public/Home/Info.cshtml`. Đừng nhầm chúng với bộ `banner_movie*.png` của phim.
+  - **Cách xác định file ảnh thừa:** phải dò cả tên đầy đủ (`movie1.jpg`) lẫn tên không đuôi (`movie1`) trên toàn bộ `.cshtml/.cs/.css/.js/.sql`, vì view có thể ghép đuôi động. Lưu ý **lọc bỏ kết quả nằm trong comment** — `movie1.jpg` và `banner_movie1.png` từng hiện ra như "đang được dùng" nhưng thực chất chỉ là ví dụ trong XML doc comment của `MediaUrl.cs`.
+  - Sau khi xoá: `wwwroot/images` + `wwwroot/banner` còn **26 file, 100% đều được tham chiếu**. Build lại toàn bộ project — **0 Warning, 0 Error**.
+  - Cần khôi phục thì `git show <commit-trước>:Cinema_System/Cinema_System/wwwroot/images/movie1.jpg > file.jpg`.
