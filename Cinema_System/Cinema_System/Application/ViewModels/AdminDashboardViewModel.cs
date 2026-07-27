@@ -10,6 +10,9 @@ public class AdminDashboardViewModel
     public int ActiveUsers { get; set; }
     public double OccupancyRate { get; set; }   // %
 
+    public decimal AllMoviesRevenue { get; set; }    // tổng doanh thu vé của TẤT CẢ phim (mẫu số cho biểu đồ tròn)
+    public decimal OtherMoviesRevenue { get; set; }  // doanh thu các phim ngoài top 5 (lát "Các phim khác")
+
     public IReadOnlyList<RevenuePointViewModel> RevenueTrend { get; set; } = Array.Empty<RevenuePointViewModel>();
     public IReadOnlyList<RecentBookingViewModel> RecentBookings { get; set; } = Array.Empty<RecentBookingViewModel>();
     public IReadOnlyList<HotMovieViewModel> HotMovies { get; set; } = Array.Empty<HotMovieViewModel>();

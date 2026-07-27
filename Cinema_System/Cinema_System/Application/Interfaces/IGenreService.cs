@@ -5,7 +5,7 @@ namespace Cinema_System.Application.Interfaces;
 
 public interface IGenreService
 {
-    Task<IEnumerable<GenreListItemViewModel>> GetAllAsync(string? search = null);
+    Task<PagedResult<GenreListItemViewModel>> GetPagedAsync(string? search, int page, int pageSize);
 
     Task<GenreFormViewModel?> GetForEditAsync(Guid id);
 

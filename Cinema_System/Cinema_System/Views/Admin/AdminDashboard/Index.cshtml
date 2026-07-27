@@ -30,50 +30,69 @@
 <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
     <!-- Biểu đồ tròn: doanh thu theo phim -->
     <div class="lg:col-span-2 rounded-2xl bg-white p-6 shadow-sm">
-        <h2 class="mb-4 font-head font-bold text-secondary-dark">Doanh thu theo phim</h2>
+        <h2 class="mb-1 font-head font-bold text-secondary-dark">Doanh thu theo phim</h2>
+        <p class="mb-4 text-xs text-gray-400">Top 5 phim nổi bật; các phim còn lại gộp thành lát "Các phim khác".</p>
         @{
             var pieMovies = Model.HotMovies.Where(m => m.Revenue > 0).ToList();
-            var pieTotal = pieMovies.Sum(m => m.Revenue);
+            var otherRev = Model.OtherMoviesRevenue > 0 ? Model.OtherMoviesRevenue : 0m;
+            var grandTotal = Model.AllMoviesRevenue > 0 ? Model.AllMoviesRevenue : pieMovies.Sum(m => m.Revenue);
             var pieColors = new[] { "#f37021", "#004b8d", "#22c55e", "#eab308", "#a855f7" };
+            var otherColor = "#cbd5e1"; // xám nhạt cho "Các phim khác"
+
+            // Rút gọn số tiền ở ô giữa để không tràn khi doanh thu lên tới tỷ.
+            Func<decimal, string> compact = v =>
+                v >= 1_000_000_000m ? (v / 1_000_000_000m).ToString("0.##") + " tỷ"
+                : v >= 1_000_000m ? (v / 1_000_000m).ToString("0.#") + " tr"
+                : v.ToString("#,##0") + "đ";
         }
-        @if (pieTotal <= 0)
+        @if (grandTotal <= 0)
         {
             <p class="py-10 text-center text-gray-400">Chưa có doanh thu để thống kê.</p>
         }
         else
         {
-            // Dựng chuỗi conic-gradient cho hình tròn
-            var pieCss = new System.Text.StringBuilder("conic-gradient(");
-            decimal cum = 0;
+            // Các lát: 5 phim nổi bật + "Các phim khác"
+            var slices = new List<(string Title, decimal Rev, string Color)>();
             for (int i = 0; i < pieMovies.Count; i++)
             {
-                var startPct = cum / pieTotal * 100;
-                cum += pieMovies[i].Revenue;
-                var endPct = cum / pieTotal * 100;
-                pieCss.Append($"{pieColors[i % pieColors.Length]} {startPct:0.##}% {endPct:0.##}%");
-                if (i < pieMovies.Count - 1) pieCss.Append(", ");
+                slices.Add((pieMovies[i].MovieTitle, pieMovies[i].Revenue, pieColors[i % pieColors.Length]));
+            }
+            if (otherRev > 0)
+            {
+                slices.Add(("Các phim khác", otherRev, otherColor));
+            }
+
+            var pieCss = new System.Text.StringBuilder("conic-gradient(");
+            decimal cum = 0;
+            for (int i = 0; i < slices.Count; i++)
+            {
+                var startPct = cum / grandTotal * 100;
+                cum += slices[i].Rev;
+                var endPct = cum / grandTotal * 100;
+                pieCss.Append($"{slices[i].Color} {startPct:0.##}% {endPct:0.##}%");
+                if (i < slices.Count - 1) pieCss.Append(", ");
             }
             pieCss.Append(")");
 
             <div class="flex flex-col items-center gap-8 sm:flex-row sm:justify-center sm:gap-12">
                 <!-- Hình tròn (donut) -->
                 <div class="relative h-44 w-44 shrink-0 rounded-full" style="background:@pieCss.ToString()">
-                    <div class="absolute inset-[24%] flex items-center justify-center rounded-full bg-white text-center">
-                        <div>
-                            <p class="text-[10px] uppercase tracking-wide text-gray-400">Tổng</p>
-                            <p class="text-sm font-bold text-secondary-dark">@pieTotal.ToString("#,##0")đ</p>
+                    <div class="absolute inset-[22%] flex items-center justify-center rounded-full bg-white px-2 text-center">
+                        <div class="leading-tight">
+                            <p class="text-[10px] uppercase tracking-wide text-gray-400">Tổng DT</p>
+                            <p class="whitespace-nowrap text-sm font-bold text-secondary-dark">@compact(grandTotal)</p>
                         </div>
                     </div>
                 </div>
                 <!-- Chú thích -->
                 <ul class="space-y-2.5 text-sm">
-                    @for (int i = 0; i < pieMovies.Count; i++)
+                    @foreach (var s in slices)
                     {
-                        var pct = pieMovies[i].Revenue / pieTotal * 100;
+                        var pct = s.Rev / grandTotal * 100;
                         <li class="flex items-center gap-2">
-                            <span class="h-3 w-3 shrink-0 rounded-sm" style="background:@pieColors[i % pieColors.Length]"></span>
-                            <span class="font-medium text-secondary-dark">@pieMovies[i].MovieTitle</span>
-                            <span class="text-gray-400">— @pct.ToString("0.0")% · @pieMovies[i].RevenueDisplay</span>
+                            <span class="h-3 w-3 shrink-0 rounded-sm" style="background:@s.Color"></span>
+                            <span class="font-medium text-secondary-dark">@s.Title</span>
+                            <span class="text-gray-400">— @pct.ToString("0.0")% · @s.Rev.ToString("#,##0")đ</span>
                         </li>
                     }
                 </ul>

@@ -65,8 +65,9 @@ public class AdminDashboardService : IAdminDashboardService
                 PaymentStatus = b.PaymentStatus
             }).ToList();
 
-        // --- Phim hot: bán nhiều vé nhất — GROUP BY + TOP 5 đẩy xuống SQL ---
-        var hotMovies = (await _unitOfWork.Tickets.GetTopMoviesByTicketsAsync(5))
+        // --- Doanh thu theo phim: lấy TẤT CẢ phim (GROUP BY dưới SQL) rồi tách top 5 + phần còn lại ---
+        var allMovieStats = await _unitOfWork.Tickets.GetTopMoviesByTicketsAsync(int.MaxValue);
+        var hotMovies = allMovieStats.Take(5)
             .Select(m => new HotMovieViewModel
             {
                 MovieTitle = m.MovieTitle,
@@ -75,6 +76,8 @@ public class AdminDashboardService : IAdminDashboardService
                 Revenue = m.Revenue
             })
             .ToList();
+        var allMoviesRevenue = allMovieStats.Sum(m => m.Revenue);      // mẫu số cho biểu đồ tròn
+        var otherMoviesRevenue = allMovieStats.Skip(5).Sum(m => m.Revenue); // gộp thành lát "Các phim khác"
 
         return new AdminDashboardViewModel
         {
@@ -86,7 +89,9 @@ public class AdminDashboardService : IAdminDashboardService
             OccupancyRate = occupancy,
             RevenueTrend = trend,
             RecentBookings = recent,
-            HotMovies = hotMovies
+            HotMovies = hotMovies,
+            AllMoviesRevenue = allMoviesRevenue,
+            OtherMoviesRevenue = otherMoviesRevenue
         };
     }
 }

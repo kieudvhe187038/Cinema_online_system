@@ -12,4 +12,10 @@ public interface IBookingManagementService
     Task<BookingManagementDetailDTO?> GetBookingDetailAsync(Guid id);
 
     Task<TicketPrintViewModel?> GetTicketPrintAsync(Guid bookingId);
+
+    /// <summary>
+    /// Tìm BookingId theo mã QR (mã đơn <c>BK...</c> hoặc mã vé <c>TK...</c> — tự nhận
+    /// diện, thử mã đơn trước). Trả về null nếu không khớp mã nào.
+    /// </summary>
+    Task<Guid?> FindBookingIdByQrAsync(string? qr);
 }

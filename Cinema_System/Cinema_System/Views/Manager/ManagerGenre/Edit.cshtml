@@ -1,56 +1,36 @@
-@model GenreFormViewModel
+@model Cinema_System.Application.ViewModels.GenreFormViewModel
 @{
     ViewData["Title"] = "Sửa Thể Loại Phim";
-    Layout = "_ManagerLayout";
+    Layout = "~/Views/Shared/_ManagerLayout.cshtml";
 }
 
-@section Styles {
-    <link rel="stylesheet" href="~/css/site.css" />
-    <style>
-        .gf-wrap { max-width: 520px; margin: 0 auto 3rem; padding: 0; }
-        .gf-title { font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: var(--on-surface); margin-bottom: 1.5rem; }
-        .gf-card { background: var(--white); border-radius: var(--radius-xl); box-shadow: var(--shadow-sm); padding: 1.75rem; }
-        .gf-field { margin-bottom: 1.1rem; }
-        .gf-field label { display: block; font-weight: 600; color: var(--on-surface-variant); margin-bottom: .4rem; font-size: .9rem; }
-        .gf-field input { width: 100%; padding: .6rem .8rem; border: 1px solid var(--outline-variant); border-radius: var(--radius); background: var(--white); font-family: var(--font-body); }
-        .gf-field input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(243,112,33,.15); }
-        .gf-hint { color: var(--on-surface-variant); font-size: .82rem; margin-top: .35rem; }
-        .gf-error { color: #b91c1c; font-size: .82rem; margin-top: .3rem; display: block; }
-        .gf-summary { color: #b91c1c; font-size: .9rem; margin-bottom: 1rem; }
-        .gf-note { background: #fff2e8; color: var(--primary-dark); border: 1px solid #f3702133; border-radius: var(--radius); padding: .6rem .8rem; font-size: .82rem; margin-bottom: 1rem; }
-        .gf-actions { display: flex; gap: .75rem; margin-top: 1.5rem; }
-        .gf-btn { padding: .6rem 1.3rem; border: none; border-radius: var(--radius); font-weight: 600; cursor: pointer; font-family: var(--font-body); text-decoration: none; display: inline-flex; align-items: center; }
-        .gf-btn-primary { background: var(--primary); color: var(--white); }
-        .gf-btn-primary:hover { background: var(--primary-dark); }
-        .gf-btn-ghost { background: var(--surface-container); color: var(--on-surface); }
-    </style>
-}
+<div class="max-w-lg mx-auto mb-12">
+    <h1 class="font-head text-2xl font-extrabold text-[#191c1d] mb-6">Sửa Thể Loại Phim</h1>
 
-<div class="gf-wrap">
-    <h1 class="gf-title">Sửa Thể Loại Phim</h1>
-
-    <div class="gf-card">
-        @if (Model.InUse)
-        {
-            <div class="gf-note">Thể loại này đang được gán cho phim. Bạn vẫn có thể đổi tên (tên mới sẽ áp dụng cho mọi phim đang dùng), nhưng không thể xóa.</div>
-        }
-
+    <div class="bg-white rounded-xl border border-[#e8eaed] p-7">
         <form method="post" action="@Url.Action("Edit", "ManagerGenre", new { id = Model.Id })">
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="Id" />
-            <input type="hidden" asp-for="InUse" />
-            <div asp-validation-summary="ModelOnly" class="gf-summary"></div>
+            <div asp-validation-summary="ModelOnly" class="text-sm text-red-600 mb-4"></div>
 
-            <div class="gf-field">
-                <label asp-for="Name"></label>
-                <input asp-for="Name" autocomplete="off" />
-                <span asp-validation-for="Name" class="gf-error"></span>
-                <p class="gf-hint">Tên thể loại từ 2 đến 100 ký tự, không được trùng thể loại đã có.</p>
+            <div class="mb-3">
+                <label asp-for="Name" class="block text-sm font-semibold text-gray-600 mb-1.5">Tên thể loại</label>
+                <input asp-for="Name"
+                       class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15" />
+                <span asp-validation-for="Name" class="block text-xs text-red-600 mt-1"></span>
             </div>
 
-            <div class="gf-actions">
-                <button type="submit" class="gf-btn gf-btn-primary">Lưu thay đổi</button>
-                <a class="gf-btn gf-btn-ghost" href="@Url.Action("Index", "ManagerGenre")">Hủy</a>
+            @if (Model.InUse)
+            {
+                <p class="text-xs text-amber-600 mb-4 flex items-center gap-1">
+                    <span class="material-symbols-outlined" style="font-size:16px">info</span>
+                    Thể loại đang được gán cho phim — đổi tên được, nhưng không xóa được.
+                </p>
+            }
+
+            <div class="flex gap-3 mt-6">
+                <button type="submit" class="px-5 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-semibold transition-colors">Lưu thay đổi</button>
+                <a href="@Url.Action("Index", "ManagerGenre")" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-semibold transition-colors">Hủy</a>
             </div>
         </form>
     </div>

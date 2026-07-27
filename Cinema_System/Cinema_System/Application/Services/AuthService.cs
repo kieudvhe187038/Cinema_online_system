@@ -72,6 +72,22 @@ public class AuthService : IAuthService
         email = email.Trim().ToLowerInvariant();
         phone = phone.Trim();
 
+        // Kiểm tra ngày sinh ở tầng service (không chỉ tin UI): tránh tài khoản Google
+        // lọt qua với ngày sinh tương lai / dưới 12 tuổi (khớp quy tắc như đăng ký thường).
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        if (dateOfBirth > today)
+        {
+            return Result<UserDto>.Failure("Ngày sinh không được ở tương lai.");
+        }
+        if (dateOfBirth < today.AddYears(-120))
+        {
+            return Result<UserDto>.Failure("Ngày sinh không hợp lệ.");
+        }
+        if (dateOfBirth > today.AddYears(-12))
+        {
+            return Result<UserDto>.Failure("Bạn phải đủ 12 tuổi trở lên để đăng ký.");
+        }
+
         if (await _unitOfWork.Users.EmailExistsAsync(email))
         {
             return Result<UserDto>.Failure("Email đã được sử dụng.");
