@@ -932,3 +932,33 @@ Nhật ký thay đổi mã nguồn / CSDL / quyết định kỹ thuật của d
   - **Cách xác định file ảnh thừa:** phải dò cả tên đầy đủ (`movie1.jpg`) lẫn tên không đuôi (`movie1`) trên toàn bộ `.cshtml/.cs/.css/.js/.sql`, vì view có thể ghép đuôi động. Lưu ý **lọc bỏ kết quả nằm trong comment** — `movie1.jpg` và `banner_movie1.png` từng hiện ra như "đang được dùng" nhưng thực chất chỉ là ví dụ trong XML doc comment của `MediaUrl.cs`.
   - Sau khi xoá: `wwwroot/images` + `wwwroot/banner` còn **26 file, 100% đều được tham chiếu**. Build lại toàn bộ project — **0 Warning, 0 Error**.
   - Cần khôi phục thì `git show <commit-trước>:Cinema_System/Cinema_System/wwwroot/images/movie1.jpg > file.jpg`.
+
+### [2026-07-27] Thêm ảnh cho 8 món đồ ăn / thức uống (By: vkieu)
+- **What changed:** Tải 8 ảnh từ **Wikimedia Commons** (giấy phép tự do) vào `wwwroot/images/foods/<slug>.jpg` (~500 KB tổng) và bổ sung cột `[image_url]` vào khối INSERT `Food_Beverages` của `SQL/CinemaWebDB_SeedData.sql`. Trước đó cột này bỏ trống (NULL) nên mọi màn có đồ ăn đều không hiện ảnh. Kèm file `wwwroot/images/foods/CREDITS.md` ghi nguồn + giấy phép từng ảnh.
+- **Why:** User yêu cầu thêm ảnh cho đồ ăn/thức uống. Ảnh hiển thị ở 3 nơi: `Views/Customer/Showtime/Food.cshtml` (khách chọn bắp nước), `Views/Staff/StaffCounter/Index.cshtml` (bán tại quầy), `Views/Manager/FoodBeverages/Index.cshtml` + `Edit.cshtml` (quản lý).
+- **Impact/Notes for Team:**
+  - **`Food_Beverages.image_url` lưu ĐƯỜNG DẪN ĐẦY ĐỦ có `/` đầu** (`/images/foods/bap-rang-bo-vua.jpg`) — **KHÁC với ảnh phim**. Lý do: các view render thẳng `@f.ImageUrl`, KHÔNG đi qua `MediaUrl` như `poster_url`/`banner_url`. Lưu tên file trần ở đây là ảnh hỏng.
+  - **Chọn `/images/foods/` thay vì `/uploads/foods/` là có chủ ý:** `FoodBeveragesController.DeleteFile` chỉ xoá file có đường dẫn bắt đầu bằng `/uploads/`. Để ảnh seed ngoài `/uploads/` thì khi Manager sửa món và upload ảnh mới, ảnh seed gốc không bị xoá mất — chạy lại seed vẫn có ảnh.
+  - **Giấy phép:** 3 ảnh Public domain, 2 ảnh CC0 (dùng thoải mái); 2 ảnh CC BY 2.0 và 1 ảnh CC BY-SA 4.0 **bắt buộc ghi công tác giả** nếu deploy công khai — đừng xoá `CREDITS.md`.
+  - **Lấy ảnh từ Commons phải kiểm tra magic bytes.** Gọi nhanh liên tiếp sẽ bị chặn và trả về **trang HTML lỗi mang đuôi .jpg** — lần đầu tôi dính đúng lỗi này, 20/31 file tải về là HTML. Cần `res.ok` + kiểm tra 2 byte đầu (`FF D8` cho JPEG) + nghỉ ~600ms giữa các lần gọi, và đặt `User-Agent` mô tả rõ.
+  - **Ảnh "Nước suối Aquafina" là chai nước không nhãn hiệu** (Commons không có ảnh Aquafina giấy phép tự do) — tên món và ảnh hơi lệch nhau, đổi tên món thành tên chung nếu thấy vướng.
+  - Đã đối chiếu: 8/8 đường dẫn trong seed đều có file thật trên đĩa; nạp lại DB tạm, toàn bộ truy vấn kiểm tra vẫn 0 lỗi.
+
+### [2026-07-27] Migration gán ảnh đồ ăn cho CSDL đã tồn tại (By: vkieu)
+- **What changed:** Thêm section `[2026-07-27]` vào `SQL/Migrations.sql`: `UPDATE [Food_Beverages].[image_url]` cho 8 món, khớp theo `[name]`.
+- **Why:** Ảnh đồ ăn đã có trong repo và trong file seed, nhưng máy dev **không hiện ảnh** vì CSDL đang chạy được nạp từ bản seed CŨ (trước khi thêm cột `image_url`) — 8/8 dòng `image_url` là NULL. Chạy lại trọn `CinemaWebDB_v2.sql` + seed thì mất sạch dữ liệu test đang có, nên dùng migration thay vì dựng lại CSDL.
+- **Impact/Notes for Team:**
+  - **Sau khi pull code mới mà thấy thiếu ảnh/dữ liệu, hãy nghĩ tới CSDL trước khi nghi code.** File seed là ảnh chụp tại thời điểm chạy; sửa seed KHÔNG tự động cập nhật CSDL đã nạp. Hoặc chạy `SQL/Migrations.sql` (giữ dữ liệu), hoặc dựng lại từ `CinemaWebDB_v2.sql` + seed (mất dữ liệu test).
+  - **Migration được viết idempotent và AN TOÀN với ảnh do người dùng upload:** chỉ ghi đè khi `image_url IS NULL` hoặc đang trỏ `/images/foods/%`. Ảnh Manager tự upload nằm ở `/uploads/foods/...` nên không bị đụng, chạy lại bao nhiêu lần cũng được.
+  - **Đã kiểm chứng end-to-end thật:** chạy migration trên `CinemaWebDB` (8 dòng cập nhật, `thieu_anh = 0`), đối chiếu 8/8 đường dẫn có file thật trên đĩa, rồi **bật app ở cổng 5199 và `curl` từng ảnh — tất cả trả HTTP 200 đúng `Content-Type: image/jpeg`** (poster phim `.webp` cũng 200). Đã tắt app sau khi kiểm tra.
+
+### [2026-07-27] Thay bộ ảnh đồ ăn bằng ảnh đẹp & hợp món hơn (By: vkieu)
+- **What changed:** Thay nội dung 8 file trong `wwwroot/images/foods/` (tên file và đường dẫn GIỮ NGUYÊN nên **không cần đụng CSDL**). Nguồn mới chủ yếu là **Openverse** (gộp Flickr + Commons) — ảnh chụp sản phẩm đẹp hơn hẳn Wikimedia Commons thuần. Cập nhật lại `CREDITS.md`.
+  - Đổi luôn cách gán cho hợp lý: **hộp bắp giấy sọc đỏ-trắng → cỡ vừa**, **tô bắp đầy ắp nền trắng → cỡ lớn**.
+  - `Coca-Cola (vừa)` → cận cảnh cola + đá viên; `Coca-Cola (lớn)` → dãy chai Coca-Cola trong tủ mát; `Combo Đôi` → 2 ly nước kèm tô bắp.
+- **Why:** Bộ ảnh đầu quá xấu/lệch ngữ cảnh: thùng bắp in logo **Regal** (rạp đối thủ), ly cola chụp macro tối om, combo là ảnh cái quầy bán hàng.
+- **Impact/Notes for Team:**
+  - **Openverse API (`https://api.openverse.org/v1/images/?q=...&license=cc0,pdm,by,by-sa`) cho ảnh đẹp hơn Wikimedia Commons API rất nhiều** với cùng loại giấy phép tự do — lần sau cần ảnh minh hoạ thì tra Openverse trước. Không cần API key, nhưng vẫn phải nghỉ ~400ms giữa các lần gọi.
+  - **Bắt buộc xem tận mắt từng ảnh trước khi chọn.** Từ khoá tìm kiếm trả về rất nhiều ảnh sai ngữ cảnh mà tiêu đề nghe vẫn hợp lý: "popcorn bucket" ra chuột lang trong hộp bắp, "PopCorn mall" ra bánh pandan, "cinema snacks" ra cái nhà quầy bán hàng, "cheese fries" ra burger.
+  - **Còn 1 điểm chưa hoàn hảo:** ảnh `combo-gia-dinh.jpg` là ly **Pepsi** trên ghế rạp trong khi menu bán Coca-Cola, và hơi tối. Giữ lại vì đúng ngữ cảnh rạp chiếu và là CC0 (không cần ghi công) — ai tìm được ảnh tốt hơn thì thay, chỉ cần ghi đè file cùng tên, KHÔNG phải sửa CSDL.
+  - Đã kiểm chứng lại: bật app ở cổng 5199, `curl` cả 8 ảnh — **8/8 trả HTTP 200, `Content-Type: image/jpeg`**, kích thước khớp file trên đĩa. Đã tắt app.

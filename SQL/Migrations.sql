@@ -98,3 +98,40 @@ IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_Payments_met
     ALTER TABLE [Payments] ADD CONSTRAINT [CK_Payments_method]
         CHECK ([payment_method] IN ('Cash', 'Transfer', 'VNPay', 'VietQR', 'Free'));
 GO
+
+-- =====================================================================================
+-- [2026-07-27] Gán [Food_Beverages].image_url cho 8 món bắp nước của bộ seed
+-- =====================================================================================
+-- Bộ seed ban đầu bỏ trống cột này (NULL) nên mọi màn có đồ ăn đều không hiện ảnh:
+-- Views/Customer/Showtime/Food.cshtml, Views/Staff/StaffCounter/Index.cshtml,
+-- Views/Manager/FoodBeverages/Index.cshtml + Edit.cshtml.
+-- Ảnh đã nằm sẵn trong wwwroot/images/foods/ (nguồn & giấy phép: CREDITS.md cùng thư mục).
+--
+-- LƯU Ý: cột này lưu ĐƯỜNG DẪN ĐẦY ĐỦ có "/" đầu — KHÁC [Movies].[poster_url] (tên file trần).
+-- Lý do: các view render thẳng @f.ImageUrl, không đi qua Application/Common/MediaUrl.cs.
+--
+-- Idempotent: khớp theo [name], và chỉ ghi đè khi ảnh đang trống hoặc vẫn đang trỏ đúng
+-- đường dẫn seed => KHÔNG đụng tới ảnh do Manager tự upload (/uploads/foods/...).
+-- =====================================================================================
+UPDATE fb
+SET fb.[image_url] = v.[url]
+FROM [Food_Beverages] fb
+JOIN (VALUES
+    (N'Bắp rang bơ (vừa)',     '/images/foods/bap-rang-bo-vua.jpg'),
+    (N'Bắp rang bơ (lớn)',     '/images/foods/bap-rang-bo-lon.jpg'),
+    (N'Coca-Cola (vừa)',       '/images/foods/coca-cola-vua.jpg'),
+    (N'Coca-Cola (lớn)',       '/images/foods/coca-cola-lon.jpg'),
+    (N'Combo Đôi',             '/images/foods/combo-doi.jpg'),
+    (N'Combo Gia Đình',        '/images/foods/combo-gia-dinh.jpg'),
+    (N'Nước suối Aquafina',    '/images/foods/nuoc-suoi.jpg'),
+    (N'Khoai tây lắc phô mai', '/images/foods/khoai-tay-lac-pho-mai.jpg')
+) AS v([name], [url]) ON v.[name] = fb.[name]
+WHERE fb.[image_url] IS NULL
+   OR fb.[image_url] LIKE '/images/foods/%';
+GO
+
+-- Kiểm tra: cột thieu_anh nên bằng 0.
+SELECT COUNT(*) AS so_mon,
+       SUM(CASE WHEN [image_url] IS NULL THEN 1 ELSE 0 END) AS thieu_anh
+FROM [Food_Beverages];
+GO
