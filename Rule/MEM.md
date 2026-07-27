@@ -932,3 +932,14 @@ Nhật ký thay đổi mã nguồn / CSDL / quyết định kỹ thuật của d
   - **Cách xác định file ảnh thừa:** phải dò cả tên đầy đủ (`movie1.jpg`) lẫn tên không đuôi (`movie1`) trên toàn bộ `.cshtml/.cs/.css/.js/.sql`, vì view có thể ghép đuôi động. Lưu ý **lọc bỏ kết quả nằm trong comment** — `movie1.jpg` và `banner_movie1.png` từng hiện ra như "đang được dùng" nhưng thực chất chỉ là ví dụ trong XML doc comment của `MediaUrl.cs`.
   - Sau khi xoá: `wwwroot/images` + `wwwroot/banner` còn **26 file, 100% đều được tham chiếu**. Build lại toàn bộ project — **0 Warning, 0 Error**.
   - Cần khôi phục thì `git show <commit-trước>:Cinema_System/Cinema_System/wwwroot/images/movie1.jpg > file.jpg`.
+
+### [2026-07-27] Thêm ảnh cho 8 món đồ ăn / thức uống (By: vkieu)
+- **What changed:** Tải 8 ảnh từ **Wikimedia Commons** (giấy phép tự do) vào `wwwroot/images/foods/<slug>.jpg` (~500 KB tổng) và bổ sung cột `[image_url]` vào khối INSERT `Food_Beverages` của `SQL/CinemaWebDB_SeedData.sql`. Trước đó cột này bỏ trống (NULL) nên mọi màn có đồ ăn đều không hiện ảnh. Kèm file `wwwroot/images/foods/CREDITS.md` ghi nguồn + giấy phép từng ảnh.
+- **Why:** User yêu cầu thêm ảnh cho đồ ăn/thức uống. Ảnh hiển thị ở 3 nơi: `Views/Customer/Showtime/Food.cshtml` (khách chọn bắp nước), `Views/Staff/StaffCounter/Index.cshtml` (bán tại quầy), `Views/Manager/FoodBeverages/Index.cshtml` + `Edit.cshtml` (quản lý).
+- **Impact/Notes for Team:**
+  - **`Food_Beverages.image_url` lưu ĐƯỜNG DẪN ĐẦY ĐỦ có `/` đầu** (`/images/foods/bap-rang-bo-vua.jpg`) — **KHÁC với ảnh phim**. Lý do: các view render thẳng `@f.ImageUrl`, KHÔNG đi qua `MediaUrl` như `poster_url`/`banner_url`. Lưu tên file trần ở đây là ảnh hỏng.
+  - **Chọn `/images/foods/` thay vì `/uploads/foods/` là có chủ ý:** `FoodBeveragesController.DeleteFile` chỉ xoá file có đường dẫn bắt đầu bằng `/uploads/`. Để ảnh seed ngoài `/uploads/` thì khi Manager sửa món và upload ảnh mới, ảnh seed gốc không bị xoá mất — chạy lại seed vẫn có ảnh.
+  - **Giấy phép:** 3 ảnh Public domain, 2 ảnh CC0 (dùng thoải mái); 2 ảnh CC BY 2.0 và 1 ảnh CC BY-SA 4.0 **bắt buộc ghi công tác giả** nếu deploy công khai — đừng xoá `CREDITS.md`.
+  - **Lấy ảnh từ Commons phải kiểm tra magic bytes.** Gọi nhanh liên tiếp sẽ bị chặn và trả về **trang HTML lỗi mang đuôi .jpg** — lần đầu tôi dính đúng lỗi này, 20/31 file tải về là HTML. Cần `res.ok` + kiểm tra 2 byte đầu (`FF D8` cho JPEG) + nghỉ ~600ms giữa các lần gọi, và đặt `User-Agent` mô tả rõ.
+  - **Ảnh "Nước suối Aquafina" là chai nước không nhãn hiệu** (Commons không có ảnh Aquafina giấy phép tự do) — tên món và ảnh hơi lệch nhau, đổi tên món thành tên chung nếu thấy vướng.
+  - Đã đối chiếu: 8/8 đường dẫn trong seed đều có file thật trên đĩa; nạp lại DB tạm, toàn bộ truy vấn kiểm tra vẫn 0 lỗi.

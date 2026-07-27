@@ -25,6 +25,8 @@
      [poster_url] = "<slug>.webp"        -> wwwroot/images/<slug>.webp          (400x600)
      [banner_url] = "banner_<slug>.webp" -> wwwroot/banner/banner_<slug>.webp   (800x420)
    3 phim không có ảnh ngang thì [banner_url] = NULL — view tự lùi về dùng poster.
+   Ảnh đồ ăn: [Food_Beverages].[image_url] lưu ĐƯỜNG DẪN ĐẦY ĐỦ "/images/foods/<slug>.jpg"
+   (khác ảnh phim!) vì view render thẳng @f.ImageUrl, không đi qua MediaUrl.
 
    [trailer_url] là ID video YouTube THẬT dạng watch?v=<11 ký tự>, đã xác minh bằng oEmbed.
    Views/Public/Movies/Details.cshtml bắt regex [?&]v=([A-Za-z0-9_-]{11}) để nhúng iframe —
@@ -583,16 +585,16 @@ INSERT INTO [Showtimes] ([id],[movie_id],[room_id],[start_time],[end_time],[stat
 ('00000000-0000-0000-0009-000000000079','00000000-0000-0000-0008-00000000000c','00000000-0000-0000-0005-000000000001',DATEADD(MINUTE,-1545,@Mon),DATEADD(MINUTE,-1453,@Mon),N'Scheduled'),
 ('00000000-0000-0000-0009-00000000007a','00000000-0000-0000-0008-00000000000c','00000000-0000-0000-0005-000000000002',DATEADD(MINUTE,-90,@Mon),DATEADD(MINUTE,2,@Mon),N'Scheduled');
 
--- Food_Beverages: 8 dòng — 8 món, trong đó 1 món đang hết hàng
-INSERT INTO [Food_Beverages] ([id],[name],[description],[price],[stock_status]) VALUES
-('00000000-0000-0000-000a-000000000001',N'Bắp rang bơ (vừa)',N'Bắp rang vị bơ, ly 64oz',65000.00,N'In Stock'),
-('00000000-0000-0000-000a-000000000002',N'Bắp rang bơ (lớn)',N'Bắp rang vị bơ, ly 85oz',85000.00,N'In Stock'),
-('00000000-0000-0000-000a-000000000003',N'Coca-Cola (vừa)',N'Nước ngọt có gas, ly 22oz',35000.00,N'In Stock'),
-('00000000-0000-0000-000a-000000000004',N'Coca-Cola (lớn)',N'Nước ngọt có gas, ly 32oz',45000.00,N'In Stock'),
-('00000000-0000-0000-000a-000000000005',N'Combo Đôi',N'2 bắp vừa + 2 nước vừa',145000.00,N'In Stock'),
-('00000000-0000-0000-000a-000000000006',N'Combo Gia Đình',N'2 bắp lớn + 4 nước vừa + 1 snack',225000.00,N'In Stock'),
-('00000000-0000-0000-000a-000000000007',N'Nước suối Aquafina',N'Chai 500ml',20000.00,N'In Stock'),
-('00000000-0000-0000-000a-000000000008',N'Khoai tây lắc phô mai',N'Khoai tây chiên lắc bột phô mai',55000.00,N'Out of Stock');
+-- Food_Beverages: 8 dòng — 8 món, trong đó 1 món đang hết hàng; ảnh nằm ở wwwroot/images/foods/
+INSERT INTO [Food_Beverages] ([id],[name],[description],[image_url],[price],[stock_status]) VALUES
+('00000000-0000-0000-000a-000000000001',N'Bắp rang bơ (vừa)',N'Bắp rang vị bơ, ly 64oz','/images/foods/bap-rang-bo-vua.jpg',65000.00,N'In Stock'),
+('00000000-0000-0000-000a-000000000002',N'Bắp rang bơ (lớn)',N'Bắp rang vị bơ, ly 85oz','/images/foods/bap-rang-bo-lon.jpg',85000.00,N'In Stock'),
+('00000000-0000-0000-000a-000000000003',N'Coca-Cola (vừa)',N'Nước ngọt có gas, ly 22oz','/images/foods/coca-cola-vua.jpg',35000.00,N'In Stock'),
+('00000000-0000-0000-000a-000000000004',N'Coca-Cola (lớn)',N'Nước ngọt có gas, ly 32oz','/images/foods/coca-cola-lon.jpg',45000.00,N'In Stock'),
+('00000000-0000-0000-000a-000000000005',N'Combo Đôi',N'2 bắp vừa + 2 nước vừa','/images/foods/combo-doi.jpg',145000.00,N'In Stock'),
+('00000000-0000-0000-000a-000000000006',N'Combo Gia Đình',N'2 bắp lớn + 4 nước vừa + 1 snack','/images/foods/combo-gia-dinh.jpg',225000.00,N'In Stock'),
+('00000000-0000-0000-000a-000000000007',N'Nước suối Aquafina',N'Chai 500ml','/images/foods/nuoc-suoi.jpg',20000.00,N'In Stock'),
+('00000000-0000-0000-000a-000000000008',N'Khoai tây lắc phô mai',N'Khoai tây chiên lắc bột phô mai','/images/foods/khoai-tay-lac-pho-mai.jpg',55000.00,N'Out of Stock');
 
 -- Promotions: 5 dòng — 4 mã còn hiệu lực + 1 mã đã hết hạn
 INSERT INTO [Promotions] ([id],[code],[discount_amount],[discount_type],[min_order_value],[max_discount_amount],[applicable_target],[valid_from],[valid_to],[usage_limit],[status]) VALUES
