@@ -9,6 +9,8 @@ namespace Cinema_System.Controllers.Manager;
 [Authorize(Roles = "MANAGER")]
 public class ManagerGenreController : Controller
 {
+    private const int PageSize = 8; // số thể loại mỗi trang
+
     private readonly IGenreService _genreService;
     private readonly IAuditLogWriter _audit;
 
@@ -19,11 +21,11 @@ public class ManagerGenreController : Controller
     }
 
     [HttpGet("")]
-    public async Task<IActionResult> Index(string? search)
+    public async Task<IActionResult> Index(string? search, int page = 1)
     {
-        var genres = await _genreService.GetAllAsync(search);
+        var vm = await _genreService.GetPagedAsync(search, page, PageSize);
         ViewData["Search"] = search;
-        return View(genres);
+        return View(vm);
     }
 
     [HttpGet("Create")]

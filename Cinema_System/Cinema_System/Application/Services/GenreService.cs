@@ -15,27 +15,34 @@ public class GenreService : IGenreService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<IEnumerable<GenreListItemViewModel>> GetAllAsync(string? search = null)
+    // Danh sách thể loại: lọc theo tên (search) rồi phân trang; chỉ đếm số phim cho các dòng của TRANG hiện tại.
+    public async Task<PagedResult<GenreListItemViewModel>> GetPagedAsync(string? search, int page, int pageSize)
     {
         var keyword = search?.Trim();
-        var genres = await _unitOfWork.Genres.GetAllAsync(
+        var genres = (await _unitOfWork.Genres.GetAllAsync(
             predicate: string.IsNullOrEmpty(keyword) ? null : g => g.Name.Contains(keyword),
-            orderBy: q => q.OrderBy(g => g.Name));
+            orderBy: q => q.OrderBy(g => g.Name))).ToList();
 
-        var result = new List<GenreListItemViewModel>();
-        foreach (var g in genres)
+        var total = genres.Count;
+        var totalPages = total == 0 ? 1 : (int)Math.Ceiling(total / (double)pageSize);
+        page = Math.Clamp(page, 1, totalPages);
+
+        var items = new List<GenreListItemViewModel>();
+        foreach (var g in genres.Skip((page - 1) * pageSize).Take(pageSize))
         {
             // Genre <-> Movie là quan hệ nhiều-nhiều: đếm số phim có gắn thể loại này.
             var movieCount = await _unitOfWork.Movies.CountAsync(m => m.Genres.Any(x => x.Id == g.Id));
-            result.Add(new GenreListItemViewModel
-            {
-                Id = g.Id,
-                Name = g.Name,
-                MovieCount = movieCount
-            });
+            items.Add(new GenreListItemViewModel { Id = g.Id, Name = g.Name, MovieCount = movieCount });
         }
 
-        return result;
+        return new PagedResult<GenreListItemViewModel>
+        {
+            Items = items,
+            CurrentPage = page,
+            TotalPages = totalPages,
+            PageSize = pageSize,
+            TotalCount = total
+        };
     }
 
     public async Task<GenreFormViewModel?> GetForEditAsync(Guid id)
