@@ -914,3 +914,12 @@ Nhật ký thay đổi mã nguồn / CSDL / quyết định kỹ thuật của d
   - Ảnh dùng định dạng **`.webp`** (mọi trình duyệt hiện nay đều hỗ trợ), nhẹ hơn nhiều so với bộ `banner_movie*.png` cũ (mỗi file 1.5–2.6 MB, tổng ~30 MB). Toàn bộ 23 ảnh mới chỉ **802 KB**.
   - Bộ ảnh cũ `wwwroot/images/movie1..15.jpg` + `wwwroot/banner/banner_movie1..15.png` **vẫn còn nhưng không còn seed nào tham chiếu tới** (chúng thuộc về 15 phim hư cấu của seed cũ). Ai dọn repo có thể xoá để nhẹ ~30 MB.
   - Đã kiểm chéo: 13/13 tên file trong seed đều tồn tại thật trên đĩa; kiểm tra header WebP xác nhận poster đúng ảnh dọc (400x600) và banner đúng ảnh ngang (800x420); 18/18 truy vấn đối chiếu dữ liệu vẫn PASS.
+
+### [2026-07-27] Sửa `trailer_url` thành ID video YouTube thật (By: vkieu)
+- **What changed:** `[trailer_url]` của 13 phim trong `SQL/CinemaWebDB_SeedData.sql` đổi từ link tìm kiếm `youtube.com/results?search_query=...` sang **link video thật** `https://www.youtube.com/watch?v=<id 11 ký tự>`. Nguồn ưu tiên kênh chính chủ / nhà phát hành tại VN: CGV Cinemas Vietnam (6 phim), Walt Disney Studios Vietnam (2), Universal Pictures, Marvel Vietnam, Mega GS - Phim Việt, Viện Phim Việt Nam, Netflix Vietnam.
+- **Why:** Link `?search_query=` **không phát được video** — `Views/Public/Movies/Details.cshtml` bắt regex `[?&]v=([A-Za-z0-9_-]{11})` để lấy ID rồi nhúng iframe, link tìm kiếm không khớp nên khối trailer rơi vào nhánh fallback, bấm vào không ra trailer phim.
+- **Impact/Notes for Team:**
+  - **`trailer_url` bắt buộc chứa `?v=` + đúng 11 ký tự `[A-Za-z0-9_-]`.** View còn nhận thêm 3 dạng khác: `youtu.be/<id>`, `youtube.com/embed/<id>`, hoặc nhập trần 11 ký tự ID. Mọi dạng khác (link tìm kiếm, link có tham số phụ trước `v=`, link rút gọn kèm query) sẽ không nhúng được.
+  - **Cẩn thận ID bắt đầu bằng dấu `-`** (vd Người Nhện là `-aUE6APXrc0`) — hợp lệ với regex, đừng tưởng là lỗi rồi cắt đi.
+  - 2 phim cũ không có trailer chính thức nên dùng video thay thế trên kênh chính chủ: **Đừng Đốt** (2009) dùng bản phim đầy đủ của Viện Phim Việt Nam, **Mùi Cỏ Cháy** (2011) dùng trích đoạn của Netflix Vietnam.
+  - **Cách kiểm tra không cần mở trình duyệt:** gọi `https://www.youtube.com/oembed?url=https%3A//www.youtube.com/watch%3Fv%3D<id>&format=json` — trả 200 kèm `title` + `author_name` là video còn sống. Đã chạy đúng regex của view trên file seed rồi verify oEmbed cho cả 13 phim: **13/13 phát được, tiêu đề khớp đúng phim**.
