@@ -92,3 +92,36 @@ public static class MoviePaging
     // Màn danh sách phim hiển thị 4 phim/hàng x 2 hàng.
     public const int DefaultPageSize = 8;
 }
+
+/// <summary>Trạng thái đánh giá phim (mặc định "Approved" — xem HasDefaultValue trong DbContext).</summary>
+public static class ReviewStatus
+{
+    // Đánh giá đã duyệt — chỉ loại này được hiển thị và được tính vào điểm trung bình.
+    public const string Approved = "Approved";
+
+    // Đánh giá bị ẩn bởi quản trị (không hiển thị, không tính điểm).
+    public const string Hidden = "Hidden";
+}
+
+/// <summary>
+/// Điều kiện để một phim được lên banner trang chủ: phải là phim ĐANG CHIẾU và có
+/// điểm đánh giá cao. Ngưỡng số lượt tối thiểu để 1 review 5 sao lẻ loi không đủ
+/// đẩy phim lên banner.
+/// </summary>
+public static class BannerHighlight
+{
+    // Số slide tối đa trên banner.
+    public const int SlideCount = 3;
+
+    // Điểm trung bình tối thiểu (thang 1-5).
+    public const double MinAverageRating = 4.0;
+
+    // Số lượt đánh giá đã duyệt tối thiểu.
+    public const int MinReviewCount = 3;
+
+    // Không dịch được sang SQL — chỉ dùng sau khi đã tính điểm trong bộ nhớ.
+    public static bool IsHighRated(double? averageRating, int reviewCount)
+        => reviewCount >= MinReviewCount
+           && averageRating.HasValue
+           && averageRating.Value >= MinAverageRating;
+}

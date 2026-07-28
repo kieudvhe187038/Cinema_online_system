@@ -15,27 +15,44 @@
                 <div class="carousel-container relative overflow-hidden">
                     <!-- Đây là khung chứa slider, chiều cao responsive theo viewport -->
                     <div class="relative w-full h-[48vh] sm:h-[52vh] md:h-[56vh] lg:h-[60vh] xl:h-[64vh] min-h-[320px]">
-                        @* 3 phim hot (đang chiếu) làm banner; có ảnh + nút Đặt vé dẫn tới trang suất chiếu của phim. *@
+                        @* Banner ưu tiên phim ĐANG CHIẾU có điểm đánh giá cao (xem BannerHighlight);
+                           service tự lùi về phim đang chiếu bất kỳ khi chưa phim nào đạt ngưỡng. *@
                         @{
-                            var hotMovies = Model.NowShowingMovies.Take(3).ToList();
+                            var bannerMovies = Model.BannerMovies.ToList();
                         }
-                        @if (hotMovies.Any())
+                        @if (bannerMovies.Any())
                         {
-                            for (var i = 0; i < hotMovies.Count; i++)
+                            for (var i = 0; i < bannerMovies.Count; i++)
                             {
-                                var m = hotMovies[i];
+                                var m = bannerMovies[i];
                                 var slideImg = MediaUrl.Banner(m.BannerUrl) ?? MediaUrl.Poster(m.PosterUrl)
                                     ?? $"https://placehold.co/1280x640?text={Uri.EscapeDataString(m.Title)}";
+                                var isHighRated = BannerHighlight.IsHighRated(m.AverageRating, m.ReviewCount);
                                 <div class="carousel-slide absolute inset-0 @(i == 0 ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none") transition-opacity duration-700 ease-in-out">
                                     <img src="@slideImg" alt="@m.Title" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/1280x640?text=Phim'" />
                                     <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/35 to-transparent"></div>
                                     <div class="absolute inset-x-0 bottom-0 p-6 sm:p-10 lg:p-14">
                                         <div class="max-w-2xl space-y-4">
-                                            <span class="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
-                                                <span class="material-symbols-outlined text-sm">local_fire_department</span>Đang chiếu
-                                            </span>
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                @if (isHighRated)
+                                                {
+                                                    <span class="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 px-3 py-1 text-xs font-bold uppercase tracking-wide text-slate-950">
+                                                        <span class="material-symbols-outlined text-sm">star</span>Đánh giá cao
+                                                    </span>
+                                                }
+                                                <span class="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
+                                                    <span class="material-symbols-outlined text-sm">local_fire_department</span>Đang chiếu
+                                                </span>
+                                            </div>
                                             <h2 class="text-2xl font-extrabold leading-tight text-white drop-shadow sm:text-4xl lg:text-5xl">@m.Title</h2>
                                             <div class="flex flex-wrap items-center gap-3 text-sm text-slate-200">
+                                                @if (m.AverageRating.HasValue)
+                                                {
+                                                    <span class="inline-flex items-center gap-1 rounded bg-white/20 px-2 py-0.5 font-semibold">
+                                                        <span class="text-amber-300">★</span>@m.AverageRating.Value.ToString("0.0")/5
+                                                        <span class="font-normal text-slate-300">(@m.ReviewCount đánh giá)</span>
+                                                    </span>
+                                                }
                                                 @if (!string.IsNullOrEmpty(m.AgeRating))
                                                 {
                                                     <span class="rounded bg-white/20 px-2 py-0.5 font-semibold">@m.AgeRating</span>
@@ -77,7 +94,7 @@
 
                     <!-- Indicators -->
                     <div class="absolute inset-x-0 bottom-6 flex justify-center gap-2 z-10">
-                        @{ var dotCount = hotMovies.Any() ? hotMovies.Count : 3; }
+                        @{ var dotCount = bannerMovies.Any() ? bannerMovies.Count : 3; }
                         @for (var i = 0; i < dotCount; i++)
                         {
                             <span class="carousel-dot h-2 w-2 rounded-full @(i == 0 ? "bg-white/80 active" : "bg-white/50") cursor-pointer transition hover:bg-white" data-slide="@i"></span>

@@ -12,6 +12,8 @@ public interface IMovieService
     Task<IEnumerable<MovieDTO>> GetNowShowingMoviesAsync();
     Task<IEnumerable<MovieDTO>> GetComingSoonMoviesAsync();
     Task<IEnumerable<MovieDTO>> GetSpecialMoviesAsync();
+    // Lấy phim cho banner trang chủ: phim đang chiếu có điểm đánh giá cao (xem BannerHighlight).
+    Task<IEnumerable<MovieDTO>> GetBannerMoviesAsync(int count = BannerHighlight.SlideCount);
     Task<IEnumerable<string>> GetAllGenresAsync();
     Task<IEnumerable<string>> GetAllAgeRatingsAsync();
     Task<MovieDTO?> GetMovieByIdAsync(Guid id);

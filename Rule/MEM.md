@@ -978,3 +978,20 @@ Nhật ký thay đổi mã nguồn / CSDL / quyết định kỹ thuật của d
   - **Quy tắc chung:** bất cứ chỗ nào render `Movie.PosterUrl`/`BannerUrl` (Razor hay JS) đều PHẢI tự nối `/images/` khi giá trị không bắt đầu bằng `/` hoặc `http`. Ảnh Manager upload qua form đã có sẵn `/uploads/...` nên nhánh kiểm tra `startsWith('/')` giữ nguyên được.
   - Logic chuẩn hoá này hiện bị lặp ở 4 nơi (3 view Razor + 1 JS). Ai refactor sau nên gom vào một helper dùng chung (vd extension method + hàm JS toàn cục) thay vì copy tiếp lần thứ 5.
   - Đã `dotnet build` lại: **Build succeeded, 0 Warning, 0 Error**.
+
+### [2026-07-28] Banner trang chủ chỉ lấy phim đang chiếu có rating cao (By: vkieu)
+- **What changed:** Banner trang chủ trước đây lấy cứng `Model.NowShowingMovies.Take(3)` (3 phim đầu, thứ tự tuỳ CSDL). Nay đổi thành **phim ĐANG CHIẾU đạt ngưỡng đánh giá cao, điểm cao xếp trước**, và banner hiện thêm điểm sao + số lượt đánh giá.
+  - `Application/Common/MovieConstants.cs`: thêm `BannerHighlight` (`SlideCount = 3`, `MinAverageRating = 4.0`, `MinReviewCount = 3`, `IsHighRated(...)`) và `ReviewStatus` (`Approved`/`Hidden`).
+  - `Application/DTOs/MovieDTO.cs`: thêm `AverageRating` (double?) + `ReviewCount` (int).
+  - `Application/Services/MovieService.cs`: thêm `GetBannerMoviesAsync(int count)` — query phim `Now Showing` kèm Include `Reviews`, tính điểm trung bình, lọc theo ngưỡng, `OrderByDescending(AverageRating).ThenByDescending(ReviewCount)`.
+  - `Application/ViewModels/HomeViewModel.cs` + `Controllers/Public/HomeController.cs`: thêm `BannerMovies`.
+  - `Views/Public/Home/Index.cshtml`: banner đọc `Model.BannerMovies`, thêm nhãn vàng "ĐÁNH GIÁ CAO" và chip `★ 4.4/5 (5 đánh giá)`.
+  - `Application/Services/ReviewService.cs`: thay 3 chỗ literal `"Approved"` bằng `ReviewStatus.Approved` (gộp về một nguồn hằng số, không đổi hành vi).
+- **Why:** Banner là chỗ đắt giá nhất trang chủ nhưng đang hiển thị phim theo thứ tự bất kỳ — có thể đẩy phim bị đánh giá thấp lên đầu. Thêm điều kiện rating để banner luôn là phim khách chấm cao.
+- **Impact/Notes for Team:**
+  - **`AverageRating`/`ReviewCount` KHÔNG được AutoMapper tự điền** — `MovieProfile` không map 2 trường này (map từ navigation `Reviews` sẽ buộc mọi truy vấn phim phải Include `Reviews`). Chỉ `GetBannerMoviesAsync` gán tay; các đường khác trả `null`/`0`. Ai cần điểm ở chỗ khác (thẻ phim, trang chi tiết) phải tự tính, đừng tưởng DTO đã có sẵn.
+  - **Chỉ review `Approved` được tính điểm** — review `Hidden` bị loại, nên số lượt trên banner có thể nhỏ hơn tổng số dòng trong bảng `Reviews`.
+  - **Có fallback có chủ ý:** khi chưa phim nào đạt ngưỡng (CSDL mới, chưa ai đánh giá) thì service trả về phim đang chiếu bất kỳ như hành vi cũ — banner không bao giờ trống. View tự ẩn nhãn "Đánh giá cao" và chip điểm khi phim không đạt ngưỡng, nên không có chuyện gắn nhãn sai. Chỉ khi KHÔNG có phim đang chiếu nào thì mới rơi về 3 ảnh tĩnh `banner1/2/3.png`.
+  - **Đổi ngưỡng thì sửa `BannerHighlight`, đừng sửa view.** `MinReviewCount = 3` là để một review 5 sao lẻ loi không đủ đẩy phim lên banner.
+  - Đối chiếu trên `CinemaWebDB` thật (query group theo `Approved`): đúng 3 phim đạt ngưỡng — **Moana (Live Action) 4.4/5 lượt, Công Viên Giải Thoát 4.3/7 lượt, Đêm Truy Sát 4.0/4 lượt**; The Odyssey 3.8 và Đừng Đốt 3.7 bị loại đúng như mong đợi. Lưu ý `Đừng Đốt` trong CSDL đang chạy là `Now Showing` (khác `Special` trong file seed) vì `MovieStatusService` tự đồng bộ theo ngày khởi chiếu.
+  - `dotnet build`: **0 Warning, 0 Error**. Chưa kiểm tra bằng mắt trên trình duyệt.

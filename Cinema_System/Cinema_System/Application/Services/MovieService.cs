@@ -14,6 +14,7 @@ public class MovieService : IMovieService
 {
     private const string ShowtimesIncludeProperty = "Showtimes"; // Include lịch chiếu khi truy vấn
     private const string GenresIncludeProperty = "Genres";       // Include thể loại khi truy vấn
+    private const string ReviewsIncludeProperty = "Reviews";     // Include đánh giá khi cần tính điểm
 
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
@@ -179,6 +180,49 @@ public class MovieService : IMovieService
         );
 
         return _mapper.Map<IEnumerable<MovieDTO>>(specialMovies);
+    }
+
+    // Lấy phim cho banner trang chủ: phim ĐANG CHIẾU đạt ngưỡng đánh giá cao, điểm cao xếp trước.
+    public async Task<IEnumerable<MovieDTO>> GetBannerMoviesAsync(int count = BannerHighlight.SlideCount)
+    {
+        if (count <= 0)
+            return Array.Empty<MovieDTO>();
+
+        var nowShowingMovies = await _unitOfWork.Movies.GetAllAsync(
+            predicate: movie => movie.Status == MovieStatus.NowShowing,
+            includeProperties: new[] { ShowtimesIncludeProperty, GenresIncludeProperty, ReviewsIncludeProperty }
+        );
+
+        // Điểm trung bình chỉ tính trên review ĐÃ DUYỆT — review bị ẩn không được kéo điểm lên.
+        var scoredMovies = nowShowingMovies
+            .Select(movie =>
+            {
+                var approvedRatings = movie.Reviews
+                    .Where(review => string.Equals(review.Status, ReviewStatus.Approved, StringComparison.OrdinalIgnoreCase))
+                    .Select(review => review.Rating)
+                    .ToList();
+
+                var dto = _mapper.Map<MovieDTO>(movie);
+                dto.ReviewCount = approvedRatings.Count;
+                dto.AverageRating = approvedRatings.Count == 0
+                    ? null
+                    : Math.Round(approvedRatings.Average(), 1);
+                return dto;
+            })
+            .ToList();
+
+        var highRatedMovies = scoredMovies
+            .Where(movie => BannerHighlight.IsHighRated(movie.AverageRating, movie.ReviewCount))
+            .OrderByDescending(movie => movie.AverageRating)
+            .ThenByDescending(movie => movie.ReviewCount)
+            .Take(count)
+            .ToList();
+
+        // Chưa phim nào đạt ngưỡng (CSDL mới, chưa có đánh giá) -> lấy phim đang chiếu như trước
+        // để banner không bị trống; view tự ẩn nhãn "đánh giá cao" khi phim không đạt ngưỡng.
+        return highRatedMovies.Count > 0
+            ? highRatedMovies
+            : scoredMovies.Take(count).ToList();
     }
 
     // Tìm phim theo từ khóa (gõ không dấu vẫn ra) và trả về kết quả phân trang.

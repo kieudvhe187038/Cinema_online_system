@@ -29,7 +29,7 @@ public class ReviewService : IReviewService
         var (items, totalCount) = await _unitOfWork.Reviews.GetPagedAsync(
             page,
             pageSize,
-            predicate: r => r.MovieId == movieId && r.Status == "Approved",
+            predicate: r => r.MovieId == movieId && r.Status == ReviewStatus.Approved,
             include: q => q.Include(r => r.User).Include(r => r.Movie),
             orderBy: q => q.OrderByDescending(x => x.CreatedAt));
 
@@ -94,7 +94,7 @@ public class ReviewService : IReviewService
             MovieId = reviewDTO.MovieId,
             Rating = reviewDTO.Rating,
             Comment = reviewDTO.Comment,
-            Status = "Approved", // Khớp với HasDefaultValue("Approved") trong DbContext
+            Status = ReviewStatus.Approved, // Khớp với HasDefaultValue("Approved") trong DbContext
             CreatedAt = DateTime.Now
         };
 
@@ -126,7 +126,7 @@ public class ReviewService : IReviewService
         var (items, totalCount) = await _unitOfWork.Reviews.GetPagedAsync(
             page,
             pageSize,
-            predicate: r => r.Status == "Approved",
+            predicate: r => r.Status == ReviewStatus.Approved,
             include: q => q.Include(r => r.User).Include(r => r.Movie),
             orderBy: q => q.OrderByDescending(x => x.CreatedAt));
 

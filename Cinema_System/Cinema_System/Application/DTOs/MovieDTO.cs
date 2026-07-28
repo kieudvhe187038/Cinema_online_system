@@ -23,6 +23,13 @@ public class MovieDTO
     // Chỉ đúng khi truy vấn có Include "Showtimes".
     public bool HasUpcomingShowtimes { get; set; }
 
+    // Điểm đánh giá trung bình (thang 1-5) tính trên các review ĐÃ DUYỆT; null khi chưa có review nào.
+    // AutoMapper KHÔNG tự điền 2 trường này — service phải gán tay (xem MovieService.GetBannerMoviesAsync).
+    public double? AverageRating { get; set; }
+
+    // Số lượt đánh giá đã duyệt.
+    public int ReviewCount { get; set; }
+
     public List<string> GenreNames { get; set; } = new();
     public DateTime? CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
