@@ -995,3 +995,10 @@ Nhật ký thay đổi mã nguồn / CSDL / quyết định kỹ thuật của d
   - **Đổi ngưỡng thì sửa `BannerHighlight`, đừng sửa view.** `MinReviewCount = 3` là để một review 5 sao lẻ loi không đủ đẩy phim lên banner.
   - Đối chiếu trên `CinemaWebDB` thật (query group theo `Approved`): đúng 3 phim đạt ngưỡng — **Moana (Live Action) 4.4/5 lượt, Công Viên Giải Thoát 4.3/7 lượt, Đêm Truy Sát 4.0/4 lượt**; The Odyssey 3.8 và Đừng Đốt 3.7 bị loại đúng như mong đợi. Lưu ý `Đừng Đốt` trong CSDL đang chạy là `Now Showing` (khác `Special` trong file seed) vì `MovieStatusService` tự đồng bộ theo ngày khởi chiếu.
   - `dotnet build`: **0 Warning, 0 Error**. Chưa kiểm tra bằng mắt trên trình duyệt.
+
+### [2026-07-28] Sửa nhãn giới hạn dung lượng ảnh đồ ăn: 10MB -> 2MB (By: vkieu)
+- **What changed:** Sửa dòng chú thích dưới ô upload ảnh ở `Views/Manager/FoodBeverages/Create.cshtml` và `Edit.cshtml` từ "Tối đa 10MB" thành "Tối đa 2MB". Chỉ đổi chữ, không đụng logic kiểm tra.
+- **Why:** Nhãn ghi sai con số nên Manager chọn ảnh 3–9MB thì bị validate chặn mà không hiểu tại sao. `FoodBeveragesController` có **2 hằng số khác nhau**: `MaxUploadBytes = 10MB` là giới hạn CẢ REQUEST (`[RequestSizeLimit]`/`[RequestFormLimits]`), còn `MaxImageBytes = 2MB` mới là giới hạn TỪNG ẢNH. Nhãn cũ lấy nhầm con số 10MB.
+- **Impact/Notes for Team:**
+  - **Đừng lấy `MaxUploadBytes` làm con số hiển thị cho người dùng** — form đồ ăn chỉ có 1 ô ảnh nên số đúng luôn là `MaxImageBytes` (2MB). `MovieManagementController` cũng có cặp hằng số y hệt (10MB request cho cả poster + banner, 2MB mỗi ảnh); form phim hiện KHÔNG ghi nhãn dung lượng nào nên chưa sai, ai thêm nhãn thì nhớ ghi 2MB.
+  - Giới hạn thật vẫn giữ nguyên, không có thay đổi hành vi — chỉ hết gây hiểu nhầm.
