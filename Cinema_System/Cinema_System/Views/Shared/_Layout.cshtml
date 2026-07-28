@@ -322,6 +322,13 @@
                 return holder;
             }
 
+            // DB lưu tên file trần (vd "ten-phim.webp") -> phải gắn /images/ như các view Razor,
+            // nếu không trình duyệt sẽ hiểu là đường dẫn tương đối và ảnh 404.
+            function posterSrc(raw) {
+                if (!raw) return '';
+                return /^(https?:)?\/\//.test(raw) || raw.startsWith('/') ? raw : '/images/' + raw;
+            }
+
             function buildRow(movie, key) {
                 const row = document.createElement('a');
                 row.href = '/Movies/Details/' + encodeURIComponent(movie.slug);
@@ -331,12 +338,15 @@
 
                 const poster = document.createElement('span');
                 poster.className = 'block h-14 w-10 shrink-0 overflow-hidden rounded bg-slate-200 dark:bg-slate-700';
-                if (movie.posterUrl) {
+                const src = posterSrc(movie.posterUrl);
+                if (src) {
                     const img = document.createElement('img');
-                    img.src = movie.posterUrl;
+                    img.src = src;
                     img.alt = '';
                     img.loading = 'lazy';
                     img.className = 'h-full w-full object-cover';
+                    // File ảnh thiếu -> bỏ thẻ img, giữ lại ô xám thay vì icon ảnh vỡ.
+                    img.addEventListener('error', function () { img.remove(); });
                     poster.appendChild(img);
                 }
                 row.appendChild(poster);

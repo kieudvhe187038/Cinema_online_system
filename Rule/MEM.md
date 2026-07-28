@@ -962,3 +962,19 @@ Nhật ký thay đổi mã nguồn / CSDL / quyết định kỹ thuật của d
   - **Bắt buộc xem tận mắt từng ảnh trước khi chọn.** Từ khoá tìm kiếm trả về rất nhiều ảnh sai ngữ cảnh mà tiêu đề nghe vẫn hợp lý: "popcorn bucket" ra chuột lang trong hộp bắp, "PopCorn mall" ra bánh pandan, "cinema snacks" ra cái nhà quầy bán hàng, "cheese fries" ra burger.
   - **Còn 1 điểm chưa hoàn hảo:** ảnh `combo-gia-dinh.jpg` là ly **Pepsi** trên ghế rạp trong khi menu bán Coca-Cola, và hơi tối. Giữ lại vì đúng ngữ cảnh rạp chiếu và là CC0 (không cần ghi công) — ai tìm được ảnh tốt hơn thì thay, chỉ cần ghi đè file cùng tên, KHÔNG phải sửa CSDL.
   - Đã kiểm chứng lại: bật app ở cổng 5199, `curl` cả 8 ảnh — **8/8 trả HTTP 200, `Content-Type: image/jpeg`**, kích thước khớp file trên đĩa. Đã tắt app.
+
+### [2026-07-28] Thêm file dữ liệu test phim Doraemon (By: vkieu)
+- **What changed:** Tạo `TestData/movie-doraemon-lau-dai-duoi-day-bien.md` — bộ dữ liệu mẫu cho phim "Phim Điện Ảnh Doraemon: Nobita và Lâu Đài Dưới Đáy Biển (Phiên bản mới)": bảng giá trị nhập form Thêm phim, nội dung mô tả/diễn viên copy sẵn, 12 case validation âm tính, bảng test trạng thái tự động, script SQL chèn/xoá nhanh và checklist kiểm tra. Không đụng code hay CSDL.
+- **Why:** Cần dữ liệu đầy đủ, bám đúng ràng buộc thật để test tay chức năng Quản lý phim mà không phải tự bịa từng lần.
+- **Impact/Notes for Team:**
+  - **Thư mục `TestData/` là thư mục mới** — chỗ để tài liệu dữ liệu test thủ công. Đây là tài liệu test, KHÔNG phải nguồn thông tin phim chính thức; các trường đạo diễn/thời lượng/ngày khởi chiếu/trailer phải kiểm chứng lại trước khi bê vào `SQL/CinemaWebDB_SeedData.sql`.
+  - **Lưu ý dễ sai khi viết SQL chèn phim tay:** `Movies.poster_url`/`banner_url` lưu **tên file trần** trong `wwwroot/images/` (vd `the-odyssey.webp`), khác hẳn `Food_Beverages.image_url` vốn lưu đường dẫn đầy đủ có `/` đầu. Ảnh Manager upload qua form thì nằm ở `/uploads/posters/` và `/uploads/banners/`.
+  - Ràng buộc đã đối chiếu từ code: ảnh tối đa **2MB/file**, tổng request **10MB**, chỉ nhận `.jpg .jpeg .png .webp .gif`; `age_rating` chỉ nhận `P/C13/C16/C18`; form **Thêm** chặn ngày khởi chiếu quá khứ còn form **Sửa** thì không; slug trùng được tự nối ticks chứ không báo lỗi.
+
+### [2026-07-28] Fix ảnh không hiển thị ở dropdown gợi ý tìm kiếm phim (By: vkieu)
+- **What changed:** Sửa JS dựng dropdown gợi ý trong `Views/Shared/_Layout.cshtml`: thêm hàm `posterSrc()` chuẩn hoá đường dẫn ảnh trước khi gán `img.src`, và gắn `error` handler để gỡ thẻ `img` khi file ảnh thiếu (giữ ô xám thay vì icon ảnh vỡ). Không đụng Controller/Service/CSDL.
+- **Why:** `Movies.poster_url` lưu **tên file trần** (vd `ten-phim.webp`). API `/Movies/Suggest` trả nguyên giá trị đó, còn JS gán thẳng vào `img.src` nên trình duyệt hiểu là đường dẫn **tương đối** so với trang hiện tại (vd `/Movies/ten-phim.webp`) -> 404, ảnh không hiện. Các view Razor (`_MovieCard.cshtml`, `Movies/Details.cshtml`, `Reviews/Create.cshtml`) đều đã tự nối `/images/` nên không dính lỗi này — chỉ mỗi nhánh JS bị bỏ sót.
+- **Impact/Notes for Team:**
+  - **Quy tắc chung:** bất cứ chỗ nào render `Movie.PosterUrl`/`BannerUrl` (Razor hay JS) đều PHẢI tự nối `/images/` khi giá trị không bắt đầu bằng `/` hoặc `http`. Ảnh Manager upload qua form đã có sẵn `/uploads/...` nên nhánh kiểm tra `startsWith('/')` giữ nguyên được.
+  - Logic chuẩn hoá này hiện bị lặp ở 4 nơi (3 view Razor + 1 JS). Ai refactor sau nên gom vào một helper dùng chung (vd extension method + hàm JS toàn cục) thay vì copy tiếp lần thứ 5.
+  - Đã `dotnet build` lại: **Build succeeded, 0 Warning, 0 Error**.
